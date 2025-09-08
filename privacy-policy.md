@@ -1,3 +1,11 @@
+---
+layout: none
+---
+
+# Privacy Policy
+
+...
+
 PointlessProductions2020
 
 Last updated September, 2025
