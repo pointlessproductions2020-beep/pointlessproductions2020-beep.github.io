@@ -275,7 +275,7 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   updateScore();
   playerReset();
 });
-
+let nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
 playerReset();
 updateScore();
 update();
