@@ -112,25 +112,23 @@
     }
 
     function createPiece(type) {
-      const t = type;
       const shapes = {
-        T: [[0, t, 0], [t, t, t]],
-        O: [[t, t], [t, t]],
-        L: [[0, 0, t], [t, t, t]],
-        J: [[t, 0, 0], [t, t, t]],
-        I: [[0, 0, 0, 0], [t, t, t, t]],
-        S: [[0, t, t], [t, t, 0]],
-        Z: [[t, t, 0], [0, t, t]]
+        T: [[0, 1, 0], [1, 1, 1]],
+        O: [[1, 1], [1, 1]],
+        L: [[0, 0, 1], [1, 1, 1]],
+        J: [[1, 0, 0], [1, 1, 1]],
+        I: [[0, 0, 0, 0], [1, 1, 1, 1]],
+        S: [[0, 1, 1], [1, 1, 0]],
+        Z: [[1, 1, 0], [0, 1, 1]]
       };
       return { matrix: shapes[type], type };
     }
 
-    function drawMatrix(matrix, offset, context, colorMap = colors) {
+    function drawMatrix(matrix, offset, context, color) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
-          if (value && value !== '.') {
-            const fill = colorMap[value] || '#888';
-            context.fillStyle = fill;
+          if (value !== 0) {
+            context.fillStyle = color;
             context.fillRect(x + offset.x, y + offset.y, 1, 1);
           }
         });
@@ -141,11 +139,12 @@
       player.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value !== 0) {
-            arena[y + player.pos.y][x + player.pos.x] = value;
+            arena[y + player.pos.y][x + player.pos.x] = player.type;
           }
         });
       });
     }
+
 
     function collide(arena, player) {
       const m = player.matrix;
@@ -232,7 +231,7 @@
         x: Math.floor((previewCanvas.width / 20 - nextPiece.matrix[0].length) / 2),
         y: Math.floor((previewCanvas.height / 20 - nextPiece.matrix.length) / 2)
       };
-      drawMatrix(nextPiece.matrix, offset, previewCtx, colors);
+      drawMatrix(nextPiece.matrix, offset, previewCtx, colors[nextPiece.type]);
     }
 
         const particles = [];
@@ -266,7 +265,7 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       drawMatrix(arena, { x: 0, y: 0 }, ctx);
-      drawMatrix(player.matrix, player.pos, ctx, colors);
+      drawMatrix(player.matrix, player.pos, ctx, colors[player.type]);
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
