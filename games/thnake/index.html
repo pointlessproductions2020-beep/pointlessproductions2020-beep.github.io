@@ -38,6 +38,26 @@
       background: #111;
       border: 2px solid #444;
     }
+    .controls {
+      margin: 20px auto;
+      font-size: 1em;
+      color: #eee;
+    }
+    .controls label {
+      cursor: pointer;
+      font-weight: bold;
+      color: #ff4f81;
+      margin-right: 20px;
+    }
+    .controls button {
+      padding: 0.5rem 1rem;
+      background-color: #ff4f81;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
     footer {
       margin-top: 40px;
       font-size: 0.9em;
@@ -59,6 +79,14 @@
     </p>
   </div>
 
+  <div class="controls">
+    <label>
+      <input type="checkbox" id="ironToggle" />
+      Activate Iron Mode 💪
+    </label>
+    <button id="restartBtn">Restart Game 🔁</button>
+  </div>
+
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
   <footer>
@@ -71,17 +99,46 @@
     const ctx = canvas.getContext("2d");
 
     const gridSize = 20;
-    let snake = [{ x: 10, y: 10 }];
-    let direction = { x: 1, y: 0 };
-    let food = { x: 15, y: 15 };
-    let score = 0;
-    let gameOver = false;
+    let snake, direction, food, score, gameOver, ironMode, speed, snakeColor;
+    let gameLoop;
+
+    const colors = ["#0f0", "#ff0", "#0ff", "#f0f", "#fff", "#ff4f81", "#44ff44"];
+
+    function initGame() {
+      snake = [{ x: 10, y: 10 }];
+      direction = { x: 1, y: 0 };
+      food = { x: 15, y: 15 };
+      score = 0;
+      gameOver = false;
+      ironMode = document.getElementById("ironToggle").checked;
+      speed = ironMode ? 75 : 150;
+      snakeColor = colors[Math.floor(Math.random() * colors.length)];
+      clearInterval(gameLoop);
+      gameLoop = setInterval(() => {
+        update();
+        draw();
+      }, speed);
+    }
+
+    document.getElementById("ironToggle").addEventListener("change", () => {
+      ironMode = document.getElementById("ironToggle").checked;
+      speed = ironMode ? 75 : 150;
+      clearInterval(gameLoop);
+      gameLoop = setInterval(() => {
+        update();
+        draw();
+      }, speed);
+    });
+
+    document.getElementById("restartBtn").addEventListener("click", () => {
+      initGame();
+    });
 
     function draw() {
       ctx.fillStyle = "#111";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#0f0";
+      ctx.fillStyle = snakeColor;
       snake.forEach(segment => {
         ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
       });
@@ -94,6 +151,10 @@
       ctx.fillStyle = "#fff";
       ctx.font = "20px sans-serif";
       ctx.fillText("Score: " + score, 10, 30);
+      if (ironMode) {
+        ctx.fillStyle = "#ff4f81";
+        ctx.fillText("IRON MODE", canvas.width - 140, 30);
+      }
     }
 
     function update() {
@@ -124,22 +185,24 @@
           x: Math.floor(Math.random() * (canvas.width / gridSize)),
           y: Math.floor(Math.random() * (canvas.height / gridSize))
         };
+        snakeColor = colors[Math.floor(Math.random() * colors.length)];
       } else {
         snake.pop();
       }
     }
 
     document.addEventListener("keydown", e => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+
       if (e.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -1 };
       if (e.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 1 };
       if (e.key === "ArrowLeft" && direction.x === 0) direction = { x: -1, y: 0 };
       if (e.key === "ArrowRight" && direction.x === 0) direction = { x: 1, y: 0 };
     });
 
-    setInterval(() => {
-      update();
-      draw();
-    }, 150);
+    initGame();
   </script>
 </body>
 </html>
