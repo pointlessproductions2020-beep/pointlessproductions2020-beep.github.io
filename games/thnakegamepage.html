@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Thnake 🐍 | Pointless Arcade</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b0b0b;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+    }
+    header {
+      padding: 40px 20px 20px;
+    }
+    h1 {
+      font-size: 3em;
+      margin: 0;
+      color: #ff4444;
+    }
+    h2 {
+      font-weight: normal;
+      font-size: 1.2em;
+      color: #ccc;
+      margin-top: 10px;
+    }
+    .lore {
+      max-width: 600px;
+      margin: 30px auto;
+      font-size: 1em;
+      color: #aaa;
+      padding: 0 20px;
+    }
+    canvas {
+      display: block;
+      margin: 30px auto;
+      background: #111;
+      border: 2px solid #444;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>THNAKE</h1>
+    <h2>Wriggle wisely. Snack recklessly.</h2>
+  </header>
+
+  <div class="lore">
+    <p>
+      Forged in the depths of the Pointless Arcade, Thnake is no ordinary serpent.  
+      It wriggles with purpose, devours with style, and fears no fruit.  
+      Enter Iron Mode if you dare—where speed is savage and snacks are slippery.
+    </p>
+  </div>
+
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <footer>
+    <p>Made by <strong>PointlessProductions</strong></p>
+    <p><em>No serpents or speech impediments were harmed in the making of this game.</em></p>
+  </footer>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const gridSize = 20;
+    let snake = [{ x: 10, y: 10 }];
+    let direction = { x: 1, y: 0 };
+    let food = { x: 15, y: 15 };
+    let score = 0;
+    let gameOver = false;
+
+    function draw() {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#0f0";
+      snake.forEach(segment => {
+        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+      });
+
+      ctx.fillStyle = "#f00";
+      ctx.beginPath();
+      ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "20px sans-serif";
+      ctx.fillText("Score: " + score, 10, 30);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+      if (
+        head.x < 0 || head.x >= canvas.width / gridSize ||
+        head.y < 0 || head.y >= canvas.height / gridSize
+      ) {
+        gameOver = true;
+        alert("Game Over! Final Score: " + score);
+        return;
+      }
+
+      if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        gameOver = true;
+        alert("Game Over! Final Score: " + score);
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        food = {
+          x: Math.floor(Math.random() * (canvas.width / gridSize)),
+          y: Math.floor(Math.random() * (canvas.height / gridSize))
+        };
+      } else {
+        snake.pop();
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -1 };
+      if (e.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 1 };
+      if (e.key === "ArrowLeft" && direction.x === 0) direction = { x: -1, y: 0 };
+      if (e.key === "ArrowRight" && direction.x === 0) direction = { x: 1, y: 0 };
+    });
+
+    setInterval(() => {
+      update();
+      draw();
+    }, 150);
+  </script>
+</body>
+</html>
