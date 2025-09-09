@@ -81,13 +81,13 @@
     </div>
   </div>
 
- <!-- <div class="touch-controls">
+  <div class="touch-controls">
     <button data-action="left">←</button>
     <button data-action="right">→</button>
     <button data-action="down">↓</button>
     <button data-action="rotateLeft">⟲</button>
     <button data-action="rotateRight">⟳</button>
-  </div>-->
+  </div>
 
 
   <script>
@@ -125,16 +125,18 @@
       return { matrix: shapes[type], type };
     }
 
-    function drawMatrix(matrix, offset, context, color) {
+    function drawMatrix(matrix, offset, context, colorMap = colors) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
-          if (value !== 0) {
-            context.fillStyle = color;
+          if (value && value !== '.') {
+            const fill = colorMap[value] || '#888';
+            context.fillStyle = fill;
             context.fillRect(x + offset.x, y + offset.y, 1, 1);
           }
         });
       });
     }
+
 
     function merge(arena, player) {
       player.matrix.forEach((row, y) => {
@@ -270,7 +272,7 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drawMatrix(arena, { x: 0, y: 0 }, ctx, null);
+      drawMatrix(arena, { x: 0, y: 0 }, ctx);
       drawMatrix(player.matrix, player.pos, ctx, colors[player.type]);
 
       for (let i = particles.length - 1; i >= 0; i--) {
