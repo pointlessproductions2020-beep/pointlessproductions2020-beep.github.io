@@ -145,7 +145,6 @@
       });
     }
 
-
     function collide(arena, player) {
       const m = player.matrix;
       const o = player.pos;
@@ -234,7 +233,7 @@
       drawMatrix(nextPiece.matrix, offset, previewCtx, colors[nextPiece.type]);
     }
 
-        const particles = [];
+    const particles = [];
 
     function arenaSweep() {
       let rowCount = 1;
@@ -264,7 +263,7 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drawMatrix(arena, { x: 0, y: 0 }, ctx);
+      drawMatrix(arena, { x: 0, y: 0 }, ctx, colors);
       drawMatrix(player.matrix, player.pos, ctx, colors[player.type]);
 
       for (let i = particles.length - 1; i >= 0; i--) {
