@@ -109,13 +109,8 @@
     const soundToggle = document.getElementById('soundToggle');
 
     const colors = {
-      T: '#ff4f81',
-      O: '#ffd700',
-      L: '#00bfff',
-      J: '#ff8c00',
-      I: '#7fff00',
-      S: '#da70d6',
-      Z: '#ff6347'
+      T: '#ff4f81', O: '#ffd700', L: '#00bfff',
+      J: '#ff8c00', I: '#7fff00', S: '#da70d6', Z: '#ff6347'
     };
 
     const sounds = {
@@ -172,41 +167,30 @@
       });
     }
 
-      function collide(arena, player) {
-        const m = player.matrix;
-        const o = player.pos;
-      
-        for (let y = 0; y < m.length; ++y) {
-          for (let x = 0; x < m[y].length; ++x) {
-            if (
-              m[y][x] !== 0 &&
-              (
-                y + o.y >= arena.length || // Bottom edge
-                x + o.x < 0 ||             // Left edge
-                x + o.x >= arena[0].length || // Right edge
-                arena[y + o.y][x + o.x] !== 0 // Collision with placed block
-              )
-            ) {
-              return true;
-            }
+    function collide(arena, player) {
+      const m = player.matrix;
+      const o = player.pos;
+      for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+          if (
+            m[y][x] !== 0 &&
+            (
+              y + o.y >= arena.length ||
+              x + o.x < 0 ||
+              x + o.x >= arena[0].length ||
+              arena[y + o.y][x + o.x] !== 0
+            )
+          ) {
+            return true;
           }
         }
-      
-        return false;
       }
-
-
-    function rotate(matrix, dir) {
-      for (let y = 0; y < matrix.length; ++y) {
-        for (let x = 0; x < y; ++x) {
-          [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-        }
-      }
-      dir > 0 ? matrix.forEach(row => row.reverse()) : matrix.reverse();
+      return false;
     }
 
     function playerDrop() {
-      if (!collide(arena, { ...player, pos: { x: player.pos.x, y: player.pos.y + 1 } })) {
+      const testPos = { x: player.pos.x, y: player.pos.y + 1 };
+      if (!collide(arena, { ...player, pos: testPos })) {
         player.pos.y++;
       } else {
         merge(arena, player);
@@ -217,8 +201,6 @@
       }
       dropCounter = 0;
     }
-
-
 
     function playerMove(dir) {
       player.pos.x += dir;
@@ -240,35 +222,42 @@
       }
     }
 
+    function rotate(matrix, dir) {
+      for (let y = 0; y < matrix.length; ++y) {
+        for (let x = 0; x < y; ++x) {
+          [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+        }
+      }
+      dir > 0 ? matrix.forEach(row => row.reverse()) : matrix.reverse();
+    }
+
     function playerReset() {
-  const piece = nextPiece;
-  player.matrix = piece.matrix;
-  player.type = piece.type;
-  player.pos = {
-    x: Math.floor(arena[0].length / 2) - Math.floor(piece.matrix[0].length / 2),
-    y: 0
-  };
+      const piece = nextPiece;
+      player.matrix = piece.matrix;
+      player.type = piece.type;
+      player.pos = {
+        x: Math.floor(arena[0].length / 2) - Math.floor(piece.matrix[0].length / 2),
+        y: 0
+      };
+      nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
+      drawPreview();
 
-  nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
-  drawPreview();
-
-  // If the new piece immediately collides, it's game over
-  if (collide(arena, player)) {
-    arena.forEach(row => row.fill(0));
-    player.score = 0;
-    playSound('gameover');
-    updateScore();
-  }
-}
+      if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        player.score = 0;
+        playSound('gameover');
+        updateScore();
+      }
+    }
 
     function drawPreview() {
-  previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-  const offset = {
-    x: Math.floor((previewCanvas.width / 20 - nextPiece.matrix[0].length) / 2),
-    y: Math.floor((previewCanvas.height / 20 - nextPiece.matrix.length) / 2)
-  };
-  drawMatrix(nextPiece.matrix, offset, previewCtx, colors[nextPiece.type]);
-}
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      const offset = {
+        x: Math.floor((previewCanvas.width / 20 - nextPiece.matrix[0].length) / 2),
+        y: Math.floor((previewCanvas.height / 20 - nextPiece.matrix.length) / 2)
+      };
+      drawMatrix(nextPiece.matrix, offset, previewCtx, colors[nextPiece.type]);
+    }
 
     const particles = [];
 
