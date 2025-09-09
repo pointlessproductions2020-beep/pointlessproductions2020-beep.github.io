@@ -89,7 +89,6 @@
     <button data-action="rotateRight">⟳</button>
   </div>
 
-
   <script>
     const canvas = document.getElementById('tetris');
     const ctx = canvas.getContext('2d');
@@ -113,14 +112,15 @@
     }
 
     function createPiece(type) {
+      const t = type;
       const shapes = {
-        T: [[0, 1, 0], [1, 1, 1]],
-        O: [[1, 1], [1, 1]],
-        L: [[0, 0, 1], [1, 1, 1]],
-        J: [[1, 0, 0], [1, 1, 1]],
-        I: [[0, 0, 0, 0], [1, 1, 1, 1]],
-        S: [[0, 1, 1], [1, 1, 0]],
-        Z: [[1, 1, 0], [0, 1, 1]]
+        T: [[0, t, 0], [t, t, t]],
+        O: [[t, t], [t, t]],
+        L: [[0, 0, t], [t, t, t]],
+        J: [[t, 0, 0], [t, t, t]],
+        I: [[0, 0, 0, 0], [t, t, t, t]],
+        S: [[0, t, t], [t, t, 0]],
+        Z: [[t, t, 0], [0, t, t]]
       };
       return { matrix: shapes[type], type };
     }
@@ -137,12 +137,11 @@
       });
     }
 
-
     function merge(arena, player) {
       player.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value !== 0) {
-            arena[y + player.pos.y][x + player.pos.x] = player.type;
+            arena[y + player.pos.y][x + player.pos.x] = value;
           }
         });
       });
@@ -170,21 +169,14 @@
     }
 
     function playerDrop() {
-      const nextY = player.pos.y + 1;
-      player.pos.y = nextY;
-
+      player.pos.y++;
       if (collide(arena, player)) {
-        player.pos.y = nextY - 1;
+        player.pos.y--;
         merge(arena, player);
-        
-        console.log("Arena after merge:");
-        console.table(arena.map(row => row.map(cell => cell || '.')));
-
         arenaSweep();
         playerReset();
         updateScore();
       }
-
       dropCounter = 0;
     }
 
@@ -240,40 +232,41 @@
         x: Math.floor((previewCanvas.width / 20 - nextPiece.matrix[0].length) / 2),
         y: Math.floor((previewCanvas.height / 20 - nextPiece.matrix.length) / 2)
       };
-      drawMatrix(nextPiece.matrix, offset, previewCtx, colors[nextPiece.type]);
+      drawMatrix(nextPiece.matrix, offset, previewCtx, colors);
     }
 
         const particles = [];
 
-      function arenaSweep() {
-        let rowCount = 1;
-        for (let y = arena.length - 1; y >= 0; --y) {
-          if (arena[y].every(cell => cell !== 0)) {
-            const type = arena[y][0];
-            for (let x = 0; x < arena[y].length; ++x) {
-              particles.push({
-                x: x,
-                y: y,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: -Math.random() * 0.5,
-                alpha: 1,
-                color: colors[type]
-              });
-            }
-            arena.splice(y, 1);
-            arena.unshift(new Array(arena[0].length).fill(0));
-            player.score += rowCount * 10;
-            rowCount *= 2;
-            y++; // recheck same row after shift
+    function arenaSweep() {
+      let rowCount = 1;
+      for (let y = arena.length - 1; y >= 0; --y) {
+        if (arena[y].every(cell => cell !== 0)) {
+          const type = arena[y][0];
+          for (let x = 0; x < arena[y].length; ++x) {
+            particles.push({
+              x: x,
+              y: y,
+              vx: (Math.random() - 0.5) * 0.5,
+              vy: -Math.random() * 0.5,
+              alpha: 1,
+              color: colors[type]
+            });
           }
+          arena.splice(y, 1);
+          arena.unshift(new Array(arena[0].length).fill(0));
+          player.score += rowCount * 10;
+          rowCount *= 2;
+          y++; // recheck same row after shift
         }
       }
-        function draw() {
+    }
+
+    function draw() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       drawMatrix(arena, { x: 0, y: 0 }, ctx);
-      drawMatrix(player.matrix, player.pos, ctx, colors[player.type]);
+      drawMatrix(player.matrix, player.pos, ctx, colors);
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -290,7 +283,8 @@
       }
       ctx.globalAlpha = 1;
     }
-        function updateScore() {
+
+    function updateScore() {
       scoreEl.innerText = 'Score: ' + player.score;
     }
 
@@ -310,7 +304,8 @@
       draw();
       requestAnimationFrame(update);
     }
-        document.addEventListener('keydown', event => {
+
+    document.addEventListener('keydown', event => {
       if (event.key === 'ArrowLeft') playerMove(-1);
       else if (event.key === 'ArrowRight') playerMove(1);
       else if (event.key === 'ArrowDown') playerDrop();
@@ -335,7 +330,8 @@
       updateScore();
       playerReset();
     });
-        const pieces = 'TJLOSZI';
+
+    const pieces = 'TJLOSZI';
     const arena = createMatrix(12, 20);
     let player = {
       pos: { x: 0, y: 0 },
