@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="google-adsense-account" content="ca-pub-3870628046924057">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-adsense-account" content="ca-pub-3870628046924057" />
   <title>Block Drop 🧱 | Pointless Arcade</title>
   <style>
     body {
@@ -201,123 +202,128 @@
     }
 
     function playerReset() {
-  player = { ...createPiece(pieces[Math.floor(Math.random() * pieces.length)]), pos: { x: 0, y: 0 }, score: player.score };
-  player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
-  if (collide(arena, player)) {
-    arena.forEach(row => row.fill(0));
-    player.score = 0;
-    playSound('gameover');
+      const piece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
+      player.matrix = piece.matrix;
+      player.type = piece.type;
+      player.pos = { x: 0, y: 0 };
+      if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        player.score = 0;
+        playSound('gameover');
+        updateScore();
+      }
+    }
+
+    function drawPreview() {
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      drawMatrix(nextPiece.matrix, { x: 0, y: 0 }, previewCtx, colors[nextPiece.type]);
+    }
+
+        const particles = [];
+
+    function arenaSweep() {
+      let rowCount = 1;
+      outer: for (let y = arena.length - 1; y >= 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+          if (arena[y][x] === 0) continue outer;
+        }
+        const type = arena[y][0];
+        for (let x = 0; x < arena[y].length; ++x) {
+          particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: -Math.random() * 0.5,
+            alpha: 1,
+            color: colors[type]
+          });
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(new Array(arena[0].length).fill(0));
+        player.score += rowCount * 10;
+        rowCount *= 2;
+        playSound('clear');
+        y++;
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawMatrix(arena, { x: 0, y: 0 }, ctx, null);
+      drawMatrix(player.matrix, player.pos, ctx, colors[player.type]);
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 1, 1);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function updateScore() {
+      scoreEl.innerText = 'Score: ' + player.score;
+    }
+
+    function update(time = 0) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+      dropCounter += deltaTime;
+      if (dropCounter > dropInterval) {
+        playerDrop();
+      }
+      draw();
+      requestAnimationFrame(update);
+    }
+
+    const pieces = 'TJLOSZI';
+    const arena = createMatrix(12, 20);
+    let player = {
+      pos: { x: 0, y: 0 },
+      matrix: null,
+      type: null,
+      score: 0
+    };
+    let dropCounter = 0;
+    let dropInterval = 1000;
+    let lastTime = 0;
+
+    let nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
+    drawPreview();
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      arena.forEach(row => row.fill(0));
+      player.score = 0;
+      updateScore();
+      playerReset();
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'ArrowLeft') {
+        playerMove(-1);
+      } else if (event.key === 'ArrowRight') {
+        playerMove(1);
+      } else if (event.key === 'ArrowDown') {
+        playerDrop();
+      } else if (event.key === 'q') {
+        playerRotate(-1);
+      } else if (event.key === 'w') {
+        playerRotate(1);
+      }
+    });
+
+    playerReset();
     updateScore();
-  }
-}
-
-function drawPreview() {
-  previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-  drawMatrix(nextPiece.matrix, { x: 0, y: 0 }, previewCtx, colors[nextPiece.type]);
-}
-
-const particles = [];
-
-function arenaSweep() {
-  let rowCount = 1;
-  outer: for (let y = arena.length - 1; y >= 0; --y) {
-    for (let x = 0; x < arena[y].length; ++x) {
-      if (arena[y][x] === 0) continue outer;
-    }
-    const type = arena[y][0];
-    for (let x = 0; x < arena[y].length; ++x) {
-      particles.push({
-        x: x,
-        y: y,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: -Math.random() * 0.5,
-        alpha: 1,
-        color: colors[type]
-      });
-    }
-    const row = arena.splice(y, 1)[0].fill(0);
-    arena.unshift(new Array(arena[0].length).fill(0));
-    player.score += rowCount * 10;
-    rowCount *= 2;
-    playSound('clear');
-    y++;
-  }
-}
-
-function draw() {
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  drawMatrix(arena, { x: 0, y: 0 }, ctx, null);
-  drawMatrix(player.matrix, player.pos, ctx, colors[player.type]);
-
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.alpha -= 0.02;
-    if (p.alpha <= 0) {
-      particles.splice(i, 1);
-      continue;
-    }
-    ctx.globalAlpha = p.alpha;
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, 1, 1);
-  }
-  ctx.globalAlpha = 1;
-}
-
-function updateScore() {
-  scoreEl.innerText = 'Score: ' + player.score;
-}
-
-function update(time = 0) {
-  const deltaTime = time - lastTime;
-  lastTime = time;
-  dropCounter += deltaTime;
-  if (dropCounter > dropInterval) {
-    playerDrop();
-  }
-  draw();
-  requestAnimationFrame(update);
-}
-
-const pieces = 'TJLOSZI';
-const arena = createMatrix(12, 20);
-let player = {
-  pos: { x: 0, y: 0 },
-  matrix: null,
-  type: null,
-  score: 0
-};
-let dropCounter = 0;
-let dropInterval = 1000;
-let lastTime = 0;
-
-let nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
-drawPreview();
-
-document.getElementById('restartBtn').addEventListener('click', () => {
-  arena.forEach(row => row.fill(0));
-  player.score = 0;
-  updateScore();
-  playerReset();
-});
-
-document.addEventListener('keydown', event => {
-  if (event.key === 'ArrowLeft') {
-    playerMove(-1);
-  } else if (event.key === 'ArrowRight') {
-    playerMove(1);
-  } else if (event.key === 'ArrowDown') {
-    playerDrop();
-  } else if (event.key === 'q') {
-    playerRotate(-1);
-  } else if (event.key === 'w') {
-    playerRotate(1);
-  }
-});
-
-playerReset();
-updateScore();
-update();
+    update();
+  </script>
+</body>
+</html>
