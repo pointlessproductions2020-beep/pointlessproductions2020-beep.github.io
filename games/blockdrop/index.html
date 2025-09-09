@@ -171,36 +171,40 @@
       const m = player.matrix;
       const o = player.pos;
       for (let y = 0; y < m.length; ++y) {
-        for (let x = 0; x < m[y].length; ++x) {
-          if (
-            m[y][x] !== 0 &&
-            (
-              y + o.y >= arena.length ||
-              x + o.x < 0 ||
-              x + o.x >= arena[0].length ||
-              arena[y + o.y][x + o.x] !== 0
-            )
-          ) {
-            return true;
-          }
-        }
+      for (let x = 0; x < m[y].length; ++x) {
+      if (
+        m[y][x] !== 0 &&
+        (
+          y + o.y >= arena.length || // bottom out-of-bounds
+          x + o.x < 0 ||             // left out-of-bounds
+          x + o.x >= arena[0].length || // right out-of-bounds
+          arena[y + o.y]?.[x + o.x] !== 0 // collision with placed block
+        )
+      ) {
+        return true;
       }
-      return false;
     }
+  }
+  return false;
+}
 
-    function playerDrop() {
-      const testPos = { x: player.pos.x, y: player.pos.y + 1 };
-      if (!collide(arena, { ...player, pos: testPos })) {
-        player.pos.y++;
-      } else {
-        merge(arena, player);
-        playSound('drop');
-        playerReset();
-        arenaSweep();
-        updateScore();
-      }
-      dropCounter = 0;
-    }
+
+  function playerDrop() {
+    const nextY = player.pos.y + 1;
+    player.pos.y = nextY;
+
+    if (collide(arena, player)) {
+      player.pos.y = nextY - 1;
+      merge(arena, player);
+      playSound('drop');
+      arenaSweep();
+      playerReset();
+      updateScore();
+  }
+
+  dropCounter = 0;
+}
+
 
     function playerMove(dir) {
       player.pos.x += dir;
@@ -212,9 +216,9 @@
       let offset = 1;
       rotate(player.matrix, dir);
       while (collide(arena, player)) {
-        player.pos.x += offset;
-        offset = -(offset + (offset > 0 ? 1 : -1));
-        if (offset > player.matrix[0].length) {
+      player.pos.x += offset;
+      offset = -(offset + (offset > 0 ? 1 : -1));
+      if (offset > player.matrix[0].length) {
           rotate(player.matrix, -dir);
           player.pos.x = pos;
           return;
