@@ -121,11 +121,16 @@
     sounds.clear.volume = 0.3;
 
     function playSound(name) {
-      if (soundToggle.checked && sounds[name]) {
-        sounds[name].currentTime = 0;
-        sounds[name].play();
-      }
+  if (soundToggle.checked && sounds[name]) {
+    try {
+      sounds[name].currentTime = 0;
+      sounds[name].play();
+    } catch (e) {
+      console.warn("Sound error:", e);
     }
+  }
+}
+
 
     function createMatrix(w, h) {
       const matrix = [];
@@ -239,23 +244,23 @@
     }
 
     function playerReset() {
-      const piece = nextPiece;
-      player.matrix = piece.matrix;
-      player.type = piece.type;
-      player.pos = {
-        x: Math.floor(arena[0].length / 2) - Math.floor(piece.matrix[0].length / 2),
-        y: 0
-      };
-      nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
-      drawPreview();
+  player.matrix = nextPiece.matrix;
+  player.type = nextPiece.type;
+  player.pos = {
+    x: Math.floor(arena[0].length / 2) - Math.floor(player.matrix[0].length / 2),
+    y: 0
+  };
 
-      if (collide(arena, player)) {
-        arena.forEach(row => row.fill(0));
-        player.score = 0;
-        playSound('gameover');
-        updateScore();
-      }
-    }
+  nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
+  drawPreview();
+
+  if (collide(arena, player)) {
+    arena.forEach(row => row.fill(0));
+    player.score = 0;
+    playSound('gameover');
+    updateScore();
+  }
+}
 
     function drawPreview() {
       previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
@@ -321,8 +326,8 @@
       scoreEl.innerText = 'Score: ' + player.score;
     }
 
-    function update(time = 0) {
-  const deltaTime = Math.min(time - lastTime, 100); // clamp to 100ms max
+function update(time = 0) {
+  const deltaTime = Math.min(time - lastTime, 100); // clamp to 100ms
   lastTime = time;
   dropCounter += deltaTime;
 
