@@ -173,6 +173,10 @@
       if (collide(arena, player)) {
         player.pos.y = nextY - 1;
         merge(arena, player);
+        
+        console.log("Arena after merge:");
+        console.table(arena.map(row => row.map(cell => cell || '.')));
+
         arenaSweep();
         playerReset();
         updateScore();
@@ -238,31 +242,29 @@
 
         const particles = [];
 
-    function arenaSweep() {
-      let rowCount = 1;
-      outer: for (let y = arena.length - 1; y >= 0; --y) {
-        for (let x = 0; x < arena[y].length; ++x) {
-          if (arena[y][x] === 0) continue outer;
+      function arenaSweep() {
+        let rowCount = 1;
+        for (let y = arena.length - 1; y >= 0; --y) {
+          if (arena[y].every(cell => cell !== 0)) {
+            const type = arena[y][0];
+            for (let x = 0; x < arena[y].length; ++x) {
+              particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: -Math.random() * 0.5,
+                alpha: 1,
+                color: colors[type]
+              });
+            }
+            arena.splice(y, 1);
+            arena.unshift(new Array(arena[0].length).fill(0));
+            player.score += rowCount * 10;
+            rowCount *= 2;
+            y++; // recheck same row after shift
+          }
         }
-
-        const type = arena[y][0];
-        for (let x = 0; x < arena[y].length; ++x) {
-          particles.push({
-            x: x,
-            y: y,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: -Math.random() * 0.5,
-            alpha: 1,
-            color: colors[type]
-          });
-        }
-
-        arena.splice(y, 1);
-        arena.unshift(new Array(arena[0].length).fill(0));
-        player.score += rowCount * 10;
-        rowCount *= 2;
       }
-    }
         function draw() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
