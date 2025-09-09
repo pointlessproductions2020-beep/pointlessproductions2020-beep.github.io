@@ -195,6 +195,9 @@
 
     if (collide(arena, player)) {
       player.pos.y = nextY - 1;
+      console.log("Drop triggered at y =", player.pos.y);
+      console.table(player.matrix);
+      
       merge(arena, player);
       playSound('drop');
       arenaSweep();
@@ -319,15 +322,17 @@
     }
 
     function update(time = 0) {
-      const deltaTime = time - lastTime;
-      lastTime = time;
-      dropCounter += deltaTime;
-      if (dropCounter > dropInterval) {
-        playerDrop();
-      }
-      draw();
-      requestAnimationFrame(update);
-    }
+  const deltaTime = Math.min(time - lastTime, 100); // clamp to 100ms max
+  lastTime = time;
+  dropCounter += deltaTime;
+
+  if (dropCounter > dropInterval) {
+    playerDrop();
+  }
+
+  draw();
+  requestAnimationFrame(update);
+}
 
     const pieces = 'TJLOSZI';
     const arena = createMatrix(12, 20);
