@@ -4,29 +4,61 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PointlessPhotoEditor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #1e1e1e;
+      background: #121212;
       color: #fff;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 60px;
+      background: #1f1f1f;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 1rem 0;
+      gap: 1rem;
+      border-right: 1px solid #333;
     }
-    header {
+
+    .tool-icon {
+      font-size: 24px;
+      color: #aaa;
+      cursor: pointer;
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    .tool-icon:hover {
+      color: #fff;
+      transform: scale(1.2);
+    }
+
+    .tool-icon.active {
+      color: #00ffd0;
+    }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 1rem;
-      font-size: 1.5rem;
-      font-weight: bold;
-      letter-spacing: 1px;
     }
+
     #toolbar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 1rem;
       margin-bottom: 1rem;
+      flex-wrap: wrap;
       justify-content: center;
     }
+
     button, input[type="color"], input[type="range"], select {
       padding: 0.5rem;
       border: none;
@@ -35,10 +67,12 @@
       color: #fff;
       cursor: pointer;
     }
+
     canvas {
       border: 1px solid #444;
       background: #fff;
     }
+
     #paletteDisplay {
       margin-top: 1rem;
       display: flex;
@@ -46,6 +80,7 @@
       flex-wrap: wrap;
       justify-content: center;
     }
+
     .swatch {
       width: 30px;
       height: 30px;
@@ -53,52 +88,93 @@
       cursor: pointer;
       transition: transform 0.2s;
     }
+
     .swatch:hover {
       transform: scale(1.1);
+    }
+
+    #textInput {
+      position: absolute;
+      display: none;
+      background: transparent;
+      border: none;
+      color: #000;
+      font-size: 20px;
+      font-family: inherit;
+      outline: none;
     }
   </style>
 </head>
 <body>
-  <header>🎨 PointlessPhotoEditor</header>
-
-  <div id="toolbar">
-    <input type="file" id="upload" accept="image/*" />
-    <input type="color" id="colorPicker" value="#000000" />
-    <select id="toolMode">
-      <option value="brush">Brush</option>
-      <option value="eraser">Eraser</option>
-    </select>
-    <input type="range" id="brushSize" min="1" max="20" value="2" />
-    <button onclick="clearCanvas()">Clear</button>
-    <button onclick="saveImage()">Save</button>
-    <input type="color" id="baseColor" value="#ff6600" />
-    <button onclick="generatePalette()">🎨 Palette</button>
+  <div id="sidebar">
+    <i class="bi bi-brush tool-icon active" data-tool="brush" title="Brush"></i>
+    <i class="bi bi-eraser tool-icon" data-tool="eraser" title="Eraser"></i>
+    <i class="bi bi-fonts tool-icon" data-tool="text" title="Text"></i>
+    <!-- Future tools: lasso, blend, clone -->
   </div>
 
-  <canvas id="editorCanvas" width="800" height="600"></canvas>
+  <div id="main">
+    <div id="toolbar">
+      <input type="file" id="upload" accept="image/*" />
+      <input type="color" id="colorPicker" value="#000000" />
+      <input type="range" id="brushSize" min="1" max="20" value="4" />
+      <button onclick="clearCanvas()">Clear</button>
+      <button onclick="saveImage()">Save</button>
+      <input type="color" id="baseColor" value="#ff6600" />
+      <button onclick="generatePalette()">🎨 Palette</button>
+    </div>
 
-  <div id="paletteDisplay"></div>
+    <canvas id="editorCanvas" width="900" height="600"></canvas>
+    <input type="text" id="textInput" />
+    <div id="paletteDisplay"></div>
+  </div>
 
   <script>
     const canvas = document.getElementById('editorCanvas');
     const ctx = canvas.getContext('2d');
+    const textInput = document.getElementById('textInput');
     let drawing = false;
     let color = '#000000';
-    let brushSize = 2;
+    let brushSize = 4;
     let toolMode = 'brush';
+    let textX = 0, textY = 0;
 
-    canvas.addEventListener('mousedown', () => drawing = true);
+    canvas.addEventListener('mousedown', (e) => {
+      if (toolMode === 'text') {
+        textX = e.offsetX;
+        textY = e.offsetY;
+        textInput.style.left = `${canvas.offsetLeft + textX}px`;
+        textInput.style.top = `${canvas.offsetTop + textY}px`;
+        textInput.style.display = 'block';
+        textInput.focus();
+      } else {
+        drawing = true;
+        draw(e);
+      }
+    });
+
     canvas.addEventListener('mouseup', () => drawing = false);
     canvas.addEventListener('mouseleave', () => drawing = false);
     canvas.addEventListener('mousemove', draw);
 
     function draw(e) {
-      if (!drawing) return;
+      if (!drawing || toolMode === 'text') return;
       ctx.fillStyle = toolMode === 'eraser' ? '#ffffff' : color;
       ctx.beginPath();
       ctx.arc(e.offsetX, e.offsetY, brushSize, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    textInput.addEventListener('blur', () => {
+      const text = textInput.value;
+      if (text) {
+        ctx.fillStyle = color;
+        ctx.font = '20px Segoe UI';
+        ctx.fillText(text, textX, textY);
+      }
+      textInput.value = '';
+      textInput.style.display = 'none';
+    });
 
     document.getElementById('colorPicker').addEventListener('input', (e) => {
       color = e.target.value;
@@ -108,8 +184,12 @@
       brushSize = parseInt(e.target.value);
     });
 
-    document.getElementById('toolMode').addEventListener('change', (e) => {
-      toolMode = e.target.value;
+    document.querySelectorAll('.tool-icon').forEach(icon => {
+      icon.addEventListener('click', () => {
+        document.querySelectorAll('.tool-icon').forEach(i => i.classList.remove('active'));
+        icon.classList.add('active');
+        toolMode = icon.getAttribute('data-tool');
+      });
     });
 
     document.getElementById('upload').addEventListener('change', (e) => {
