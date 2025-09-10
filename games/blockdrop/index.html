@@ -111,6 +111,10 @@
       return matrix;
     }
 
+    function cloneMatrix(matrix) {
+      return matrix.map(row => [...row]);
+    }
+
     function createPiece(type) {
       const shapes = {
         T: [[0, 1, 0], [1, 1, 1]],
@@ -121,7 +125,7 @@
         S: [[0, 1, 1], [1, 1, 0]],
         Z: [[1, 1, 0], [0, 1, 1]]
       };
-      return { matrix: shapes[type], type };
+      return { matrix: cloneMatrix(shapes[type]), type };
     }
 
     function drawMatrix(matrix, offset, context, colorMap = colors, type = null) {
@@ -209,7 +213,7 @@
     }
 
     function playerReset() {
-      player.matrix = nextPiece.matrix;
+      player.matrix = cloneMatrix(nextPiece.matrix);
       player.type = nextPiece.type;
       player.pos = {
         x: Math.floor(arena[0].length / 2) - Math.floor(player.matrix[0].length / 2),
