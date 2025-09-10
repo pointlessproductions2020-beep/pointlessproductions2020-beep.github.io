@@ -129,16 +129,19 @@
     }
 
     function drawMatrix(matrix, offset, context, colorMap = colors, type = null) {
-      matrix.forEach((row, y) => {
-        row.forEach((value, x) => {
-          if (value) {
-            const fill = colorMap[type] || '#888';
-            context.fillStyle = fill;
-            context.fillRect(x + offset.x, y + offset.y, 1, 1);
-          }
-        });
-      });
-    }
+  matrix.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value) {
+        const fill = typeof value === 'string'
+          ? colorMap[value] || '#ff4f81' // fallback to pink if unknown
+          : colorMap[type] || '#ff4f81'; // use current piece type
+        context.fillStyle = fill;
+        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+      }
+    });
+  });
+}
+
 
     function merge(arena, player) {
       player.matrix.forEach((row, y) => {
