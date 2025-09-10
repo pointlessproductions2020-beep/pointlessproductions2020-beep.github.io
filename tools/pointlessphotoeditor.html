@@ -22,11 +22,13 @@
     }
     #toolbar {
       display: flex;
-      gap: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
       margin-bottom: 1rem;
+      justify-content: center;
     }
-    button, input[type="color"] {
-      padding: 0.5rem 1rem;
+    button, input[type="color"], input[type="range"], select {
+      padding: 0.5rem;
       border: none;
       border-radius: 4px;
       background: #333;
@@ -37,6 +39,23 @@
       border: 1px solid #444;
       background: #fff;
     }
+    #paletteDisplay {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .swatch {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #444;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .swatch:hover {
+      transform: scale(1.1);
+    }
   </style>
 </head>
 <body>
@@ -45,32 +64,52 @@
   <div id="toolbar">
     <input type="file" id="upload" accept="image/*" />
     <input type="color" id="colorPicker" value="#000000" />
+    <select id="toolMode">
+      <option value="brush">Brush</option>
+      <option value="eraser">Eraser</option>
+    </select>
+    <input type="range" id="brushSize" min="1" max="20" value="2" />
     <button onclick="clearCanvas()">Clear</button>
     <button onclick="saveImage()">Save</button>
+    <input type="color" id="baseColor" value="#ff6600" />
+    <button onclick="generatePalette()">🎨 Palette</button>
   </div>
 
   <canvas id="editorCanvas" width="800" height="600"></canvas>
+
+  <div id="paletteDisplay"></div>
 
   <script>
     const canvas = document.getElementById('editorCanvas');
     const ctx = canvas.getContext('2d');
     let drawing = false;
     let color = '#000000';
+    let brushSize = 2;
+    let toolMode = 'brush';
 
     canvas.addEventListener('mousedown', () => drawing = true);
     canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseleave', () => drawing = false);
     canvas.addEventListener('mousemove', draw);
 
     function draw(e) {
       if (!drawing) return;
-      ctx.fillStyle = color;
+      ctx.fillStyle = toolMode === 'eraser' ? '#ffffff' : color;
       ctx.beginPath();
-      ctx.arc(e.offsetX, e.offsetY, 2, 0, Math.PI * 2);
+      ctx.arc(e.offsetX, e.offsetY, brushSize, 0, Math.PI * 2);
       ctx.fill();
     }
 
     document.getElementById('colorPicker').addEventListener('input', (e) => {
       color = e.target.value;
+    });
+
+    document.getElementById('brushSize').addEventListener('input', (e) => {
+      brushSize = parseInt(e.target.value);
+    });
+
+    document.getElementById('toolMode').addEventListener('change', (e) => {
+      toolMode = e.target.value;
     });
 
     document.getElementById('upload').addEventListener('change', (e) => {
@@ -90,6 +129,32 @@
       link.download = 'pointless-edit.png';
       link.href = canvas.toDataURL();
       link.click();
+    }
+
+    function generatePalette() {
+      const baseHex = document.getElementById('baseColor').value;
+      const palette = getPalette(baseHex);
+      const display = document.getElementById('paletteDisplay');
+      display.innerHTML = '';
+      palette.forEach(hex => {
+        const swatch = document.createElement('div');
+        swatch.className = 'swatch';
+        swatch.style.background = hex;
+        swatch.title = hex;
+        swatch.onclick = () => {
+          color = hex;
+          document.getElementById('colorPicker').value = hex;
+        };
+        display.appendChild(swatch);
+      });
+    }
+
+    function getPalette(baseHex) {
+      const base = parseInt(baseHex.slice(1), 16);
+      const comp = (0xFFFFFF - base).toString(16).padStart(6, '0');
+      const triad1 = ((base + 0x552200) % 0xFFFFFF).toString(16).padStart(6, '0');
+      const triad2 = ((base + 0xAA4400) % 0xFFFFFF).toString(16).padStart(6, '0');
+      return [`#${baseHex.slice(1)}`, `#${comp}`, `#${triad1}`, `#${triad2}`];
     }
   </script>
 </body>
