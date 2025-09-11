@@ -2,45 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Blocky the Brave</title>
+  <title>Blocky Level 1</title>
   <style>
-    canvas { background: #eef; display: block; margin: 0 auto; }
+    canvas { background: #ddf; display: block; margin: 0 auto; }
+    #overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      font-family: sans-serif;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #overlay button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
 <canvas id="game" width="800" height="400"></canvas>
+<div id="overlay">
+  <h1>🎉 Level Complete!</h1>
+  <p>Blocky made it to the flagpole!</p>
+  <button onclick="restart()">Play Again</button>
+</div>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
 
 let keys = {};
 document.addEventListener('keydown', e => keys[e.code] = true);
 document.addEventListener('keyup', e => keys[e.code] = false);
 
-// Modular character made of blocks
+let cameraX = 0;
+let levelComplete = false;
+
 const blocky = {
   x: 100, y: 300,
-  vx: 2, vy: 0,
+  vx: 0, vy: 0,
   gravity: 0.5,
   jumpPower: -10,
   grounded: false,
+  width: 20, height: 40,
   blocks: [
-    { dx: 0, dy: -30 }, // Head
-    { dx: -10, dy: 0 }, // Left arm
-    { dx: 0, dy: 0 },   // Body
-    { dx: 10, dy: 0 },  // Right arm
-    { dx: -5, dy: 30 }, // Left leg
-    { dx: 5, dy: 30 }   // Right leg
+    { dx: 0, dy: -30 },
+    { dx: -10, dy: 0 },
+    { dx: 0, dy: 0 },
+    { dx: 10, dy: 0 },
+    { dx: -5, dy: 30 },
+    { dx: 5, dy: 30 }
   ]
 };
 
 const platforms = [
-  { x: 0, y: 350, width: 800, height: 50 },
-  { x: 200, y: 300, width: 100, height: 20 },
-  { x: 400, y: 250, width: 100, height: 20 },
+  { x: 0, y: 350, width: 2000, height: 50, color: 'red' },
+  { x: 300, y: 250, width: 40, height: 40, color: 'red' },
+  { x: 350, y: 250, width: 40, height: 40, color: 'yellow', punchable: true, punched: false },
+  { x: 400, y: 250, width: 40, height: 40, color: 'red' },
+  { x: 600, y: 300, width: 40, height: 50, color: 'red' },
+  { x: 640, y: 250, width: 40, height: 100, color: 'red' },
 ];
 
-const coin = { x: 600, y: 220, radius: 10, collected: false };
+const powerUps = [];
+const flagpole = { x: 1800, y: 200, width: 10, height: 150 };
 
 function collide(rect1, rect2) {
   return rect1.x < rect2.x + rect2.width &&
@@ -50,20 +80,31 @@ function collide(rect1, rect2) {
 }
 
 function update() {
+  if (levelComplete) return;
+
   blocky.vy += blocky.gravity;
+
+  if (keys['ArrowRight']) blocky.vx = 2;
+  else if (keys['ArrowLeft']) blocky.vx = -2;
+  else blocky.vx = 0;
+
   blocky.x += blocky.vx;
   blocky.y += blocky.vy;
 
   blocky.grounded = false;
   for (let plat of platforms) {
     const playerRect = {
-      x: blocky.x, y: blocky.y, width: 20, height: 40
+      x: blocky.x, y: blocky.y, width: blocky.width, height: blocky.height
     };
     if (collide(playerRect, plat)) {
       if (blocky.vy > 0) {
-        blocky.y = plat.y - 40;
+        blocky.y = plat.y - blocky.height;
         blocky.vy = 0;
         blocky.grounded = true;
+      } else if (blocky.vy < 0 && plat.punchable && !plat.punched) {
+        blocky.vy = 0;
+        plat.punched = true;
+        powerUps.push({ x: plat.x, y: plat.y - 20, width: 20, height: 20, vy: -2 });
       }
     }
   }
@@ -72,41 +113,51 @@ function update() {
     blocky.vy = blocky.jumpPower;
   }
 
-  // Coin collection
-  const dx = blocky.x - coin.x;
-  const dy = blocky.y - coin.y;
-  if (Math.sqrt(dx*dx + dy*dy) < coin.radius + 20) {
-    coin.collected = true;
+  powerUps.forEach(p => {
+    p.y += p.vy;
+    p.vy += 0.2;
+  });
+
+  cameraX = blocky.x - canvas.width / 2;
+
+  // Flagpole collision
+  const playerRect = { x: blocky.x, y: blocky.y, width: blocky.width, height: blocky.height };
+  if (collide(playerRect, flagpole)) {
+    levelComplete = true;
+    overlay.style.display = 'flex';
   }
 }
 
 function drawCharacter(baseX, baseY, time) {
-  ctx.fillStyle = 'red';
+  ctx.fillStyle = 'blue';
   blocky.blocks.forEach((block, i) => {
     let offsetY = block.dy;
     if (i >= 4) {
-      offsetY += Math.sin(time / 200 + i) * 5; // Leg animation
+      offsetY += Math.sin(time / 200 + i) * 5;
     }
-    ctx.fillRect(baseX + block.dx, baseY + offsetY, 10, 10);
+    ctx.fillRect(baseX + block.dx - cameraX, baseY + offsetY, 10, 10);
   });
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Platforms
+  platforms.forEach(p => {
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
+  });
+
   ctx.fillStyle = 'green';
-  platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+  powerUps.forEach(p => {
+    ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
+  });
 
-  // Coin
-  if (!coin.collected) {
-    ctx.fillStyle = 'gold';
-    ctx.beginPath();
-    ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // Flagpole
+  ctx.fillStyle = 'black';
+  ctx.fillRect(flagpole.x - cameraX, flagpole.y, flagpole.width, flagpole.height);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(flagpole.x - cameraX + 10, flagpole.y, 20, 20); // flag
 
-  // Character
   drawCharacter(blocky.x, blocky.y, performance.now());
 }
 
@@ -114,6 +165,18 @@ function loop() {
   update();
   draw();
   requestAnimationFrame(loop);
+}
+
+function restart() {
+  blocky.x = 100;
+  blocky.y = 300;
+  blocky.vx = 0;
+  blocky.vy = 0;
+  cameraX = 0;
+  levelComplete = false;
+  overlay.style.display = 'none';
+  powerUps.length = 0;
+  platforms.forEach(p => { if (p.punchable) p.punched = false; });
 }
 
 loop();
