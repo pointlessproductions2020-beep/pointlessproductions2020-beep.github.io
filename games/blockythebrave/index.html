@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Blocky Level 1</title>
+  <title>Blocky Level 1 Extended</title>
   <style>
     canvas { background: #ddf; display: block; margin: 0 auto; }
     #overlay {
@@ -61,16 +61,39 @@ const blocky = {
 };
 
 const platforms = [
-  { x: 0, y: 350, width: 2000, height: 50, color: 'red' },
+  // Ground terrain
+  { x: 0, y: 350, width: 3000, height: 50, color: 'red' },
+
+  // Floating blocks and punchables
   { x: 300, y: 250, width: 40, height: 40, color: 'red' },
   { x: 350, y: 250, width: 40, height: 40, color: 'yellow', punchable: true, punched: false },
   { x: 400, y: 250, width: 40, height: 40, color: 'red' },
+
+  // Wall jump challenge
   { x: 600, y: 300, width: 40, height: 50, color: 'red' },
   { x: 640, y: 250, width: 40, height: 100, color: 'red' },
+
+  // Sticky zone
+  { x: 1000, y: 350, width: 200, height: 50, color: 'purple', sticky: true },
+
+  // Wind tunnel
+  { x: 1300, y: 350, width: 200, height: 50, color: 'lightblue', wind: 1 },
+
+  // Floating multi-coin block
+  { x: 1600, y: 250, width: 40, height: 40, color: 'yellow', punchable: true, punched: false, multi: true }
 ];
 
 const powerUps = [];
-const flagpole = { x: 1800, y: 200, width: 10, height: 150 };
+  const triangleEnemies = [
+  { x: 800, y: 320, width: 20, height: 20, dir: 1 },
+  { x: 1400, y: 320, width: 20, height: 20, dir: -1 }
+];
+
+const crushers = [
+  { x: 1200, y: 200, width: 40, height: 40, active: false, vy: 0 }
+];
+
+const flagpole = { x: 2900, y: 200, width: 10, height: 150 };
 
 function collide(rect1, rect2) {
   return rect1.x < rect2.x + rect2.width &&
@@ -84,9 +107,17 @@ function update() {
 
   blocky.vy += blocky.gravity;
 
-  if (keys['ArrowRight']) blocky.vx = 2;
-  else if (keys['ArrowLeft']) blocky.vx = -2;
+  // Movement
+  if (keys['ArrowRight']) blocky.vx = platforms.some(p => p.sticky && collide(blocky, p)) ? 1 : 2;
+  else if (keys['ArrowLeft']) blocky.vx = platforms.some(p => p.sticky && collide(blocky, p)) ? -1 : -2;
   else blocky.vx = 0;
+
+  // Wind tunnel
+  platforms.forEach(p => {
+    if (p.wind && collide(blocky, p)) {
+      blocky.vx += p.wind;
+    }
+  });
 
   blocky.x += blocky.vx;
   blocky.y += blocky.vy;
@@ -104,7 +135,10 @@ function update() {
       } else if (blocky.vy < 0 && plat.punchable && !plat.punched) {
         blocky.vy = 0;
         plat.punched = true;
-        powerUps.push({ x: plat.x, y: plat.y - 20, width: 20, height: 20, vy: -2 });
+        const count = plat.multi ? 3 : 1;
+        for (let i = 0; i < count; i++) {
+          powerUps.push({ x: plat.x, y: plat.y - 20 - i * 25, width: 20, height: 20, vy: -2 });
+        }
       }
     }
   }
@@ -118,16 +152,31 @@ function update() {
     p.vy += 0.2;
   });
 
-  cameraX = blocky.x - canvas.width / 2;
+  // Triangle enemies bounce
+  triangleEnemies.forEach(e => {
+    e.x += e.dir * 1.5;
+    if (e.x < 750 || e.x > 1450) e.dir *= -1;
+    if (collide(blocky, e)) restart(); // Reset on contact
+  });
+
+  // Crushers drop
+  crushers.forEach(c => {
+    if (!c.active && Math.abs(blocky.x - c.x) < 40) c.active = true;
+    if (c.active) {
+      c.vy += 0.5;
+      c.y += c.vy;
+      if (collide(blocky, c)) restart();
+    }
+  });
 
   // Flagpole collision
-  const playerRect = { x: blocky.x, y: blocky.y, width: blocky.width, height: blocky.height };
-  if (collide(playerRect, flagpole)) {
+  if (collide(blocky, flagpole)) {
     levelComplete = true;
     overlay.style.display = 'flex';
   }
-}
 
+  cameraX = blocky.x - canvas.width / 2;
+}
 function drawCharacter(baseX, baseY, time) {
   ctx.fillStyle = 'blue';
   blocky.blocks.forEach((block, i) => {
@@ -142,14 +191,33 @@ function drawCharacter(baseX, baseY, time) {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Platforms
   platforms.forEach(p => {
     ctx.fillStyle = p.color;
     ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
   });
 
+  // Power-ups
   ctx.fillStyle = 'green';
   powerUps.forEach(p => {
     ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
+  });
+
+  // Triangle enemies
+  ctx.fillStyle = 'orange';
+  triangleEnemies.forEach(e => {
+    ctx.beginPath();
+    ctx.moveTo(e.x - cameraX, e.y + e.height);
+    ctx.lineTo(e.x + e.width / 2 - cameraX, e.y);
+    ctx.lineTo(e.x + e.width - cameraX, e.y + e.height);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // Crushers
+  ctx.fillStyle = 'black';
+  crushers.forEach(c => {
+    ctx.fillRect(c.x - cameraX, c.y, c.width, c.height);
   });
 
   // Flagpole
@@ -158,6 +226,7 @@ function draw() {
   ctx.fillStyle = 'white';
   ctx.fillRect(flagpole.x - cameraX + 10, flagpole.y, 20, 20); // flag
 
+  // Character
   drawCharacter(blocky.x, blocky.y, performance.now());
 }
 
@@ -177,9 +246,12 @@ function restart() {
   overlay.style.display = 'none';
   powerUps.length = 0;
   platforms.forEach(p => { if (p.punchable) p.punched = false; });
+  triangleEnemies.forEach(e => { e.x = e.dir === 1 ? 800 : 1400; });
+  crushers.forEach(c => { c.y = 200; c.vy = 0; c.active = false; });
 }
 
 loop();
 </script>
 </body>
 </html>
+  
