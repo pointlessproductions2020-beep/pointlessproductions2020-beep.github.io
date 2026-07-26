@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================
-   BLOCK DROP REMASTERED
+   BLOCK DROP REMASTERED — AUDIO EDITION
    Pointless Productions
 ========================================================= */
 
@@ -11,13 +11,13 @@
 ========================================================= */
 
 const canvas = document.querySelector("#tetris");
-const context = canvas.getContext("2d");
+const context = canvas?.getContext("2d");
 
 const previewCanvas = document.querySelector("#preview");
-const previewContext = previewCanvas.getContext("2d");
+const previewContext = previewCanvas?.getContext("2d");
 
 const holdCanvas = document.querySelector("#hold-canvas");
-const holdContext = holdCanvas.getContext("2d");
+const holdContext = holdCanvas?.getContext("2d");
 
 const scoreElement = document.querySelector("#score");
 const highScoreElement = document.querySelector("#high-score");
@@ -26,6 +26,7 @@ const linesElement = document.querySelector("#lines");
 const comboElement = document.querySelector("#combo");
 
 const finalScoreElement = document.querySelector("#final-score");
+
 const highScoreMessage = document.querySelector(
   "#new-high-score-message"
 );
@@ -34,13 +35,31 @@ const statusElement = document.querySelector("#game-status");
 const statusLight = document.querySelector("#status-light");
 
 const startOverlay = document.querySelector("#start-overlay");
+
+const countdownOverlay = document.querySelector(
+  "#countdown-overlay"
+);
+
+const countdownNumber = document.querySelector(
+  "#countdown-number"
+);
+
 const pauseOverlay = document.querySelector("#pause-overlay");
+
 const gameOverOverlay = document.querySelector(
   "#game-over-overlay"
 );
 
-const startButton = document.querySelector("#start-button");
+const audioOnButton = document.querySelector(
+  "#audio-on-button"
+);
+
+const audioOffButton = document.querySelector(
+  "#audio-off-button"
+);
+
 const resumeButton = document.querySelector("#resume-button");
+
 const playAgainButton = document.querySelector(
   "#play-again-button"
 );
@@ -68,7 +87,9 @@ if (
   !holdCanvas ||
   !holdContext
 ) {
-  throw new Error("Block Drop could not find its canvas elements.");
+  throw new Error(
+    "Block Drop could not find its required canvas elements."
+  );
 }
 
 
@@ -79,11 +100,21 @@ if (
 const BOARD_COLUMNS = 12;
 const BOARD_ROWS = 20;
 
-const BOARD_BLOCK_SIZE = canvas.width / BOARD_COLUMNS;
+const BOARD_BLOCK_SIZE =
+  canvas.width / BOARD_COLUMNS;
+
 const PREVIEW_BLOCK_SIZE = 28;
 const HOLD_BLOCK_SIZE = 24;
 
-const PIECE_TYPES = ["T", "J", "L", "O", "S", "Z", "I"];
+const PIECE_TYPES = [
+  "T",
+  "J",
+  "L",
+  "O",
+  "S",
+  "Z",
+  "I"
+];
 
 const PIECE_COLOURS = {
   T: {
@@ -163,7 +194,77 @@ const GAME_TIPS = [
 
 
 /* =========================================================
-   3. PIECE SHAPES
+   3. AUDIO SETTINGS AND FILE PATHS
+========================================================= */
+
+const MUSIC_VOLUME = 0.34;
+const DANGER_MUSIC_VOLUME = 0.42;
+
+const EFFECT_VOLUME = 0.78;
+const VOICE_VOLUME = 0.82;
+
+const MUSIC_FADE_DURATION = 850;
+
+const musicTracks = {
+  menu: createAudio(
+    "assets/sounds/music/block-drop-menu.mp3",
+    true
+  ),
+
+  gameplay: createAudio(
+    "assets/sounds/music/block-drop-gameplay.mp3",
+    true
+  ),
+
+  danger: createAudio(
+    "assets/sounds/music/block-drop-danger.mp3",
+    true
+  )
+};
+
+const effectPaths = {
+  titleOne:
+    "assets/sounds/effects/blockdrop.mp3",
+
+  titleTwo:
+    "assets/sounds/effects/blockdrop2.mp3",
+
+  lineClear:
+    "assets/sounds/effects/line-clear.mp3",
+
+  fourLineClear:
+    "assets/sounds/effects/four-line-clear.mp3",
+
+  levelUp:
+    "assets/sounds/effects/level-up.mp3",
+
+  gameOver:
+    "assets/sounds/effects/game-over.mp3",
+
+  gameOverWhispered:
+    "assets/sounds/effects/game-over-whispered.mp3"
+};
+
+const voicePaths = {
+  beautiful:
+    "assets/sounds/voices/beautiful.mp3",
+
+  dangerous:
+    "assets/sounds/voices/dangerous.mp3",
+
+  nice:
+    "assets/sounds/voices/nice.mp3",
+
+  okay:
+    "assets/sounds/voices/okay.mp3",
+
+  thatllDo:
+    "assets/sounds/voices/thatll-do.mp3"
+};
+
+
+/* =========================================================
+   4. PIECE SHAPES
 ========================================================= */
 
 const PIECE_SHAPES = {
@@ -204,10 +305,13 @@ const PIECE_SHAPES = {
 
 
 /* =========================================================
-   4. GAME STATE
+   5. GAME STATE
 ========================================================= */
 
-const arena = createMatrix(BOARD_COLUMNS, BOARD_ROWS);
+const arena = createMatrix(
+  BOARD_COLUMNS,
+  BOARD_ROWS
+);
 
 const player = {
   matrix: null,
@@ -227,6 +331,7 @@ let pieceBag = [];
 
 let score = 0;
 let highScore = loadHighScore();
+let runStartingHighScore = highScore;
 
 let level = 1;
 let clearedLines = 0;
@@ -240,22 +345,319 @@ let lastFrameTime = performance.now();
 let gameStarted = false;
 let gamePaused = false;
 let gameOver = false;
+let countdownRunning = false;
 
-let soundMuted = false;
+let particles = [];
 
 let announcementTimer = null;
 let tipTimer = null;
 
-let particles = [];
+let masterMuted = false;
+
+let dangerActive = false;
+let dangerVoicePlayed = false;
+
+let activeMusic = null;
+let activeMusicName = null;
 
 let audioContext = null;
 
+const audioFadeFrames = new WeakMap();
+
 
 /* =========================================================
-   5. MATRIX UTILITIES
+   6. BASIC AUDIO UTILITIES
 ========================================================= */
 
-function createMatrix(width, height) {
+function createAudio(
+  path,
+  shouldLoop = false
+) {
+  const audio = new Audio(path);
+
+  audio.preload = "auto";
+  audio.loop = shouldLoop;
+  audio.volume = 0;
+
+  return audio;
+}
+
+
+function safelyPlay(audio) {
+  if (!audio || masterMuted) {
+    return;
+  }
+
+  const playPromise = audio.play();
+
+  if (
+    playPromise &&
+    typeof playPromise.catch === "function"
+  ) {
+    playPromise.catch((error) => {
+      console.warn(
+        "Block Drop audio could not play.",
+        error
+      );
+    });
+  }
+}
+
+
+function stopAudioFade(audio) {
+  const frameId =
+    audioFadeFrames.get(audio);
+
+  if (frameId) {
+    cancelAnimationFrame(frameId);
+    audioFadeFrames.delete(audio);
+  }
+}
+
+
+function fadeAudio(
+  audio,
+  targetVolume,
+  duration = MUSIC_FADE_DURATION,
+  onComplete = null
+) {
+  if (!audio) {
+    return;
+  }
+
+  stopAudioFade(audio);
+
+  const startingVolume = audio.volume;
+  const startedAt = performance.now();
+
+  function fadeStep(currentTime) {
+    const progress = Math.min(
+      (currentTime - startedAt) / duration,
+      1
+    );
+
+    audio.volume =
+      startingVolume +
+      (targetVolume - startingVolume) *
+        progress;
+
+    audio.volume = Math.max(
+      0,
+      Math.min(1, audio.volume)
+    );
+
+    if (progress < 1) {
+      const frameId =
+        requestAnimationFrame(fadeStep);
+
+      audioFadeFrames.set(
+        audio,
+        frameId
+      );
+
+      return;
+    }
+
+    audioFadeFrames.delete(audio);
+
+    if (typeof onComplete === "function") {
+      onComplete();
+    }
+  }
+
+  const frameId =
+    requestAnimationFrame(fadeStep);
+
+  audioFadeFrames.set(audio, frameId);
+}
+
+
+function playImportedClip(
+  path,
+  volume = EFFECT_VOLUME,
+  delay = 0
+) {
+  if (masterMuted || !path) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    if (masterMuted) {
+      return;
+    }
+
+    const clip = createAudio(
+      path,
+      false
+    );
+
+    clip.volume = volume;
+
+    safelyPlay(clip);
+  }, delay);
+}
+
+
+function stopAllMusic() {
+  Object.values(musicTracks).forEach(
+    (track) => {
+      stopAudioFade(track);
+
+      track.pause();
+      track.currentTime = 0;
+      track.volume = 0;
+    }
+  );
+
+  activeMusic = null;
+  activeMusicName = null;
+}
+
+
+function synchroniseTrackPosition(
+  previousTrack,
+  nextTrack
+) {
+  if (
+    !previousTrack ||
+    !nextTrack ||
+    !Number.isFinite(previousTrack.currentTime)
+  ) {
+    nextTrack.currentTime = 0;
+    return;
+  }
+
+  const duration =
+    nextTrack.duration;
+
+  if (
+    Number.isFinite(duration) &&
+    duration > 0
+  ) {
+    nextTrack.currentTime =
+      previousTrack.currentTime % duration;
+  } else {
+    nextTrack.currentTime = 0;
+  }
+}
+
+
+function changeMusic(
+  trackName,
+  targetVolume = MUSIC_VOLUME
+) {
+  if (masterMuted) {
+    return;
+  }
+
+  const nextTrack =
+    musicTracks[trackName];
+
+  if (!nextTrack) {
+    return;
+  }
+
+  if (activeMusicName === trackName) {
+    if (nextTrack.paused) {
+      safelyPlay(nextTrack);
+    }
+
+    fadeAudio(
+      nextTrack,
+      targetVolume,
+      350
+    );
+
+    return;
+  }
+
+  const previousTrack = activeMusic;
+
+  synchroniseTrackPosition(
+    previousTrack,
+    nextTrack
+  );
+
+  nextTrack.volume = 0;
+
+  safelyPlay(nextTrack);
+
+  activeMusic = nextTrack;
+  activeMusicName = trackName;
+
+  fadeAudio(
+    nextTrack,
+    targetVolume,
+    MUSIC_FADE_DURATION
+  );
+
+  if (
+    previousTrack &&
+    previousTrack !== nextTrack
+  ) {
+    fadeAudio(
+      previousTrack,
+      0,
+      MUSIC_FADE_DURATION,
+      () => {
+        previousTrack.pause();
+        previousTrack.volume = 0;
+      }
+    );
+  }
+}
+
+
+function setMasterMuted(isMuted) {
+  masterMuted = Boolean(isMuted);
+
+  soundButton?.setAttribute(
+    "aria-pressed",
+    String(masterMuted)
+  );
+
+  soundButton?.setAttribute(
+    "aria-label",
+    masterMuted
+      ? "Enable all audio"
+      : "Mute all audio"
+  );
+
+  if (masterMuted) {
+    Object.values(musicTracks).forEach(
+      (track) => {
+        stopAudioFade(track);
+        track.pause();
+      }
+    );
+
+    return;
+  }
+
+  initialiseAudioContext();
+
+  if (
+    gameStarted &&
+    !gameOver
+  ) {
+    updateDynamicMusic(true);
+  } else {
+    changeMusic(
+      "menu",
+      MUSIC_VOLUME
+    );
+  }
+}
+
+
+/* =========================================================
+   7. MATRIX UTILITIES
+========================================================= */
+
+function createMatrix(
+  width,
+  height
+) {
   return Array.from(
     {
       length: height
@@ -266,7 +668,9 @@ function createMatrix(width, height) {
 
 
 function cloneMatrix(matrix) {
-  return matrix.map((row) => [...row]);
+  return matrix.map(
+    (row) => [...row]
+  );
 }
 
 
@@ -278,10 +682,13 @@ function clearArena() {
 
 
 function createPiece(type) {
-  const shape = PIECE_SHAPES[type];
+  const shape =
+    PIECE_SHAPES[type];
 
   if (!shape) {
-    throw new Error(`Unknown Block Drop piece: ${type}`);
+    throw new Error(
+      `Unknown Block Drop piece: ${type}`
+    );
   }
 
   return {
@@ -292,18 +699,27 @@ function createPiece(type) {
 
 
 /* =========================================================
-   6. SEVEN-BAG RANDOM PIECES
+   8. SEVEN-BAG RANDOM PIECES
 ========================================================= */
 
 function shuffleArray(array) {
   const copy = [...array];
 
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(
-      Math.random() * (index + 1)
-    );
+  for (
+    let index = copy.length - 1;
+    index > 0;
+    index -= 1
+  ) {
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+          (index + 1)
+      );
 
-    [copy[index], copy[randomIndex]] = [
+    [
+      copy[index],
+      copy[randomIndex]
+    ] = [
       copy[randomIndex],
       copy[index]
     ];
@@ -315,7 +731,8 @@ function shuffleArray(array) {
 
 function getNextPieceType() {
   if (pieceBag.length === 0) {
-    pieceBag = shuffleArray(PIECE_TYPES);
+    pieceBag =
+      shuffleArray(PIECE_TYPES);
   }
 
   return pieceBag.pop();
@@ -323,7 +740,7 @@ function getNextPieceType() {
 
 
 /* =========================================================
-   7. COLLISION AND MERGING
+   9. COLLISION AND MERGING
 ========================================================= */
 
 function collides(
@@ -334,14 +751,25 @@ function collides(
     return false;
   }
 
-  for (let y = 0; y < matrix.length; y += 1) {
-    for (let x = 0; x < matrix[y].length; x += 1) {
+  for (
+    let y = 0;
+    y < matrix.length;
+    y += 1
+  ) {
+    for (
+      let x = 0;
+      x < matrix[y].length;
+      x += 1
+    ) {
       if (matrix[y][x] === 0) {
         continue;
       }
 
-      const arenaX = x + position.x;
-      const arenaY = y + position.y;
+      const arenaX =
+        x + position.x;
+
+      const arenaY =
+        y + position.y;
 
       if (
         arenaX < 0 ||
@@ -365,50 +793,56 @@ function collides(
 
 
 function mergePlayerIntoArena() {
-  if (!player.matrix || !player.type) {
+  if (
+    !player.matrix ||
+    !player.type
+  ) {
     return;
   }
 
-  player.matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value === 0) {
-        return;
-      }
+  player.matrix.forEach(
+    (row, y) => {
+      row.forEach(
+        (value, x) => {
+          if (value === 0) {
+            return;
+          }
 
-      const arenaX = x + player.position.x;
-      const arenaY = y + player.position.y;
+          const arenaX =
+            x + player.position.x;
 
-      if (
-        arenaY >= 0 &&
-        arenaY < BOARD_ROWS &&
-        arenaX >= 0 &&
-        arenaX < BOARD_COLUMNS
-      ) {
-        arena[arenaY][arenaX] = player.type;
-      }
-    });
-  });
+          const arenaY =
+            y + player.position.y;
+
+          if (
+            arenaY >= 0 &&
+            arenaY < BOARD_ROWS &&
+            arenaX >= 0 &&
+            arenaX < BOARD_COLUMNS
+          ) {
+            arena[arenaY][arenaX] =
+              player.type;
+          }
+        }
+      );
+    }
+  );
 }
 
 
 /* =========================================================
-   8. PIECE SPAWNING
+   10. PIECE SPAWNING
 ========================================================= */
-
-function centrePlayerPiece() {
-  player.position.x =
-    Math.floor(BOARD_COLUMNS / 2) -
-    Math.ceil(player.matrix[0].length / 2);
-
-  player.position.y = -getTopEmptyRows(player.matrix);
-}
-
 
 function getTopEmptyRows(matrix) {
   let emptyRows = 0;
 
   for (const row of matrix) {
-    if (row.every((value) => value === 0)) {
+    if (
+      row.every(
+        (value) => value === 0
+      )
+    ) {
       emptyRows += 1;
     } else {
       break;
@@ -419,15 +853,40 @@ function getTopEmptyRows(matrix) {
 }
 
 
+function centrePlayerPiece() {
+  player.position.x =
+    Math.floor(
+      BOARD_COLUMNS / 2
+    ) -
+    Math.ceil(
+      player.matrix[0].length / 2
+    );
+
+  player.position.y =
+    -getTopEmptyRows(
+      player.matrix
+    );
+}
+
+
 function spawnNextPiece() {
   if (!nextPiece) {
-    nextPiece = createPiece(getNextPieceType());
+    nextPiece = createPiece(
+      getNextPieceType()
+    );
   }
 
-  player.type = nextPiece.type;
-  player.matrix = cloneMatrix(nextPiece.matrix);
+  player.type =
+    nextPiece.type;
 
-  nextPiece = createPiece(getNextPieceType());
+  player.matrix =
+    cloneMatrix(
+      nextPiece.matrix
+    );
+
+  nextPiece = createPiece(
+    getNextPieceType()
+  );
 
   centrePlayerPiece();
 
@@ -443,7 +902,7 @@ function spawnNextPiece() {
 
 
 /* =========================================================
-   9. MOVEMENT
+   11. MOVEMENT
 ========================================================= */
 
 function movePlayer(direction) {
@@ -455,11 +914,15 @@ function movePlayer(direction) {
 
   if (collides()) {
     player.position.x -= direction;
-    playSound("blocked");
+
+    playGeneratedSound(
+      "blocked"
+    );
+
     return;
   }
 
-  playSound("move");
+  playGeneratedSound("move");
 }
 
 
@@ -474,6 +937,7 @@ function softDropPlayer({
 
   if (collides()) {
     player.position.y -= 1;
+
     lockCurrentPiece();
 
     return false;
@@ -505,10 +969,15 @@ function hardDropPlayer() {
   distance -= 1;
 
   if (distance > 0) {
-    addScore(distance * 2);
+    addScore(
+      distance * 2
+    );
   }
 
-  playSound("hardDrop");
+  playGeneratedSound(
+    "hardDrop"
+  );
+
   shakeScreen();
 
   lockCurrentPiece();
@@ -516,12 +985,16 @@ function hardDropPlayer() {
 
 
 /* =========================================================
-   10. ROTATION
+   12. ROTATION
 ========================================================= */
 
-function rotateMatrix(matrix, direction) {
+function rotateMatrix(
+  matrix,
+  direction
+) {
   const rows = matrix.length;
-  const columns = matrix[0].length;
+  const columns =
+    matrix[0].length;
 
   const rotated = Array.from(
     {
@@ -530,12 +1003,22 @@ function rotateMatrix(matrix, direction) {
     () => new Array(rows).fill(0)
   );
 
-  for (let y = 0; y < rows; y += 1) {
-    for (let x = 0; x < columns; x += 1) {
+  for (
+    let y = 0;
+    y < rows;
+    y += 1
+  ) {
+    for (
+      let x = 0;
+      x < columns;
+      x += 1
+    ) {
       if (direction > 0) {
-        rotated[x][rows - 1 - y] = matrix[y][x];
+        rotated[x][rows - 1 - y] =
+          matrix[y][x];
       } else {
-        rotated[columns - 1 - x][y] = matrix[y][x];
+        rotated[columns - 1 - x][y] =
+          matrix[y][x];
       }
     }
   }
@@ -545,17 +1028,24 @@ function rotateMatrix(matrix, direction) {
 
 
 function rotatePlayer(direction) {
-  if (!canControlPlayer() || player.type === "O") {
+  if (
+    !canControlPlayer() ||
+    player.type === "O"
+  ) {
     return;
   }
 
-  const originalMatrix = player.matrix;
-  const originalX = player.position.x;
+  const originalMatrix =
+    player.matrix;
 
-  player.matrix = rotateMatrix(
-    player.matrix,
-    direction
-  );
+  const originalX =
+    player.position.x;
+
+  player.matrix =
+    rotateMatrix(
+      player.matrix,
+      direction
+    );
 
   const wallKickOffsets = [
     0,
@@ -565,43 +1055,67 @@ function rotatePlayer(direction) {
     -2
   ];
 
-  for (const offset of wallKickOffsets) {
-    player.position.x = originalX + offset;
+  for (
+    const offset
+    of wallKickOffsets
+  ) {
+    player.position.x =
+      originalX + offset;
 
     if (!collides()) {
-      playSound("rotate");
+      playGeneratedSound(
+        "rotate"
+      );
+
       return;
     }
   }
 
-  player.matrix = originalMatrix;
-  player.position.x = originalX;
+  player.matrix =
+    originalMatrix;
 
-  playSound("blocked");
+  player.position.x =
+    originalX;
+
+  playGeneratedSound(
+    "blocked"
+  );
 }
 
 
 /* =========================================================
-   11. HOLD PIECE
+   13. HOLD PIECE
 ========================================================= */
 
 function holdCurrentPiece() {
-  if (!canControlPlayer() || !canHold) {
+  if (
+    !canControlPlayer() ||
+    !canHold
+  ) {
     return;
   }
 
-  const currentPieceType = player.type;
+  const currentPieceType =
+    player.type;
 
   if (!heldPieceType) {
-    heldPieceType = currentPieceType;
+    heldPieceType =
+      currentPieceType;
+
     spawnNextPiece();
   } else {
-    player.type = heldPieceType;
-    player.matrix = cloneMatrix(
-      PIECE_SHAPES[heldPieceType]
-    );
+    player.type =
+      heldPieceType;
 
-    heldPieceType = currentPieceType;
+    player.matrix =
+      cloneMatrix(
+        PIECE_SHAPES[
+          heldPieceType
+        ]
+      );
+
+    heldPieceType =
+      currentPieceType;
 
     centrePlayerPiece();
 
@@ -615,12 +1129,12 @@ function holdCurrentPiece() {
 
   drawHeldPiece();
 
-  playSound("hold");
+  playGeneratedSound("hold");
 }
 
 
 /* =========================================================
-   12. GHOST PIECE
+   14. GHOST PIECE
 ========================================================= */
 
 function getGhostPosition() {
@@ -652,11 +1166,14 @@ function getGhostPosition() {
 
 
 /* =========================================================
-   13. PIECE LOCKING AND LINE CLEARING
+   15. PIECE LOCKING AND LINE CLEARING
 ========================================================= */
 
 function lockCurrentPiece() {
-  if (!player.matrix || gameOver) {
+  if (
+    !player.matrix ||
+    gameOver
+  ) {
     return;
   }
 
@@ -664,15 +1181,23 @@ function lockCurrentPiece() {
 
   createLandingParticles();
 
-  const lineClearResult = clearCompletedLines();
+  const lineClearResult =
+    clearCompletedLines();
 
-  if (lineClearResult.count === 0) {
+  if (
+    lineClearResult.count === 0
+  ) {
     combo = -1;
+
     updateComboDisplay();
-    playSound("land");
+
+    playGeneratedSound("land");
   }
 
   spawnNextPiece();
+
+  updateDynamicMusic();
+
   updateInterface();
 }
 
@@ -680,35 +1205,52 @@ function lockCurrentPiece() {
 function clearCompletedLines() {
   const clearedRowIndexes = [];
 
-  for (let y = BOARD_ROWS - 1; y >= 0; y -= 1) {
+  for (
+    let y = BOARD_ROWS - 1;
+    y >= 0;
+    y -= 1
+  ) {
     if (
-      arena[y].every((cell) => cell !== 0)
+      arena[y].every(
+        (cell) => cell !== 0
+      )
     ) {
       clearedRowIndexes.push(y);
     }
   }
 
-  if (clearedRowIndexes.length === 0) {
+  if (
+    clearedRowIndexes.length === 0
+  ) {
     return {
       count: 0
     };
   }
 
-  createLineParticles(clearedRowIndexes);
+  createLineParticles(
+    clearedRowIndexes
+  );
 
   clearedRowIndexes
     .sort((a, b) => b - a)
     .forEach((rowIndex) => {
-      arena.splice(rowIndex, 1);
+      arena.splice(
+        rowIndex,
+        1
+      );
+
       arena.unshift(
-        new Array(BOARD_COLUMNS).fill(0)
+        new Array(
+          BOARD_COLUMNS
+        ).fill(0)
       );
     });
 
   const numberOfLines =
     clearedRowIndexes.length;
 
-  clearedLines += numberOfLines;
+  clearedLines +=
+    numberOfLines;
 
   combo += 1;
 
@@ -717,7 +1259,9 @@ function clearCompletedLines() {
   }
 
   const baseLineScore =
-    LINE_SCORE_VALUES[numberOfLines] ||
+    LINE_SCORE_VALUES[
+      numberOfLines
+    ] ||
     numberOfLines * 250;
 
   const comboBonus =
@@ -726,7 +1270,9 @@ function clearCompletedLines() {
       : 0;
 
   addScore(
-    baseLineScore * level + comboBonus
+    baseLineScore *
+      level +
+      comboBonus
   );
 
   updateLevel();
@@ -737,17 +1283,30 @@ function clearCompletedLines() {
   );
 
   triggerScreenFlash();
+
   shakeScreen(
     numberOfLines === 4
       ? 300
       : 180
   );
 
-  playSound(
-    numberOfLines === 4
-      ? "fourLines"
-      : "lineClear"
-  );
+  if (numberOfLines === 4) {
+    playImportedClip(
+      effectPaths.fourLineClear,
+      EFFECT_VOLUME
+    );
+
+    playFourLineVoice();
+  } else {
+    playImportedClip(
+      effectPaths.lineClear,
+      EFFECT_VOLUME
+    );
+
+    maybePlayPositiveVoice(
+      numberOfLines
+    );
+  }
 
   updateComboDisplay();
   updateInterface();
@@ -759,14 +1318,18 @@ function clearCompletedLines() {
 
 
 /* =========================================================
-   14. SCORING AND LEVELS
+   16. SCORING AND LEVELS
 ========================================================= */
 
 function addScore(points) {
-  score += Math.max(0, Math.floor(points));
+  score += Math.max(
+    0,
+    Math.floor(points)
+  );
 
   if (score > highScore) {
     highScore = score;
+
     saveHighScore();
   }
 
@@ -776,7 +1339,9 @@ function addScore(points) {
 
 function updateLevel() {
   const newLevel =
-    Math.floor(clearedLines / 10) + 1;
+    Math.floor(
+      clearedLines / 10
+    ) + 1;
 
   if (newLevel > level) {
     level = newLevel;
@@ -785,7 +1350,10 @@ function updateLevel() {
       `Level ${level}!`
     );
 
-    playSound("levelUp");
+    playImportedClip(
+      effectPaths.levelUp,
+      EFFECT_VOLUME
+    );
   } else {
     level = newLevel;
   }
@@ -795,13 +1363,275 @@ function updateLevel() {
 function getDropInterval() {
   return Math.max(
     90,
-    1000 - (level - 1) * 75
+    1000 -
+      (level - 1) * 75
   );
 }
 
 
 /* =========================================================
-   15. GAME FLOW
+   17. DYNAMIC MUSIC
+========================================================= */
+
+function isBoardInDanger() {
+  return arena
+    .slice(0, 5)
+    .some((row) =>
+      row.some(
+        (cell) => cell !== 0
+      )
+    );
+}
+
+
+function updateDynamicMusic(
+  forceUpdate = false
+) {
+  if (
+    !gameStarted ||
+    gamePaused ||
+    gameOver ||
+    masterMuted
+  ) {
+    return;
+  }
+
+  const nowDangerous =
+    isBoardInDanger();
+
+  if (
+    !forceUpdate &&
+    nowDangerous ===
+      dangerActive
+  ) {
+    return;
+  }
+
+  dangerActive =
+    nowDangerous;
+
+  if (dangerActive) {
+    changeMusic(
+      "danger",
+      DANGER_MUSIC_VOLUME
+    );
+
+    if (!dangerVoicePlayed) {
+      dangerVoicePlayed = true;
+
+      playImportedClip(
+        voicePaths.dangerous,
+        VOICE_VOLUME,
+        500
+      );
+    }
+  } else {
+    dangerVoicePlayed = false;
+
+    changeMusic(
+      "gameplay",
+      MUSIC_VOLUME
+    );
+  }
+}
+
+
+/* =========================================================
+   18. VOICE REACTIONS
+========================================================= */
+
+function maybePlayPositiveVoice(
+  numberOfLines
+) {
+  if (masterMuted) {
+    return;
+  }
+
+  const chance =
+    numberOfLines >= 2
+      ? 0.34
+      : 0.13;
+
+  if (Math.random() > chance) {
+    return;
+  }
+
+  const choices = [
+    voicePaths.nice,
+    voicePaths.okay,
+    voicePaths.thatllDo
+  ];
+
+  if (numberOfLines >= 3) {
+    choices.push(
+      voicePaths.beautiful
+    );
+  }
+
+  const selectedVoice =
+    choices[
+      Math.floor(
+        Math.random() *
+          choices.length
+      )
+    ];
+
+  playImportedClip(
+    selectedVoice,
+    VOICE_VOLUME,
+    180
+  );
+}
+
+
+function playFourLineVoice() {
+  if (masterMuted) {
+    return;
+  }
+
+  const selectedVoice =
+    Math.random() < 0.55
+      ? voicePaths.beautiful
+      : voicePaths.thatllDo;
+
+  playImportedClip(
+    selectedVoice,
+    VOICE_VOLUME,
+    300
+  );
+}
+
+
+/* =========================================================
+   19. COUNTDOWN
+========================================================= */
+
+async function beginGameSequence(
+  audioEnabled
+) {
+  if (countdownRunning) {
+    return;
+  }
+
+  setMasterMuted(
+    !audioEnabled
+  );
+
+  hideAllOverlays();
+
+  countdownRunning = true;
+
+  countdownOverlay.classList.add(
+    "is-visible"
+  );
+
+  countdownOverlay.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  if (audioEnabled) {
+    changeMusic(
+      "menu",
+      MUSIC_VOLUME
+    );
+  }
+
+  const countdownItems = [
+    "3",
+    "2",
+    "1",
+    "DROP!"
+  ];
+
+  for (
+    const item
+    of countdownItems
+  ) {
+    countdownNumber.textContent =
+      item;
+
+    countdownNumber.classList.toggle(
+      "is-drop",
+      item === "DROP!"
+    );
+
+    restartCountdownAnimation();
+
+    if (
+      audioEnabled &&
+      item !== "DROP!"
+    ) {
+      playGeneratedSound(
+        "countdown"
+      );
+    }
+
+    if (
+      audioEnabled &&
+      item === "DROP!"
+    ) {
+      const titleEffect =
+        Math.random() < 0.5
+          ? effectPaths.titleOne
+          : effectPaths.titleTwo;
+
+      playImportedClip(
+        titleEffect,
+        EFFECT_VOLUME
+      );
+    }
+
+    await wait(
+      item === "DROP!"
+        ? 700
+        : 650
+    );
+  }
+
+  countdownOverlay.classList.remove(
+    "is-visible"
+  );
+
+  countdownOverlay.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  countdownNumber.classList.remove(
+    "is-drop"
+  );
+
+  countdownRunning = false;
+
+  startNewGame();
+}
+
+
+function restartCountdownAnimation() {
+  countdownNumber.style.animation =
+    "none";
+
+  void countdownNumber.offsetWidth;
+
+  countdownNumber.style.animation = "";
+}
+
+
+function wait(milliseconds) {
+  return new Promise(
+    (resolve) => {
+      window.setTimeout(
+        resolve,
+        milliseconds
+      );
+    }
+  );
+}
+
+
+/* =========================================================
+   20. GAME FLOW
 ========================================================= */
 
 function startNewGame() {
@@ -823,19 +1653,32 @@ function startNewGame() {
   bestCombo = 0;
 
   dropCounter = 0;
-  lastFrameTime = performance.now();
+  lastFrameTime =
+    performance.now();
 
   gameStarted = true;
   gamePaused = false;
   gameOver = false;
 
-  document.body.classList.add("game-running");
+  dangerActive = false;
+  dangerVoicePlayed = false;
+
+  runStartingHighScore =
+    highScore;
+
+  document.body.classList.add(
+    "game-running"
+  );
 
   hideAllOverlays();
 
-  setGameStatus("Playing", "playing");
+  setGameStatus(
+    "Playing",
+    "playing"
+  );
 
-  highScoreMessage.hidden = true;
+  highScoreMessage.hidden =
+    true;
 
   chooseRandomTip();
 
@@ -844,17 +1687,32 @@ function startNewGame() {
   updateComboDisplay();
   updateInterface();
 
-  playSound("start");
+  if (!masterMuted) {
+    changeMusic(
+      "gameplay",
+      MUSIC_VOLUME
+    );
+  }
 }
 
 
 function restartGame() {
-  startNewGame();
+  if (countdownRunning) {
+    return;
+  }
+
+  beginGameSequence(
+    !masterMuted
+  );
 }
 
 
 function togglePause() {
-  if (!gameStarted || gameOver) {
+  if (
+    !gameStarted ||
+    gameOver ||
+    countdownRunning
+  ) {
     return;
   }
 
@@ -867,52 +1725,85 @@ function togglePause() {
 
 
 function pauseGame() {
-  if (!gameStarted || gameOver) {
+  if (
+    !gameStarted ||
+    gameOver
+  ) {
     return;
   }
 
   gamePaused = true;
 
-  pauseOverlay.classList.add("is-visible");
+  pauseOverlay.classList.add(
+    "is-visible"
+  );
+
   pauseOverlay.setAttribute(
     "aria-hidden",
     "false"
   );
 
-  setGameStatus("Paused", "paused");
+  setGameStatus(
+    "Paused",
+    "paused"
+  );
 
   if (pauseButton) {
     pauseButton.innerHTML =
       '<span aria-hidden="true">▶</span> Resume';
   }
 
-  playSound("pause");
+  if (
+    activeMusic &&
+    !masterMuted
+  ) {
+    fadeAudio(
+      activeMusic,
+      0.12,
+      300
+    );
+  }
+
+  playGeneratedSound("pause");
 }
 
 
 function resumeGame() {
-  if (!gameStarted || gameOver) {
+  if (
+    !gameStarted ||
+    gameOver
+  ) {
     return;
   }
 
   gamePaused = false;
   dropCounter = 0;
-  lastFrameTime = performance.now();
 
-  pauseOverlay.classList.remove("is-visible");
+  lastFrameTime =
+    performance.now();
+
+  pauseOverlay.classList.remove(
+    "is-visible"
+  );
+
   pauseOverlay.setAttribute(
     "aria-hidden",
     "true"
   );
 
-  setGameStatus("Playing", "playing");
+  setGameStatus(
+    "Playing",
+    "playing"
+  );
 
   if (pauseButton) {
     pauseButton.innerHTML =
       '<span aria-hidden="true">⏸</span> Pause';
   }
 
-  playSound("resume");
+  updateDynamicMusic(true);
+
+  playGeneratedSound("resume");
 }
 
 
@@ -921,42 +1812,64 @@ function endGame() {
   gamePaused = false;
   gameStarted = false;
 
-  document.body.classList.remove("game-running");
+  document.body.classList.remove(
+    "game-running"
+  );
 
   finalScoreElement.textContent =
     formatScore(score);
 
-  const previousStoredScore =
-    Number.parseInt(
-      localStorage.getItem(
-        "blockDropHighScore"
-      ) || "0",
-      10
-    );
-
   const achievedNewHighScore =
     score > 0 &&
-    score >= previousStoredScore;
+    score > runStartingHighScore;
 
   highScoreMessage.hidden =
     !achievedNewHighScore;
 
   if (score > highScore) {
     highScore = score;
+
     saveHighScore();
   }
 
-  gameOverOverlay.classList.add("is-visible");
+  gameOverOverlay.classList.add(
+    "is-visible"
+  );
+
   gameOverOverlay.setAttribute(
     "aria-hidden",
     "false"
   );
 
-  setGameStatus("Game Over", "game-over");
+  setGameStatus(
+    "Game Over",
+    "game-over"
+  );
 
   updateInterface();
 
-  playSound("gameOver");
+  if (!masterMuted) {
+    playImportedClip(
+      effectPaths.gameOver,
+      EFFECT_VOLUME
+    );
+
+    playImportedClip(
+      effectPaths.gameOverWhispered,
+      VOICE_VOLUME,
+      650
+    );
+
+    window.setTimeout(() => {
+      if (!masterMuted) {
+        changeMusic(
+          "menu",
+          MUSIC_VOLUME
+        );
+      }
+    }, 1250);
+  }
+
   shakeScreen(380);
 }
 
@@ -966,18 +1879,20 @@ function canControlPlayer() {
     gameStarted &&
     !gamePaused &&
     !gameOver &&
-    player.matrix
+    !countdownRunning &&
+    Boolean(player.matrix)
   );
 }
 
 
 /* =========================================================
-   16. OVERLAY UTILITIES
+   21. OVERLAY UTILITIES
 ========================================================= */
 
 function hideAllOverlays() {
   [
     startOverlay,
+    countdownOverlay,
     pauseOverlay,
     gameOverOverlay
   ].forEach((overlay) => {
@@ -985,7 +1900,10 @@ function hideAllOverlays() {
       return;
     }
 
-    overlay.classList.remove("is-visible");
+    overlay.classList.remove(
+      "is-visible"
+    );
+
     overlay.setAttribute(
       "aria-hidden",
       "true"
@@ -995,7 +1913,7 @@ function hideAllOverlays() {
 
 
 /* =========================================================
-   17. DRAWING
+   22. DRAWING
 ========================================================= */
 
 function drawGame() {
@@ -1005,7 +1923,6 @@ function drawGame() {
   );
 
   drawBoardBackground();
-
   drawArena();
 
   if (
@@ -1110,19 +2027,21 @@ function drawBoardBackground() {
 
 function drawArena() {
   arena.forEach((row, y) => {
-    row.forEach((pieceType, x) => {
-      if (pieceType === 0) {
-        return;
-      }
+    row.forEach(
+      (pieceType, x) => {
+        if (pieceType === 0) {
+          return;
+        }
 
-      drawBlock(
-        context,
-        x * BOARD_BLOCK_SIZE,
-        y * BOARD_BLOCK_SIZE,
-        BOARD_BLOCK_SIZE,
-        pieceType
-      );
-    });
+        drawBlock(
+          context,
+          x * BOARD_BLOCK_SIZE,
+          y * BOARD_BLOCK_SIZE,
+          BOARD_BLOCK_SIZE,
+          pieceType
+        );
+      }
+    );
   });
 }
 
@@ -1139,13 +2058,10 @@ function drawPlayerPiece() {
 
 
 function drawGhostPiece() {
-  const ghostPosition =
-    getGhostPosition();
-
   drawMatrix(
     context,
     player.matrix,
-    ghostPosition,
+    getGhostPosition(),
     BOARD_BLOCK_SIZE,
     player.type,
     {
@@ -1168,20 +2084,24 @@ function drawMatrix(
   }
 
   matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value === 0) {
-        return;
-      }
+    row.forEach(
+      (value, x) => {
+        if (value === 0) {
+          return;
+        }
 
-      drawBlock(
-        drawingContext,
-        (x + position.x) * blockSize,
-        (y + position.y) * blockSize,
-        blockSize,
-        type,
-        options
-      );
-    });
+        drawBlock(
+          drawingContext,
+          (x + position.x) *
+            blockSize,
+          (y + position.y) *
+            blockSize,
+          blockSize,
+          type,
+          options
+        );
+      }
+    );
   });
 }
 
@@ -1204,7 +2124,10 @@ function drawBlock(
   }
 
   const gap =
-    Math.max(2, blockSize * 0.075);
+    Math.max(
+      2,
+      blockSize * 0.075
+    );
 
   const x = pixelX + gap;
   const y = pixelY + gap;
@@ -1215,13 +2138,17 @@ function drawBlock(
   if (ghost) {
     drawingContext.save();
 
-    drawingContext.globalAlpha = 0.25;
+    drawingContext.globalAlpha =
+      0.25;
 
     drawingContext.strokeStyle =
       colours.light;
 
     drawingContext.lineWidth =
-      Math.max(2, blockSize * 0.07);
+      Math.max(
+        2,
+        blockSize * 0.07
+      );
 
     roundedRectanglePath(
       drawingContext,
@@ -1229,11 +2156,13 @@ function drawBlock(
       y,
       size,
       size,
-      Math.max(3, blockSize * 0.14)
+      Math.max(
+        3,
+        blockSize * 0.14
+      )
     );
 
     drawingContext.stroke();
-
     drawingContext.restore();
 
     return;
@@ -1245,7 +2174,10 @@ function drawBlock(
     colours.main;
 
   drawingContext.shadowBlur =
-    Math.max(7, blockSize * 0.42);
+    Math.max(
+      7,
+      blockSize * 0.42
+    );
 
   const gradient =
     drawingContext.createLinearGradient(
@@ -1276,10 +2208,15 @@ function drawBlock(
     y,
     size,
     size,
-    Math.max(3, blockSize * 0.14)
+    Math.max(
+      3,
+      blockSize * 0.14
+    )
   );
 
-  drawingContext.fillStyle = gradient;
+  drawingContext.fillStyle =
+    gradient;
+
   drawingContext.fill();
 
   drawingContext.shadowBlur = 0;
@@ -1288,12 +2225,18 @@ function drawBlock(
     "rgba(255, 255, 255, 0.3)";
 
   drawingContext.lineWidth =
-    Math.max(1, blockSize * 0.035);
+    Math.max(
+      1,
+      blockSize * 0.035
+    );
 
   drawingContext.stroke();
 
   const highlightSize =
-    Math.max(3, size * 0.16);
+    Math.max(
+      3,
+      size * 0.16
+    );
 
   const highlightGradient =
     drawingContext.createLinearGradient(
@@ -1320,9 +2263,16 @@ function drawBlock(
     drawingContext,
     x + highlightSize * 0.4,
     y + highlightSize * 0.4,
-    size - highlightSize * 0.8,
-    Math.max(3, highlightSize),
-    Math.max(2, blockSize * 0.08)
+    size -
+      highlightSize * 0.8,
+    Math.max(
+      3,
+      highlightSize
+    ),
+    Math.max(
+      2,
+      blockSize * 0.08
+    )
   );
 
   drawingContext.fill();
@@ -1339,11 +2289,12 @@ function roundedRectanglePath(
   height,
   radius
 ) {
-  const safeRadius = Math.min(
-    radius,
-    width / 2,
-    height / 2
-  );
+  const safeRadius =
+    Math.min(
+      radius,
+      width / 2,
+      height / 2
+    );
 
   drawingContext.beginPath();
 
@@ -1358,7 +2309,7 @@ function roundedRectanglePath(
 
 
 /* =========================================================
-   18. PREVIEW AND HOLD DRAWING
+   23. PREVIEW AND HOLD DRAWING
 ========================================================= */
 
 function drawPreviewPiece() {
@@ -1388,7 +2339,9 @@ function drawHeldPiece() {
   );
 
   if (!heldPieceType) {
-    holdEmptyMessage.hidden = false;
+    holdEmptyMessage.hidden =
+      false;
+
     return;
   }
 
@@ -1397,7 +2350,9 @@ function drawHeldPiece() {
   drawCentredMiniPiece(
     holdContext,
     holdCanvas,
-    PIECE_SHAPES[heldPieceType],
+    PIECE_SHAPES[
+      heldPieceType
+    ],
     heldPieceType,
     HOLD_BLOCK_SIZE
   );
@@ -1417,177 +2372,253 @@ function drawCentredMiniPiece(
   const maximumHeight =
     drawingCanvas.height * 0.82;
 
-  const fittedBlockSize = Math.min(
-    preferredBlockSize,
-    maximumWidth / matrix[0].length,
-    maximumHeight / matrix.length
-  );
+  const fittedBlockSize =
+    Math.min(
+      preferredBlockSize,
+      maximumWidth /
+        matrix[0].length,
+      maximumHeight /
+        matrix.length
+    );
 
   const pieceWidth =
-    matrix[0].length * fittedBlockSize;
+    matrix[0].length *
+    fittedBlockSize;
 
   const pieceHeight =
-    matrix.length * fittedBlockSize;
+    matrix.length *
+    fittedBlockSize;
 
   const offsetX =
-    (drawingCanvas.width - pieceWidth) / 2;
+    (
+      drawingCanvas.width -
+      pieceWidth
+    ) / 2;
 
   const offsetY =
-    (drawingCanvas.height - pieceHeight) / 2;
+    (
+      drawingCanvas.height -
+      pieceHeight
+    ) / 2;
 
   matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value === 0) {
-        return;
-      }
+    row.forEach(
+      (value, x) => {
+        if (value === 0) {
+          return;
+        }
 
-      drawBlock(
-        drawingContext,
-        offsetX + x * fittedBlockSize,
-        offsetY + y * fittedBlockSize,
-        fittedBlockSize,
-        type
-      );
-    });
+        drawBlock(
+          drawingContext,
+          offsetX +
+            x * fittedBlockSize,
+          offsetY +
+            y * fittedBlockSize,
+          fittedBlockSize,
+          type
+        );
+      }
+    );
   });
 }
 
 
 /* =========================================================
-   19. PARTICLES
+   24. PARTICLES
 ========================================================= */
 
 function createLandingParticles() {
-  if (!player.matrix || !player.type) {
+  if (
+    !player.matrix ||
+    !player.type
+  ) {
     return;
   }
 
   const colour =
-    PIECE_COLOURS[player.type].main;
+    PIECE_COLOURS[
+      player.type
+    ].main;
 
-  player.matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value === 0) {
-        return;
-      }
+  player.matrix.forEach(
+    (row, y) => {
+      row.forEach(
+        (value, x) => {
+          if (value === 0) {
+            return;
+          }
 
-      for (
-        let index = 0;
-        index < 2;
-        index += 1
-      ) {
-        particles.push({
-          x:
-            (x + player.position.x + 0.5) *
-            BOARD_BLOCK_SIZE,
+          for (
+            let index = 0;
+            index < 2;
+            index += 1
+          ) {
+            particles.push({
+              x:
+                (
+                  x +
+                  player.position.x +
+                  0.5
+                ) *
+                BOARD_BLOCK_SIZE,
 
-          y:
-            (y + player.position.y + 0.9) *
-            BOARD_BLOCK_SIZE,
+              y:
+                (
+                  y +
+                  player.position.y +
+                  0.9
+                ) *
+                BOARD_BLOCK_SIZE,
 
-          velocityX:
-            (Math.random() - 0.5) * 2.7,
+              velocityX:
+                (
+                  Math.random() -
+                  0.5
+                ) * 2.7,
 
-          velocityY:
-            -Math.random() * 2.1,
+              velocityY:
+                -Math.random() *
+                2.1,
 
-          gravity: 0.08,
+              gravity: 0.08,
 
-          size:
-            2 + Math.random() * 4,
+              size:
+                2 +
+                Math.random() *
+                  4,
 
-          alpha: 0.7,
+              alpha: 0.7,
 
-          decay:
-            0.025 + Math.random() * 0.02,
+              decay:
+                0.025 +
+                Math.random() *
+                  0.02,
 
-          colour
-        });
-      }
-    });
-  });
+              colour
+            });
+          }
+        }
+      );
+    }
+  );
 }
 
 
-function createLineParticles(rowIndexes) {
-  rowIndexes.forEach((rowIndex) => {
-    for (
-      let x = 0;
-      x < BOARD_COLUMNS;
-      x += 1
-    ) {
-      const pieceType =
-        arena[rowIndex][x];
-
-      const colour =
-        PIECE_COLOURS[pieceType]?.main ||
-        "#ffffff";
-
+function createLineParticles(
+  rowIndexes
+) {
+  rowIndexes.forEach(
+    (rowIndex) => {
       for (
-        let index = 0;
-        index < 4;
-        index += 1
+        let x = 0;
+        x < BOARD_COLUMNS;
+        x += 1
       ) {
-        particles.push({
-          x:
-            (x + 0.5) *
-            BOARD_BLOCK_SIZE,
+        const pieceType =
+          arena[rowIndex][x];
 
-          y:
-            (rowIndex + 0.5) *
-            BOARD_BLOCK_SIZE,
+        const colour =
+          PIECE_COLOURS[
+            pieceType
+          ]?.main ||
+          "#ffffff";
 
-          velocityX:
-            (Math.random() - 0.5) * 7,
+        for (
+          let index = 0;
+          index < 4;
+          index += 1
+        ) {
+          particles.push({
+            x:
+              (x + 0.5) *
+              BOARD_BLOCK_SIZE,
 
-          velocityY:
-            -1.5 - Math.random() * 5,
+            y:
+              (
+                rowIndex +
+                0.5
+              ) *
+              BOARD_BLOCK_SIZE,
 
-          gravity: 0.13,
+            velocityX:
+              (
+                Math.random() -
+                0.5
+              ) * 7,
 
-          size:
-            3 + Math.random() * 7,
+            velocityY:
+              -1.5 -
+              Math.random() *
+                5,
 
-          alpha: 1,
+            gravity: 0.13,
 
-          decay:
-            0.018 + Math.random() * 0.025,
+            size:
+              3 +
+              Math.random() *
+                7,
 
-          colour
-        });
+            alpha: 1,
+
+            decay:
+              0.018 +
+              Math.random() *
+                0.025,
+
+            colour
+          });
+        }
       }
     }
-  });
+  );
 }
 
 
 function drawParticles() {
   for (
-    let index = particles.length - 1;
+    let index =
+      particles.length - 1;
     index >= 0;
     index -= 1
   ) {
-    const particle = particles[index];
+    const particle =
+      particles[index];
 
-    particle.x += particle.velocityX;
-    particle.y += particle.velocityY;
+    particle.x +=
+      particle.velocityX;
 
-    particle.velocityY += particle.gravity;
+    particle.y +=
+      particle.velocityY;
 
-    particle.alpha -= particle.decay;
+    particle.velocityY +=
+      particle.gravity;
+
+    particle.alpha -=
+      particle.decay;
 
     if (particle.alpha <= 0) {
-      particles.splice(index, 1);
+      particles.splice(
+        index,
+        1
+      );
+
       continue;
     }
 
     context.save();
 
     context.globalAlpha =
-      Math.max(0, particle.alpha);
+      Math.max(
+        0,
+        particle.alpha
+      );
 
-    context.fillStyle = particle.colour;
-    context.shadowColor = particle.colour;
+    context.fillStyle =
+      particle.colour;
+
+    context.shadowColor =
+      particle.colour;
+
     context.shadowBlur = 10;
 
     context.fillRect(
@@ -1603,12 +2634,15 @@ function drawParticles() {
 
 
 /* =========================================================
-   20. USER INTERFACE
+   25. USER INTERFACE
 ========================================================= */
 
 function formatScore(value) {
   return String(
-    Math.max(0, Math.floor(value))
+    Math.max(
+      0,
+      Math.floor(value)
+    )
   ).padStart(6, "0");
 }
 
@@ -1629,11 +2663,8 @@ function updateInterface() {
 
 
 function updateComboDisplay() {
-  const displayCombo =
-    Math.max(0, combo);
-
   comboElement.textContent =
-    `x${displayCombo}`;
+    `x${Math.max(0, bestCombo)}`;
 }
 
 
@@ -1641,7 +2672,8 @@ function setGameStatus(
   text,
   state
 ) {
-  statusElement.textContent = text;
+  statusElement.textContent =
+    text;
 
   statusLight.className =
     `status-light status-light--${state}`;
@@ -1653,7 +2685,9 @@ function showLineAnnouncement(
   currentCombo
 ) {
   const standardText =
-    ANNOUNCEMENT_TEXT[lineCount] ||
+    ANNOUNCEMENT_TEXT[
+      lineCount
+    ] ||
     `${lineCount} Lines!`;
 
   const comboText =
@@ -1667,14 +2701,18 @@ function showLineAnnouncement(
 }
 
 
-function showTemporaryAnnouncement(text) {
+function showTemporaryAnnouncement(
+  text
+) {
   if (announcementTimer) {
     window.clearTimeout(
       announcementTimer
     );
   }
 
-  lineAnnouncement.textContent = text;
+  lineAnnouncement.textContent =
+    text;
+
   lineAnnouncement.classList.add(
     "is-visible"
   );
@@ -1697,25 +2735,29 @@ function chooseRandomTip() {
     GAME_TIPS[
       Math.floor(
         Math.random() *
-        GAME_TIPS.length
+          GAME_TIPS.length
       )
     ];
 
-  gameTipElement.textContent = tip;
+  gameTipElement.textContent =
+    tip;
 
   if (tipTimer) {
-    window.clearTimeout(tipTimer);
+    window.clearTimeout(
+      tipTimer
+    );
   }
 
-  tipTimer = window.setTimeout(
-    chooseRandomTip,
-    18000
-  );
+  tipTimer =
+    window.setTimeout(
+      chooseRandomTip,
+      18000
+    );
 }
 
 
 /* =========================================================
-   21. VISUAL EFFECTS
+   26. VISUAL EFFECTS
 ========================================================= */
 
 function triggerScreenFlash() {
@@ -1731,7 +2773,9 @@ function triggerScreenFlash() {
 }
 
 
-function shakeScreen(duration = 180) {
+function shakeScreen(
+  duration = 180
+) {
   document.body.classList.remove(
     "is-shaking"
   );
@@ -1751,7 +2795,7 @@ function shakeScreen(duration = 180) {
 
 
 /* =========================================================
-   22. LOCAL HIGH SCORE
+   27. LOCAL HIGH SCORE
 ========================================================= */
 
 function loadHighScore() {
@@ -1767,8 +2811,13 @@ function loadHighScore() {
         10
       );
 
-    return Number.isFinite(parsedValue)
-      ? Math.max(0, parsedValue)
+    return Number.isFinite(
+      parsedValue
+    )
+      ? Math.max(
+          0,
+          parsedValue
+        )
       : 0;
   } catch (error) {
     console.warn(
@@ -1797,15 +2846,22 @@ function saveHighScore() {
 
 
 /* =========================================================
-   23. GENERATED SOUND EFFECTS
+   28. GENERATED MICRO SOUND EFFECTS
 ========================================================= */
 
-function initialiseAudio() {
+function initialiseAudioContext() {
+  if (masterMuted) {
+    return;
+  }
+
   if (audioContext) {
     if (
-      audioContext.state === "suspended"
+      audioContext.state ===
+      "suspended"
     ) {
-      audioContext.resume().catch(() => {});
+      audioContext
+        .resume()
+        .catch(() => {});
     }
 
     return;
@@ -1815,12 +2871,10 @@ function initialiseAudio() {
     window.AudioContext ||
     window.webkitAudioContext;
 
-  if (!AudioContextClass) {
-    return;
+  if (AudioContextClass) {
+    audioContext =
+      new AudioContextClass();
   }
-
-  audioContext =
-    new AudioContextClass();
 }
 
 
@@ -1833,14 +2887,15 @@ function playTone({
   delay = 0
 } = {}) {
   if (
-    soundMuted ||
+    masterMuted ||
     !audioContext
   ) {
     return;
   }
 
   const startTime =
-    audioContext.currentTime + delay;
+    audioContext.currentTime +
+    delay;
 
   const oscillator =
     audioContext.createOscillator();
@@ -1856,14 +2911,21 @@ function playTone({
   );
 
   if (slideTo !== null) {
-    oscillator.frequency.exponentialRampToValueAtTime(
-      Math.max(1, slideTo),
-      startTime + duration
-    );
+    oscillator.frequency
+      .exponentialRampToValueAtTime(
+        Math.max(
+          1,
+          slideTo
+        ),
+        startTime + duration
+      );
   }
 
   gain.gain.setValueAtTime(
-    Math.max(0.0001, volume),
+    Math.max(
+      0.0001,
+      volume
+    ),
     startTime
   );
 
@@ -1873,19 +2935,26 @@ function playTone({
   );
 
   oscillator.connect(gain);
-  gain.connect(audioContext.destination);
+  gain.connect(
+    audioContext.destination
+  );
 
   oscillator.start(startTime);
-  oscillator.stop(startTime + duration);
+
+  oscillator.stop(
+    startTime + duration
+  );
 }
 
 
-function playSound(soundName) {
-  if (soundMuted) {
+function playGeneratedSound(
+  soundName
+) {
+  if (masterMuted) {
     return;
   }
 
-  initialiseAudio();
+  initialiseAudioContext();
 
   if (!audioContext) {
     return;
@@ -1951,62 +3020,6 @@ function playSound(soundName) {
       });
     },
 
-    lineClear() {
-      [440, 590, 740].forEach(
-        (frequency, index) => {
-          playTone({
-            frequency,
-            duration: 0.12,
-            volume: 0.035,
-            type: "triangle",
-            delay: index * 0.055
-          });
-        }
-      );
-    },
-
-    fourLines() {
-      [220, 330, 440, 660, 880].forEach(
-        (frequency, index) => {
-          playTone({
-            frequency,
-            duration: 0.22,
-            volume: 0.043,
-            type: "sawtooth",
-            delay: index * 0.05
-          });
-        }
-      );
-    },
-
-    levelUp() {
-      [392, 523, 659, 784].forEach(
-        (frequency, index) => {
-          playTone({
-            frequency,
-            duration: 0.16,
-            volume: 0.035,
-            type: "triangle",
-            delay: index * 0.07
-          });
-        }
-      );
-    },
-
-    start() {
-      [220, 330, 440].forEach(
-        (frequency, index) => {
-          playTone({
-            frequency,
-            duration: 0.16,
-            volume: 0.035,
-            type: "triangle",
-            delay: index * 0.08
-          });
-        }
-      );
-    },
-
     pause() {
       playTone({
         frequency: 330,
@@ -2027,18 +3040,14 @@ function playSound(soundName) {
       });
     },
 
-    gameOver() {
-      [330, 247, 196, 130].forEach(
-        (frequency, index) => {
-          playTone({
-            frequency,
-            duration: 0.3,
-            volume: 0.04,
-            type: "sawtooth",
-            delay: index * 0.13
-          });
-        }
-      );
+    countdown() {
+      playTone({
+        frequency: 520,
+        slideTo: 420,
+        duration: 0.1,
+        volume: 0.04,
+        type: "square"
+      });
     }
   };
 
@@ -2047,10 +3056,12 @@ function playSound(soundName) {
 
 
 /* =========================================================
-   24. KEYBOARD CONTROLS
+   29. KEYBOARD CONTROLS
 ========================================================= */
 
-function handleKeyboardInput(event) {
+function handleKeyboardInput(
+  event
+) {
   const controlledKeys = [
     "ArrowLeft",
     "ArrowRight",
@@ -2068,37 +3079,15 @@ function handleKeyboardInput(event) {
     "C",
     "p",
     "P",
-    "Escape",
-    "Enter"
+    "Escape"
   ];
 
   if (
-    controlledKeys.includes(event.key)
+    controlledKeys.includes(
+      event.key
+    )
   ) {
     event.preventDefault();
-  }
-
-  if (
-    !gameStarted &&
-    !gameOver &&
-    (
-      event.key === "Enter" ||
-      event.key === " "
-    )
-  ) {
-    startNewGame();
-    return;
-  }
-
-  if (
-    gameOver &&
-    (
-      event.key === "Enter" ||
-      event.key === " "
-    )
-  ) {
-    startNewGame();
-    return;
   }
 
   if (
@@ -2157,10 +3146,12 @@ function handleKeyboardInput(event) {
 
 
 /* =========================================================
-   25. TOUCH CONTROLS
+   30. TOUCH CONTROLS
 ========================================================= */
 
-function handleTouchAction(action) {
+function handleTouchAction(
+  action
+) {
   switch (action) {
     case "left":
       movePlayer(-1);
@@ -2206,162 +3197,180 @@ function initialiseTouchControls() {
       "[data-action]"
     );
 
-  touchButtons.forEach((button) => {
-    const action =
-      button.dataset.action;
+  touchButtons.forEach(
+    (button) => {
+      const action =
+        button.dataset.action;
 
-    let repeatTimer = null;
-    let repeatInterval = null;
+      let repeatTimer = null;
+      let repeatInterval = null;
 
-    const repeatableActions = [
-      "left",
-      "right",
-      "soft-drop"
-    ];
+      const repeatableActions = [
+        "left",
+        "right",
+        "soft-drop"
+      ];
 
-    const stopRepeating = () => {
-      if (repeatTimer) {
-        window.clearTimeout(
-          repeatTimer
-        );
+      const stopRepeating = () => {
+        if (repeatTimer) {
+          window.clearTimeout(
+            repeatTimer
+          );
 
-        repeatTimer = null;
-      }
+          repeatTimer = null;
+        }
 
-      if (repeatInterval) {
-        window.clearInterval(
-          repeatInterval
-        );
+        if (repeatInterval) {
+          window.clearInterval(
+            repeatInterval
+          );
 
-        repeatInterval = null;
-      }
+          repeatInterval = null;
+        }
 
-      button.classList.remove(
-        "is-pressed"
-      );
-    };
-
-    button.addEventListener(
-      "pointerdown",
-      (event) => {
-        event.preventDefault();
-
-        initialiseAudio();
-
-        button.classList.add(
+        button.classList.remove(
           "is-pressed"
         );
+      };
 
-        handleTouchAction(action);
+      button.addEventListener(
+        "pointerdown",
+        (event) => {
+          event.preventDefault();
 
-        if (
-          repeatableActions.includes(action)
-        ) {
-          repeatTimer =
-            window.setTimeout(() => {
-              repeatInterval =
-                window.setInterval(() => {
-                  handleTouchAction(action);
-                }, 75);
-            }, 240);
+          initialiseAudioContext();
+
+          button.classList.add(
+            "is-pressed"
+          );
+
+          handleTouchAction(
+            action
+          );
+
+          if (
+            repeatableActions.includes(
+              action
+            )
+          ) {
+            repeatTimer =
+              window.setTimeout(() => {
+                repeatInterval =
+                  window.setInterval(
+                    () => {
+                      handleTouchAction(
+                        action
+                      );
+                    },
+                    75
+                  );
+              }, 240);
+          }
         }
-      }
-    );
+      );
 
-    button.addEventListener(
-      "pointerup",
-      stopRepeating
-    );
+      button.addEventListener(
+        "pointerup",
+        stopRepeating
+      );
 
-    button.addEventListener(
-      "pointercancel",
-      stopRepeating
-    );
+      button.addEventListener(
+        "pointercancel",
+        stopRepeating
+      );
 
-    button.addEventListener(
-      "pointerleave",
-      stopRepeating
-    );
+      button.addEventListener(
+        "pointerleave",
+        stopRepeating
+      );
 
-    button.addEventListener(
-      "contextmenu",
-      (event) => {
-        event.preventDefault();
-      }
-    );
-  });
+      button.addEventListener(
+        "contextmenu",
+        (event) => {
+          event.preventDefault();
+        }
+      );
+    }
+  );
 }
 
 
 /* =========================================================
-   26. BUTTON EVENTS
+   31. BUTTON EVENTS
 ========================================================= */
 
-startButton?.addEventListener(
+audioOnButton?.addEventListener(
   "click",
-  startNewGame
+  () => {
+    initialiseAudioContext();
+
+    beginGameSequence(true);
+  }
 );
+
+
+audioOffButton?.addEventListener(
+  "click",
+  () => {
+    beginGameSequence(false);
+  }
+);
+
 
 resumeButton?.addEventListener(
   "click",
   resumeGame
 );
 
+
 playAgainButton?.addEventListener(
   "click",
-  startNewGame
+  () => {
+    beginGameSequence(
+      !masterMuted
+    );
+  }
 );
+
 
 pauseButton?.addEventListener(
   "click",
   togglePause
 );
 
+
 restartButton?.addEventListener(
   "click",
   restartGame
 );
 
+
 soundButton?.addEventListener(
   "click",
   () => {
-    soundMuted = !soundMuted;
-
-    soundButton.setAttribute(
-      "aria-pressed",
-      String(soundMuted)
+    setMasterMuted(
+      !masterMuted
     );
 
-    soundButton.setAttribute(
-      "aria-label",
-      soundMuted
-        ? "Enable sound"
-        : "Mute sound"
-    );
+    if (!masterMuted) {
+      initialiseAudioContext();
 
-    if (!soundMuted) {
-      initialiseAudio();
-      playSound("resume");
+      playGeneratedSound(
+        "resume"
+      );
     }
   }
 );
+
 
 document.addEventListener(
   "keydown",
   handleKeyboardInput
 );
 
-document.addEventListener(
-  "pointerdown",
-  initialiseAudio,
-  {
-    once: true
-  }
-);
-
 
 /* =========================================================
-   27. AUTOMATIC PAUSE
+   32. AUTOMATIC PAUSE
 ========================================================= */
 
 document.addEventListener(
@@ -2380,26 +3389,33 @@ document.addEventListener(
 
 
 /* =========================================================
-   28. ANIMATION LOOP
+   33. ANIMATION LOOP
 ========================================================= */
 
-function updateGame(currentTime = 0) {
-  const deltaTime = Math.min(
-    currentTime - lastFrameTime,
-    100
-  );
+function updateGame(
+  currentTime = 0
+) {
+  const deltaTime =
+    Math.min(
+      currentTime -
+        lastFrameTime,
+      100
+    );
 
-  lastFrameTime = currentTime;
+  lastFrameTime =
+    currentTime;
 
   if (
     gameStarted &&
     !gamePaused &&
     !gameOver
   ) {
-    dropCounter += deltaTime;
+    dropCounter +=
+      deltaTime;
 
     if (
-      dropCounter >= getDropInterval()
+      dropCounter >=
+      getDropInterval()
     ) {
       softDropPlayer({
         reward: false
@@ -2418,7 +3434,7 @@ function updateGame(currentTime = 0) {
 
 
 /* =========================================================
-   29. INITIALISATION
+   34. INITIALISATION
 ========================================================= */
 
 function initialiseGame() {
@@ -2429,14 +3445,24 @@ function initialiseGame() {
   drawHeldPiece();
   drawGame();
 
-  setGameStatus("Ready", "ready");
+  setGameStatus(
+    "Ready",
+    "ready"
+  );
 
   initialiseTouchControls();
   chooseRandomTip();
+
+  Object.values(
+    musicTracks
+  ).forEach((track) => {
+    track.volume = 0;
+  });
 
   window.requestAnimationFrame(
     updateGame
   );
 }
+
 
 initialiseGame();
