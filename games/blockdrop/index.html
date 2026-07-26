@@ -1,365 +1,666 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Block Drop 🧱 | Pointless Arcade</title>
-  <style>
-    body {
-      background: #0b0b0b;
-      color: #eee;
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      margin: 0;
-    }
-    h1 {
-      margin-top: 30px;
-      color: #ff4444;
-    }
-    .controls {
-      margin: 10px auto;
-      font-size: 1em;
-      color: #ccc;
-    }
-    .panel {
-      display: flex;
-      justify-content: center;
-      gap: 40px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-    canvas {
-      background: #111;
-      border: 2px solid #444;
-    }
-    #score {
-      font-size: 1.2em;
-      margin-top: 10px;
-      color: #0ff;
-    }
-    button {
-      margin-top: 10px;
-      padding: 0.5rem 1rem;
-      background-color: #ff4f81;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .touch-controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin: 20px auto;
-      max-width: 300px;
-    }
-    .touch-controls button {
-      flex: 1 1 40%;
-      padding: 1rem;
-      font-size: 1.5rem;
-      background-color: #333;
-      color: #fff;
-      border: 2px solid #ff4f81;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-  </style>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Block Drop | Pointless Arcade</title>
+
+  <meta
+    name="description"
+    content="Play Block Drop, a fast neon block puzzle game from Pointless Productions."
+  >
+
+  <meta name="theme-color" content="#08040f">
+
+  <link
+    rel="icon"
+    href="../../assets/images/logos/logo-round.webp"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
 </head>
+
 <body>
-  <h1>Block Drop 🧱</h1>
-  <div class="controls">
-    <p><strong>Controls:</strong> ← / → to move | ↓ to drop | Q / W to rotate</p>
-  </div>
-  <div id="score">Score: 0</div>
-  <div class="panel">
-    <canvas id="tetris" width="240" height="400"></canvas>
-    <div>
-      <canvas id="preview" width="80" height="80"></canvas>
-      <button id="restartBtn">Restart 🔁</button>
-    </div>
-  </div>
 
-  <div class="touch-controls">
-    <button data-action="left">←</button>
-    <button data-action="right">→</button>
-    <button data-action="down">↓</button>
-    <button data-action="rotateLeft">⟲</button>
-    <button data-action="rotateRight">⟳</button>
+  <a class="skip-link" href="#game-board">
+    Skip to game
+  </a>
+
+
+  <!-- Background decoration -->
+
+  <div class="background-effects" aria-hidden="true">
+    <div class="background-grid"></div>
+    <div class="background-glow background-glow--one"></div>
+    <div class="background-glow background-glow--two"></div>
+    <div class="floating-block floating-block--one"></div>
+    <div class="floating-block floating-block--two"></div>
+    <div class="floating-block floating-block--three"></div>
+    <div class="floating-block floating-block--four"></div>
   </div>
 
-  <script>
-    const canvas = document.getElementById('tetris');
-    const ctx = canvas.getContext('2d');
-    ctx.scale(20, 20);
 
-    const previewCanvas = document.getElementById('preview');
-    const previewCtx = previewCanvas.getContext('2d');
-    previewCtx.scale(20, 20);
+  <!-- Top navigation -->
 
-    const scoreEl = document.getElementById('score');
+  <header class="game-header">
 
-    const colors = {
-      T: '#ff4f81', O: '#ffd700', L: '#00bfff',
-      J: '#ff8c00', I: '#7fff00', S: '#da70d6', Z: '#ff6347'
-    };
+    <a
+      class="game-brand"
+      href="../../index.html"
+      aria-label="Return to Pointless Productions"
+    >
+      <img
+        src="../../assets/images/logos/logo-round.webp"
+        alt=""
+        width="54"
+        height="54"
+      >
 
-    function createMatrix(w, h) {
-      const matrix = [];
-      while (h--) matrix.push(new Array(w).fill(0));
-      return matrix;
-    }
+      <span>
+        <strong>Pointless</strong>
+        <small>Arcade</small>
+      </span>
+    </a>
 
-    function cloneMatrix(matrix) {
-      return matrix.map(row => [...row]);
-    }
+    <a class="arcade-link" href="../">
+      <span aria-hidden="true">←</span>
+      Back to Arcade
+    </a>
 
-    function createPiece(type) {
-      const shapes = {
-        T: [[0, 1, 0], [1, 1, 1]],
-        O: [[1, 1], [1, 1]],
-        L: [[0, 0, 1], [1, 1, 1]],
-        J: [[1, 0, 0], [1, 1, 1]],
-        I: [[1], [1], [1], [1]],
-        S: [[0, 1, 1], [1, 1, 0]],
-        Z: [[1, 1, 0], [0, 1, 1]]
-      };
-      return { matrix: cloneMatrix(shapes[type]), type };
-    }
-
-    function drawMatrix(matrix, offset, context, colorMap = colors, type = null) {
-  matrix.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value) {
-        const fill = typeof value === 'string'
-          ? colorMap[value] || '#ff4f81' // fallback to pink if unknown
-          : colorMap[type] || '#ff4f81'; // use current piece type
-        context.fillStyle = fill;
-        context.fillRect(x + offset.x, y + offset.y, 1, 1);
-      }
-    });
-  });
-}
+  </header>
 
 
-    function merge(arena, player) {
-      player.matrix.forEach((row, y) => {
-        row.forEach((value, x) => {
-          if (value !== 0) {
-            arena[y + player.pos.y][x + player.pos.x] = player.type;
-          }
-        });
-      });
-    }
+  <main class="game-page">
 
-    function collide(arena, player) {
-      const m = player.matrix;
-      const o = player.pos;
-      for (let y = 0; y < m.length; ++y) {
-        for (let x = 0; x < m[y].length; ++x) {
-          if (
-            m[y][x] !== 0 &&
-            (
-              y + o.y >= arena.length ||
-              x + o.x < 0 ||
-              x + o.x >= arena[0].length ||
-              arena[y + o.y]?.[x + o.x] !== 0
-            )
-          ) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
+    <!-- Game heading -->
 
-    function rotate(matrix, dir) {
-      const rows = matrix.length;
-      const cols = matrix[0].length;
-      const rotated = Array.from({ length: cols }, () => Array(rows).fill(0));
+    <section class="game-intro">
 
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          if (dir > 0) {
-            rotated[x][rows - 1 - y] = matrix[y][x];
-          } else {
-            rotated[cols - 1 - x][y] = matrix[y][x];
-          }
-        }
-      }
+      <p class="game-intro__eyebrow">
+        Pointless Productions presents
+      </p>
 
-      matrix.length = 0;
-      rotated.forEach(row => matrix.push(row));
-    }
+      <h1 aria-label="Block Drop">
+        <span class="title-block title-block--blue">B</span>
+        <span class="title-block title-block--cyan">L</span>
+        <span class="title-block title-block--purple">O</span>
+        <span class="title-block title-block--pink">C</span>
+        <span class="title-block title-block--green">K</span>
 
-    function playerRotate(dir) {
-      const pos = player.pos.x;
-      let offset = 1;
-      rotate(player.matrix, dir);
-      while (collide(arena, player)) {
-        player.pos.x += offset;
-        offset = -(offset + (offset > 0 ? 1 : -1));
-        if (offset > player.matrix[0].length) {
-          rotate(player.matrix, -dir);
-          player.pos.x = pos;
-          return;
-        }
-      }
-    }
+        <span class="title-gap" aria-hidden="true"></span>
 
-    function playerMove(dir) {
-      player.pos.x += dir;
-      if (collide(arena, player)) player.pos.x -= dir;
-    }
+        <span class="title-block title-block--orange">D</span>
+        <span class="title-block title-block--yellow">R</span>
+        <span class="title-block title-block--purple">O</span>
+        <span class="title-block title-block--green">P</span>
+      </h1>
 
-    function playerDrop() {
-      player.pos.y++;
-      if (collide(arena, player)) {
-        player.pos.y--;
-        merge(arena, player);
-        arenaSweep();
-        playerReset();
-        updateScore();
-      }
-      dropCounter = 0;
-    }
+      <p class="game-intro__tagline">
+        Drop. Match. Clear. Repeat.
+      </p>
 
-    function playerReset() {
-      player.matrix = cloneMatrix(nextPiece.matrix);
-      player.type = nextPiece.type;
-      player.pos = {
-        x: Math.floor(arena[0].length / 2) - Math.floor(player.matrix[0].length / 2),
-        y: 0
-      };
-      nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
-      drawPreview();
+    </section>
 
-      if (collide(arena, player)) {
-        arena.forEach(row => row.fill(0));
-        player.score = 0;
-        updateScore();
-      }
-    }
 
-    function drawPreview() {
-      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-      const offset = {
-        x: Math.floor((previewCanvas.width / 20 - nextPiece.matrix[0].length) / 2),
-        y: Math.floor((previewCanvas.height / 20 - nextPiece.matrix.length) / 2)
-      };
-      drawMatrix(nextPiece.matrix, offset, previewCtx, colors, nextPiece.type);
-    }
+    <!-- Main game cabinet -->
 
-    const particles = [];
+    <section class="game-cabinet" aria-label="Block Drop game">
 
-    function arenaSweep() {
-      let rowCount = 1;
-      for (let y = arena.length - 1; y >= 0; --y) {
-        if (arena[y].every(cell => cell !== 0)) {
-          const type = arena[y][0];
-          for (let x = 0; x < arena[y].length; ++x) {
-            particles.push({
-              x: x,
-              y: y,
-              vx: (Math.random() - 0.5) * 0.5,
-              vy: -Math.random() * 0.5,
-              alpha: 1,
-              color: colors[type]
-            });
-          }
-          arena.splice(y, 1);
-          arena.unshift(new Array(arena[0].length).fill(0));
-          player.score += rowCount * 10;
-          rowCount *= 2;
-          y++; // recheck same row after shift
-        }
-      }
-    }
+      <!-- Left dashboard -->
 
-    function draw() {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      <aside class="dashboard dashboard--left">
 
-      drawMatrix(arena, { x: 0, y: 0 }, ctx);
-      drawMatrix(player.matrix, player.pos, ctx, colors, player.type);
+        <section class="dashboard-panel hold-panel">
+          <div class="panel-heading">
+            <span>Hold</span>
+            <small>C</small>
+          </div>
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= 0.02;
-        if (p.alpha <= 0) {
-          particles.splice(i, 1);
-          continue;
-        }
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 1, 1);
-      }
-      ctx.globalAlpha = 1;
-    }
+          <div class="preview-frame">
+            <canvas
+              id="hold-canvas"
+              width="120"
+              height="120"
+              aria-label="Held piece"
+            ></canvas>
 
-    function updateScore() {
-      scoreEl.innerText = 'Score: ' + player.score;
-    }
+            <span
+              class="empty-preview-message"
+              id="hold-empty-message"
+            >
+              Empty
+            </span>
+          </div>
+        </section>
 
-    let lastTime = performance.now();
-    let dropCounter = 0;
-    const dropInterval = 1000;
 
-    function update(time = 0) {
-      const deltaTime = Math.min(time - lastTime, 100);
-      lastTime = time;
-      dropCounter += deltaTime;
+        <section class="dashboard-panel stats-panel">
 
-      if (dropCounter > dropInterval) {
-        playerDrop();
-      }
+          <div class="stat">
+            <span class="stat__label">Score</span>
+            <strong class="stat__value" id="score">000000</strong>
+          </div>
 
-      draw();
-      requestAnimationFrame(update);
-    }
+          <div class="stat">
+            <span class="stat__label">High Score</span>
+            <strong class="stat__value" id="high-score">000000</strong>
+          </div>
 
-    document.addEventListener('keydown', event => {
-      if (event.key === 'ArrowLeft') playerMove(-1);
-      else if (event.key === 'ArrowRight') playerMove(1);
-      else if (event.key === 'ArrowDown') playerDrop();
-      else if (event.key === 'q') playerRotate(-1);
-      else if (event.key === 'w') playerRotate(1);
-    });
+          <div class="stats-row">
 
-    document.querySelectorAll('.touch-controls button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const action = btn.getAttribute('data-action');
-        if (action === 'left') playerMove(-1);
-        else if (action === 'right') playerMove(1);
-        else if (action === 'down') playerDrop();
-        else if (action === 'rotateLeft') playerRotate(-1);
-        else if (action === 'rotateRight') playerRotate(1);
-      });
-    });
+            <div class="stat stat--small">
+              <span class="stat__label">Level</span>
+              <strong class="stat__value" id="level">1</strong>
+            </div>
 
-    document.getElementById('restartBtn').addEventListener('click', () => {
-      arena.forEach(row => row.fill(0));
-      player.score = 0;
-      updateScore();
-      playerReset();
-    });
+            <div class="stat stat--small">
+              <span class="stat__label">Lines</span>
+              <strong class="stat__value" id="lines">0</strong>
+            </div>
 
-    const pieces = 'TJLOSZI';
-    const arena = createMatrix(12, 20);
-    let player = {
-      pos: { x: 0, y: 0 },
-      matrix: null,
-      type: null,
-      score: 0
-    };
+          </div>
 
-    let nextPiece = createPiece(pieces[Math.floor(Math.random() * pieces.length)]);
-    playerReset();
-    updateScore();
-    update();
-  </script>
+        </section>
+
+
+        <section class="dashboard-panel controls-panel">
+
+          <div class="panel-heading">
+            <span>Controls</span>
+          </div>
+
+          <dl class="keyboard-controls">
+
+            <div>
+              <dt>
+                <kbd>←</kbd>
+                <kbd>→</kbd>
+              </dt>
+              <dd>Move</dd>
+            </div>
+
+            <div>
+              <dt><kbd>↓</kbd></dt>
+              <dd>Soft drop</dd>
+            </div>
+
+            <div>
+              <dt><kbd>Space</kbd></dt>
+              <dd>Hard drop</dd>
+            </div>
+
+            <div>
+              <dt>
+                <kbd>Q</kbd>
+                <kbd>E</kbd>
+              </dt>
+              <dd>Rotate</dd>
+            </div>
+
+            <div>
+              <dt><kbd>C</kbd></dt>
+              <dd>Hold</dd>
+            </div>
+
+            <div>
+              <dt><kbd>P</kbd></dt>
+              <dd>Pause</dd>
+            </div>
+
+          </dl>
+
+        </section>
+
+      </aside>
+
+
+      <!-- Centre playfield -->
+
+      <section class="playfield-column">
+
+        <div class="playfield-shell" id="game-board">
+
+          <div class="playfield-lights" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="playfield-frame">
+
+            <canvas
+              id="tetris"
+              width="360"
+              height="600"
+              aria-label="Block Drop game board"
+            ></canvas>
+
+
+            <!-- Start overlay -->
+
+            <div
+              class="game-overlay is-visible"
+              id="start-overlay"
+            >
+              <div class="overlay-content">
+
+                <span class="overlay-icon" aria-hidden="true">
+                  🧱
+                </span>
+
+                <h2>Ready to Drop?</h2>
+
+                <p>
+                  Stack the blocks, clear the lines and try not
+                  to panic when everything speeds up.
+                </p>
+
+                <button
+                  class="game-button game-button--primary"
+                  id="start-button"
+                  type="button"
+                >
+                  <span>Start Game</span>
+                  <span aria-hidden="true">▶</span>
+                </button>
+
+              </div>
+            </div>
+
+
+            <!-- Pause overlay -->
+
+            <div
+              class="game-overlay"
+              id="pause-overlay"
+              aria-hidden="true"
+            >
+              <div class="overlay-content">
+
+                <span class="overlay-icon" aria-hidden="true">
+                  ⏸
+                </span>
+
+                <h2>Paused</h2>
+
+                <p>
+                  The blocks will wait. They have nowhere else
+                  to be.
+                </p>
+
+                <button
+                  class="game-button game-button--primary"
+                  id="resume-button"
+                  type="button"
+                >
+                  Resume
+                </button>
+
+              </div>
+            </div>
+
+
+            <!-- Game-over overlay -->
+
+            <div
+              class="game-overlay"
+              id="game-over-overlay"
+              aria-hidden="true"
+            >
+              <div class="overlay-content">
+
+                <span class="overlay-icon" aria-hidden="true">
+                  💥
+                </span>
+
+                <p class="overlay-kicker">
+                  The tower has fallen
+                </p>
+
+                <h2>Game Over</h2>
+
+                <div class="final-score">
+
+                  <span>Final Score</span>
+
+                  <strong id="final-score">
+                    000000
+                  </strong>
+
+                </div>
+
+                <p
+                  class="new-high-score"
+                  id="new-high-score-message"
+                  hidden
+                >
+                  New high score!
+                </p>
+
+                <button
+                  class="game-button game-button--primary"
+                  id="play-again-button"
+                  type="button"
+                >
+                  Play Again
+                </button>
+
+              </div>
+            </div>
+
+
+            <!-- Line-clear announcement -->
+
+            <div
+              class="line-announcement"
+              id="line-announcement"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+          <div class="cabinet-label">
+            Pointless Arcade System
+          </div>
+
+        </div>
+
+
+        <!-- Desktop game buttons -->
+
+        <div class="game-actions">
+
+          <button
+            class="game-button game-button--secondary"
+            id="pause-button"
+            type="button"
+          >
+            <span aria-hidden="true">⏸</span>
+            Pause
+          </button>
+
+          <button
+            class="game-button game-button--secondary"
+            id="restart-button"
+            type="button"
+          >
+            <span aria-hidden="true">↻</span>
+            Restart
+          </button>
+
+          <button
+            class="icon-button"
+            id="sound-button"
+            type="button"
+            aria-label="Mute sound"
+            aria-pressed="false"
+          >
+            <span class="sound-on" aria-hidden="true">🔊</span>
+            <span class="sound-off" aria-hidden="true">🔇</span>
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- Right dashboard -->
+
+      <aside class="dashboard dashboard--right">
+
+        <section class="dashboard-panel next-panel">
+
+          <div class="panel-heading">
+            <span>Next</span>
+          </div>
+
+          <div class="preview-frame preview-frame--large">
+            <canvas
+              id="preview"
+              width="140"
+              height="140"
+              aria-label="Next piece"
+            ></canvas>
+          </div>
+
+        </section>
+
+
+        <section class="dashboard-panel status-panel">
+
+          <div class="panel-heading">
+            <span>Status</span>
+          </div>
+
+          <div class="status-display">
+
+            <span
+              class="status-light status-light--ready"
+              id="status-light"
+            ></span>
+
+            <strong id="game-status">
+              Ready
+            </strong>
+
+          </div>
+
+        </section>
+
+
+        <section class="dashboard-panel achievement-panel">
+
+          <div class="panel-heading">
+            <span>Best Combo</span>
+          </div>
+
+          <div class="combo-display">
+            <span aria-hidden="true">🔥</span>
+            <strong id="combo">x0</strong>
+          </div>
+
+        </section>
+
+
+        <section class="dashboard-panel tip-panel">
+
+          <div class="panel-heading">
+            <span>Pointless Tip</span>
+          </div>
+
+          <p id="game-tip">
+            Leave a gap for the long piece. It will arrive
+            immediately after you stop waiting for it.
+          </p>
+
+        </section>
+
+      </aside>
+
+    </section>
+
+
+    <!-- Mobile controls -->
+
+    <section
+      class="mobile-controls"
+      aria-label="Touch controls"
+    >
+
+      <div class="mobile-controls__top">
+
+        <button
+          class="touch-button"
+          data-action="hold"
+          type="button"
+          aria-label="Hold piece"
+        >
+          <span>C</span>
+          <small>Hold</small>
+        </button>
+
+        <button
+          class="touch-button"
+          data-action="rotate-left"
+          type="button"
+          aria-label="Rotate left"
+        >
+          <span>↶</span>
+          <small>Rotate</small>
+        </button>
+
+        <button
+          class="touch-button"
+          data-action="rotate-right"
+          type="button"
+          aria-label="Rotate right"
+        >
+          <span>↷</span>
+          <small>Rotate</small>
+        </button>
+
+        <button
+          class="touch-button"
+          data-action="pause"
+          type="button"
+          aria-label="Pause game"
+        >
+          <span>Ⅱ</span>
+          <small>Pause</small>
+        </button>
+
+      </div>
+
+
+      <div class="mobile-controls__movement">
+
+        <button
+          class="touch-button touch-button--large"
+          data-action="left"
+          type="button"
+          aria-label="Move left"
+        >
+          ←
+        </button>
+
+        <button
+          class="touch-button touch-button--large"
+          data-action="soft-drop"
+          type="button"
+          aria-label="Soft drop"
+        >
+          ↓
+        </button>
+
+        <button
+          class="touch-button touch-button--large"
+          data-action="right"
+          type="button"
+          aria-label="Move right"
+        >
+          →
+        </button>
+
+      </div>
+
+
+      <button
+        class="touch-button touch-button--hard-drop"
+        data-action="hard-drop"
+        type="button"
+      >
+        <span>⬇</span>
+        <strong>Hard Drop</strong>
+      </button>
+
+    </section>
+
+
+    <!-- Bottom information -->
+
+    <section class="game-information">
+
+      <article>
+
+        <span aria-hidden="true">👻</span>
+
+        <div>
+          <h2>Ghost Piece</h2>
+          <p>
+            See exactly where your current block will land
+            before committing to your questionable decision.
+          </p>
+        </div>
+
+      </article>
+
+      <article>
+
+        <span aria-hidden="true">💾</span>
+
+        <div>
+          <h2>Local High Score</h2>
+          <p>
+            Your best score is saved automatically in this
+            browser.
+          </p>
+        </div>
+
+      </article>
+
+      <article>
+
+        <span aria-hidden="true">⚡</span>
+
+        <div>
+          <h2>Increasing Speed</h2>
+          <p>
+            Clear lines to level up. Every level makes the
+            blocks fall faster.
+          </p>
+        </div>
+
+      </article>
+
+    </section>
+
+  </main>
+
+
+  <footer class="game-footer">
+
+    <img
+      src="../../assets/images/logos/logo-round.webp"
+      alt=""
+      width="48"
+      height="48"
+    >
+
+    <p>
+      Block Drop is a Pointless Productions game.
+      <br>
+      Music and sound by Pointless Productions.
+    </p>
+
+  </footer>
+
+
+  <div
+    class="screen-flash"
+    id="screen-flash"
+    aria-hidden="true"
+  ></div>
+
+
+  <script src="js/game.js"></script>
+
 </body>
 </html>
