@@ -35,20 +35,28 @@
   </a>
 
 
-  <!-- Background decoration -->
+  <!-- =====================================================
+       BACKGROUND
+  ====================================================== -->
 
   <div class="background-effects" aria-hidden="true">
+
     <div class="background-grid"></div>
+
     <div class="background-glow background-glow--one"></div>
     <div class="background-glow background-glow--two"></div>
+
     <div class="floating-block floating-block--one"></div>
     <div class="floating-block floating-block--two"></div>
     <div class="floating-block floating-block--three"></div>
     <div class="floating-block floating-block--four"></div>
+
   </div>
 
 
-  <!-- Top navigation -->
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
 
   <header class="game-header">
 
@@ -57,6 +65,7 @@
       href="../../index.html"
       aria-label="Return to Pointless Productions"
     >
+
       <img
         src="../../assets/images/logos/logo-round.webp"
         alt=""
@@ -68,19 +77,31 @@
         <strong>Pointless</strong>
         <small>Arcade</small>
       </span>
+
     </a>
 
-    <a class="arcade-link" href="../">
+
+    <a class="arcade-link" href="../../games.html">
+
       <span aria-hidden="true">←</span>
+
       Back to Arcade
+
     </a>
 
   </header>
 
 
+  <!-- =====================================================
+       MAIN PAGE
+  ====================================================== -->
+
   <main class="game-page">
 
-    <!-- Game heading -->
+
+    <!-- ===================================================
+         TITLE
+    ==================================================== -->
 
     <section class="game-intro">
 
@@ -89,6 +110,7 @@
       </p>
 
       <h1 aria-label="Block Drop">
+
         <span class="title-block title-block--blue">B</span>
         <span class="title-block title-block--cyan">L</span>
         <span class="title-block title-block--purple">O</span>
@@ -101,6 +123,7 @@
         <span class="title-block title-block--yellow">R</span>
         <span class="title-block title-block--purple">O</span>
         <span class="title-block title-block--green">P</span>
+
       </h1>
 
       <p class="game-intro__tagline">
@@ -110,21 +133,37 @@
     </section>
 
 
-    <!-- Main game cabinet -->
+    <!-- ===================================================
+         GAME CABINET
+    ==================================================== -->
 
-    <section class="game-cabinet" aria-label="Block Drop game">
+    <section
+      class="game-cabinet"
+      aria-label="Block Drop game"
+    >
 
-      <!-- Left dashboard -->
+
+      <!-- =================================================
+           LEFT DASHBOARD
+      ================================================== -->
 
       <aside class="dashboard dashboard--left">
 
+
+        <!-- Hold -->
+
         <section class="dashboard-panel hold-panel">
+
           <div class="panel-heading">
+
             <span>Hold</span>
+
             <small>C</small>
+
           </div>
 
           <div class="preview-frame">
+
             <canvas
               id="hold-canvas"
               width="120"
@@ -138,32 +177,79 @@
             >
               Empty
             </span>
+
           </div>
+
         </section>
 
+
+        <!-- Statistics -->
 
         <section class="dashboard-panel stats-panel">
 
           <div class="stat">
-            <span class="stat__label">Score</span>
-            <strong class="stat__value" id="score">000000</strong>
+
+            <span class="stat__label">
+              Score
+            </span>
+
+            <strong
+              class="stat__value"
+              id="score"
+            >
+              000000
+            </strong>
+
           </div>
 
+
           <div class="stat">
-            <span class="stat__label">High Score</span>
-            <strong class="stat__value" id="high-score">000000</strong>
+
+            <span class="stat__label">
+              High Score
+            </span>
+
+            <strong
+              class="stat__value"
+              id="high-score"
+            >
+              000000
+            </strong>
+
           </div>
+
 
           <div class="stats-row">
 
             <div class="stat stat--small">
-              <span class="stat__label">Level</span>
-              <strong class="stat__value" id="level">1</strong>
+
+              <span class="stat__label">
+                Level
+              </span>
+
+              <strong
+                class="stat__value"
+                id="level"
+              >
+                1
+              </strong>
+
             </div>
 
+
             <div class="stat stat--small">
-              <span class="stat__label">Lines</span>
-              <strong class="stat__value" id="lines">0</strong>
+
+              <span class="stat__label">
+                Lines
+              </span>
+
+              <strong
+                class="stat__value"
+                id="lines"
+              >
+                0
+              </strong>
+
             </div>
 
           </div>
@@ -171,48 +257,83 @@
         </section>
 
 
+        <!-- Keyboard controls -->
+
         <section class="dashboard-panel controls-panel">
 
           <div class="panel-heading">
+
             <span>Controls</span>
+
           </div>
 
           <dl class="keyboard-controls">
 
             <div>
+
               <dt>
                 <kbd>←</kbd>
                 <kbd>→</kbd>
               </dt>
+
               <dd>Move</dd>
+
             </div>
 
+
             <div>
-              <dt><kbd>↓</kbd></dt>
+
+              <dt>
+                <kbd>↓</kbd>
+              </dt>
+
               <dd>Soft drop</dd>
+
             </div>
 
+
             <div>
-              <dt><kbd>Space</kbd></dt>
+
+              <dt>
+                <kbd>Space</kbd>
+              </dt>
+
               <dd>Hard drop</dd>
+
             </div>
 
+
             <div>
+
               <dt>
                 <kbd>Q</kbd>
                 <kbd>E</kbd>
               </dt>
+
               <dd>Rotate</dd>
+
             </div>
 
+
             <div>
-              <dt><kbd>C</kbd></dt>
+
+              <dt>
+                <kbd>C</kbd>
+              </dt>
+
               <dd>Hold</dd>
+
             </div>
 
+
             <div>
-              <dt><kbd>P</kbd></dt>
+
+              <dt>
+                <kbd>P</kbd>
+              </dt>
+
               <dd>Pause</dd>
+
             </div>
 
           </dl>
@@ -222,17 +343,26 @@
       </aside>
 
 
-      <!-- Centre playfield -->
+      <!-- =================================================
+           CENTRE PLAYFIELD
+      ================================================== -->
 
       <section class="playfield-column">
 
-        <div class="playfield-shell" id="game-board">
+        <div
+          class="playfield-shell"
+          id="game-board"
+        >
 
-          <div class="playfield-lights" aria-hidden="true">
+          <div
+            class="playfield-lights"
+            aria-hidden="true"
+          >
             <span></span>
             <span></span>
             <span></span>
           </div>
+
 
           <div class="playfield-frame">
 
@@ -244,56 +374,129 @@
             ></canvas>
 
 
-            <!-- Start overlay -->
+            <!-- ===========================================
+                 START / AUDIO CHOICE
+            ============================================ -->
 
             <div
               class="game-overlay is-visible"
               id="start-overlay"
+              aria-hidden="false"
             >
+
               <div class="overlay-content">
 
-                <span class="overlay-icon" aria-hidden="true">
+                <span
+                  class="overlay-icon"
+                  aria-hidden="true"
+                >
                   🧱
                 </span>
 
-                <h2>Ready to Drop?</h2>
+                <h2>
+                  Ready to Drop?
+                </h2>
 
                 <p>
-                  Stack the blocks, clear the lines and try not
-                  to panic when everything speeds up.
+                  Choose your audio, then prepare for a completely
+                  unnecessary dramatic countdown.
                 </p>
 
-                <button
-                  class="game-button game-button--primary"
-                  id="start-button"
-                  type="button"
+                <div
+                  class="audio-choice"
+                  role="group"
+                  aria-label="Choose audio preference"
                 >
-                  <span>Start Game</span>
-                  <span aria-hidden="true">▶</span>
-                </button>
+
+                  <button
+                    class="game-button game-button--primary"
+                    id="audio-on-button"
+                    type="button"
+                  >
+
+                    <span aria-hidden="true">
+                      🔊
+                    </span>
+
+                    Play with Audio
+
+                  </button>
+
+
+                  <button
+                    class="game-button game-button--secondary"
+                    id="audio-off-button"
+                    type="button"
+                  >
+
+                    <span aria-hidden="true">
+                      🔇
+                    </span>
+
+                    Play Muted
+
+                  </button>
+
+                </div>
 
               </div>
+
             </div>
 
 
-            <!-- Pause overlay -->
+            <!-- ===========================================
+                 COUNTDOWN
+            ============================================ -->
+
+            <div
+              class="game-overlay countdown-overlay"
+              id="countdown-overlay"
+              aria-hidden="true"
+            >
+
+              <div class="overlay-content">
+
+                <p class="overlay-kicker">
+                  Prepare yourself
+                </p>
+
+                <strong
+                  class="countdown-number"
+                  id="countdown-number"
+                >
+                  3
+                </strong>
+
+              </div>
+
+            </div>
+
+
+            <!-- ===========================================
+                 PAUSED
+            ============================================ -->
 
             <div
               class="game-overlay"
               id="pause-overlay"
               aria-hidden="true"
             >
+
               <div class="overlay-content">
 
-                <span class="overlay-icon" aria-hidden="true">
+                <span
+                  class="overlay-icon"
+                  aria-hidden="true"
+                >
                   ⏸
                 </span>
 
-                <h2>Paused</h2>
+                <h2>
+                  Paused
+                </h2>
 
                 <p>
-                  The blocks will wait. They have nowhere else
-                  to be.
+                  The blocks will wait. They have nowhere else to be.
                 </p>
 
                 <button
@@ -305,19 +508,26 @@
                 </button>
 
               </div>
+
             </div>
 
 
-            <!-- Game-over overlay -->
+            <!-- ===========================================
+                 GAME OVER
+            ============================================ -->
 
             <div
               class="game-overlay"
               id="game-over-overlay"
               aria-hidden="true"
             >
+
               <div class="overlay-content">
 
-                <span class="overlay-icon" aria-hidden="true">
+                <span
+                  class="overlay-icon"
+                  aria-hidden="true"
+                >
                   💥
                 </span>
 
@@ -325,11 +535,15 @@
                   The tower has fallen
                 </p>
 
-                <h2>Game Over</h2>
+                <h2>
+                  Game Over
+                </h2>
 
                 <div class="final-score">
 
-                  <span>Final Score</span>
+                  <span>
+                    Final Score
+                  </span>
 
                   <strong id="final-score">
                     000000
@@ -354,10 +568,13 @@
                 </button>
 
               </div>
+
             </div>
 
 
-            <!-- Line-clear announcement -->
+            <!-- ===========================================
+                 LINE CLEAR TEXT
+            ============================================ -->
 
             <div
               class="line-announcement"
@@ -367,6 +584,7 @@
 
           </div>
 
+
           <div class="cabinet-label">
             Pointless Arcade System
           </div>
@@ -374,7 +592,7 @@
         </div>
 
 
-        <!-- Desktop game buttons -->
+        <!-- Desktop action buttons -->
 
         <div class="game-actions">
 
@@ -383,28 +601,53 @@
             id="pause-button"
             type="button"
           >
-            <span aria-hidden="true">⏸</span>
+
+            <span aria-hidden="true">
+              ⏸
+            </span>
+
             Pause
+
           </button>
+
 
           <button
             class="game-button game-button--secondary"
             id="restart-button"
             type="button"
           >
-            <span aria-hidden="true">↻</span>
+
+            <span aria-hidden="true">
+              ↻
+            </span>
+
             Restart
+
           </button>
+
 
           <button
             class="icon-button"
             id="sound-button"
             type="button"
-            aria-label="Mute sound"
+            aria-label="Mute all audio"
             aria-pressed="false"
           >
-            <span class="sound-on" aria-hidden="true">🔊</span>
-            <span class="sound-off" aria-hidden="true">🔇</span>
+
+            <span
+              class="sound-on"
+              aria-hidden="true"
+            >
+              🔊
+            </span>
+
+            <span
+              class="sound-off"
+              aria-hidden="true"
+            >
+              🔇
+            </span>
+
           </button>
 
         </div>
@@ -412,32 +655,45 @@
       </section>
 
 
-      <!-- Right dashboard -->
+      <!-- =================================================
+           RIGHT DASHBOARD
+      ================================================== -->
 
       <aside class="dashboard dashboard--right">
+
+
+        <!-- Next piece -->
 
         <section class="dashboard-panel next-panel">
 
           <div class="panel-heading">
+
             <span>Next</span>
+
           </div>
 
           <div class="preview-frame preview-frame--large">
+
             <canvas
               id="preview"
               width="140"
               height="140"
               aria-label="Next piece"
             ></canvas>
+
           </div>
 
         </section>
 
 
+        <!-- Status -->
+
         <section class="dashboard-panel status-panel">
 
           <div class="panel-heading">
+
             <span>Status</span>
+
           </div>
 
           <div class="status-display">
@@ -456,24 +712,39 @@
         </section>
 
 
+        <!-- Combo -->
+
         <section class="dashboard-panel achievement-panel">
 
           <div class="panel-heading">
+
             <span>Best Combo</span>
+
           </div>
 
           <div class="combo-display">
-            <span aria-hidden="true">🔥</span>
-            <strong id="combo">x0</strong>
+
+            <span aria-hidden="true">
+              🔥
+            </span>
+
+            <strong id="combo">
+              x0
+            </strong>
+
           </div>
 
         </section>
 
 
+        <!-- Tip -->
+
         <section class="dashboard-panel tip-panel">
 
           <div class="panel-heading">
+
             <span>Pointless Tip</span>
+
           </div>
 
           <p id="game-tip">
@@ -488,7 +759,9 @@
     </section>
 
 
-    <!-- Mobile controls -->
+    <!-- ===================================================
+         MOBILE CONTROLS
+    ==================================================== -->
 
     <section
       class="mobile-controls"
@@ -503,9 +776,15 @@
           type="button"
           aria-label="Hold piece"
         >
+
           <span>C</span>
-          <small>Hold</small>
+
+          <small>
+            Hold
+          </small>
+
         </button>
+
 
         <button
           class="touch-button"
@@ -513,9 +792,15 @@
           type="button"
           aria-label="Rotate left"
         >
+
           <span>↶</span>
-          <small>Rotate</small>
+
+          <small>
+            Rotate
+          </small>
+
         </button>
+
 
         <button
           class="touch-button"
@@ -523,9 +808,15 @@
           type="button"
           aria-label="Rotate right"
         >
+
           <span>↷</span>
-          <small>Rotate</small>
+
+          <small>
+            Rotate
+          </small>
+
         </button>
+
 
         <button
           class="touch-button"
@@ -533,8 +824,13 @@
           type="button"
           aria-label="Pause game"
         >
+
           <span>Ⅱ</span>
-          <small>Pause</small>
+
+          <small>
+            Pause
+          </small>
+
         </button>
 
       </div>
@@ -551,6 +847,7 @@
           ←
         </button>
 
+
         <button
           class="touch-button touch-button--large"
           data-action="soft-drop"
@@ -559,6 +856,7 @@
         >
           ↓
         </button>
+
 
         <button
           class="touch-button touch-button--large"
@@ -577,55 +875,86 @@
         data-action="hard-drop"
         type="button"
       >
-        <span>⬇</span>
-        <strong>Hard Drop</strong>
+
+        <span>
+          ⬇
+        </span>
+
+        <strong>
+          Hard Drop
+        </strong>
+
       </button>
 
     </section>
 
 
-    <!-- Bottom information -->
+    <!-- ===================================================
+         GAME INFORMATION
+    ==================================================== -->
 
     <section class="game-information">
 
       <article>
 
-        <span aria-hidden="true">👻</span>
+        <span aria-hidden="true">
+          👻
+        </span>
 
         <div>
-          <h2>Ghost Piece</h2>
+
+          <h2>
+            Ghost Piece
+          </h2>
+
           <p>
-            See exactly where your current block will land
-            before committing to your questionable decision.
+            See exactly where your current block will land before
+            committing to your questionable decision.
           </p>
+
         </div>
 
       </article>
 
+
       <article>
 
-        <span aria-hidden="true">💾</span>
+        <span aria-hidden="true">
+          💾
+        </span>
 
         <div>
-          <h2>Local High Score</h2>
+
+          <h2>
+            Local High Score
+          </h2>
+
           <p>
-            Your best score is saved automatically in this
-            browser.
+            Your best score is saved automatically in this browser.
           </p>
+
         </div>
 
       </article>
 
+
       <article>
 
-        <span aria-hidden="true">⚡</span>
+        <span aria-hidden="true">
+          ⚡
+        </span>
 
         <div>
-          <h2>Increasing Speed</h2>
+
+          <h2>
+            Increasing Speed
+          </h2>
+
           <p>
-            Clear lines to level up. Every level makes the
-            blocks fall faster.
+            Clear lines to level up. Every level makes the blocks
+            fall faster.
           </p>
+
         </div>
 
       </article>
@@ -634,6 +963,10 @@
 
   </main>
 
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
 
   <footer class="game-footer">
 
@@ -653,12 +986,20 @@
   </footer>
 
 
+  <!-- =====================================================
+       SCREEN FLASH
+  ====================================================== -->
+
   <div
     class="screen-flash"
     id="screen-flash"
     aria-hidden="true"
   ></div>
 
+
+  <!-- =====================================================
+       GAME SCRIPT
+  ====================================================== -->
 
   <script src="js/game.js"></script>
 
