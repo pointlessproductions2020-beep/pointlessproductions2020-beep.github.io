@@ -1,210 +1,380 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>Thnake 🐍 | Pointless Arcade</title>
-  <style>
-    body {
-      margin: 0;
-      background: #0b0b0b;
-      color: #eee;
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-    }
-    header {
-      padding: 40px 20px 20px;
-    }
-    h1 {
-      font-size: 3em;
-      margin: 0;
-      color: #ff4444;
-    }
-    h2 {
-      font-weight: normal;
-      font-size: 1.2em;
-      color: #ccc;
-      margin-top: 10px;
-    }
-    .lore {
-      max-width: 600px;
-      margin: 30px auto;
-      font-size: 1em;
-      color: #aaa;
-      padding: 0 20px;
-    }
-    canvas {
-      display: block;
-      margin: 30px auto;
-      background: #111;
-      border: 2px solid #444;
-    }
-    .controls {
-      margin: 20px auto;
-      font-size: 1em;
-      color: #eee;
-    }
-    .controls label {
-      cursor: pointer;
-      font-weight: bold;
-      color: #ff4f81;
-      margin-right: 20px;
-    }
-    .controls button {
-      padding: 0.5rem 1rem;
-      background-color: #ff4f81;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    footer {
-      margin-top: 40px;
-      font-size: 0.9em;
-      color: #666;
-    }
-  </style>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Thnake | Pointless Arcade</title>
+
+    <meta name="description"
+        content="Steal the treasure. Escape the maze. Don't trap yourself. Welcome to Thnake - an original puzzle game from Pointless Arcade.">
+
+    <link rel="icon" href="../../Images/favicon.png">
+
+    <link rel="stylesheet" href="css/style.css">
+
 </head>
+
 <body>
-  <header>
-    <h1>THNAKE</h1>
-    <h2>Wriggle wisely. Snack recklessly.</h2>
-  </header>
 
-  <div class="lore">
-    <p>
-      Forged in the depths of the Pointless Arcade, Thnake is no ordinary serpent.  
-      It wriggles with purpose, devours with style, and fears no fruit.  
-      Enter Iron Mode if you dare—where speed is savage and snacks are slippery.
-      use the up down left right arrows to control thnakes movements.
-  
-    </p>
-  </div>
+    <!-- =====================================================
+         BACKGROUND
+    ====================================================== -->
 
-  <div class="controls">
-    <label>
-      <input type="checkbox" id="ironToggle" />
-      Activate Iron Mode 💪
-    </label>
-    <button id="restartBtn">Restart Game 🔁</button>
-  </div>
+    <div class="background-glow glow-left"></div>
+    <div class="background-glow glow-right"></div>
+    <div class="background-grid"></div>
 
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
-  <footer>
-    <p>Made by <strong>PointlessProductions</strong></p>
-    <p><em>No serpents or speech impediments were harmed in the making of this game.</em></p>
-  </footer>
+    <header class="game-header">
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+        <a href="../../arcade.html" class="back-button">
+            ← Back to Arcade
+        </a>
 
-    const gridSize = 20;
-    let snake, direction, food, score, gameOver, ironMode, speed, snakeColor;
-    let gameLoop;
+        <div class="title-area">
 
-    const colors = ["#0f0", "#ff0", "#0ff", "#f0f", "#fff", "#ff4f81", "#44ff44"];
+            <h1>THNAKE</h1>
 
-    function initGame() {
-      snake = [{ x: 10, y: 10 }];
-      direction = { x: 1, y: 0 };
-      food = { x: 15, y: 15 };
-      score = 0;
-      gameOver = false;
-      ironMode = document.getElementById("ironToggle").checked;
-      speed = ironMode ? 75 : 150;
-      snakeColor = colors[Math.floor(Math.random() * colors.length)];
-      clearInterval(gameLoop);
-      gameLoop = setInterval(() => {
-        update();
-        draw();
-      }, speed);
-    }
+            <p>
 
-    document.getElementById("ironToggle").addEventListener("change", () => {
-      ironMode = document.getElementById("ironToggle").checked;
-      speed = ironMode ? 75 : 150;
-      clearInterval(gameLoop);
-      gameLoop = setInterval(() => {
-        update();
-        draw();
-      }, speed);
-    });
+                Steal the treasure.
 
-    document.getElementById("restartBtn").addEventListener("click", () => {
-      initGame();
-    });
+                Escape the maze.
 
-    function draw() {
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+                Don't trap yourself.
 
-      ctx.fillStyle = snakeColor;
-      snake.forEach(segment => {
-        ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-      });
+            </p>
 
-      ctx.fillStyle = "#f00";
-      ctx.beginPath();
-      ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
-      ctx.fill();
+        </div>
 
-      ctx.fillStyle = "#fff";
-      ctx.font = "20px sans-serif";
-      ctx.fillText("Score: " + score, 10, 30);
-      if (ironMode) {
-        ctx.fillStyle = "#ff4f81";
-        ctx.fillText("IRON MODE", canvas.width - 140, 30);
-      }
-    }
+    </header>
 
-    function update() {
-      if (gameOver) return;
+    <!-- =====================================================
+         MAIN LAYOUT
+    ====================================================== -->
 
-      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+    <main class="game-layout">
 
-      if (
-        head.x < 0 || head.x >= canvas.width / gridSize ||
-        head.y < 0 || head.y >= canvas.height / gridSize
-      ) {
-        gameOver = true;
-        alert("Game Over! Final Score: " + score);
-        return;
-      }
+        <!-- ==========================
+             LEFT PANEL
+        =========================== -->
 
-      if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-        gameOver = true;
-        alert("Game Over! Final Score: " + score);
-        return;
-      }
+        <aside class="side-panel">
 
-      snake.unshift(head);
+            <section class="mission-card">
 
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        food = {
-          x: Math.floor(Math.random() * (canvas.width / gridSize)),
-          y: Math.floor(Math.random() * (canvas.height / gridSize))
-        };
-        snakeColor = colors[Math.floor(Math.random() * colors.length)];
-      } else {
-        snake.pop();
-      }
-    }
+                <h2>Mission</h2>
 
-    document.addEventListener("keydown", e => {
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        e.preventDefault();
-      }
+                <p id="missionName">
 
-      if (e.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -1 };
-      if (e.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 1 };
-      if (e.key === "ArrowLeft" && direction.x === 0) direction = { x: -1, y: 0 };
-      if (e.key === "ArrowRight" && direction.x === 0) direction = { x: 1, y: 0 };
-    });
+                    The Rubber Duck Job
 
-    initGame();
-  </script>
+                </p>
+
+                <div class="objective">
+
+                    🦆 Steal the Rubber Duck
+
+                </div>
+
+                <div class="objective">
+
+                    🚪 Escape safely
+
+                </div>
+
+            </section>
+
+            <section class="stats-card">
+
+                <h2>Stats</h2>
+
+                <div class="stat">
+
+                    <span>Score</span>
+
+                    <strong id="score">
+                        000000
+                    </strong>
+
+                </div>
+
+                <div class="stat">
+
+                    <span>Moves</span>
+
+                    <strong id="moves">
+                        0
+                    </strong>
+
+                </div>
+
+                <div class="stat">
+
+                    <span>Treasure</span>
+
+                    <strong id="treasureCount">
+                        0 / 1
+                    </strong>
+
+                </div>
+
+            </section>
+
+            <section class="controls-card desktop-only">
+
+                <h2>Controls</h2>
+
+                <p>Move</p>
+
+                <strong>WASD / Arrow Keys</strong>
+
+                <p>Pause</p>
+
+                <strong>P</strong>
+
+                <p>Restart</p>
+
+                <strong>R</strong>
+
+            </section>
+
+        </aside>
+
+        <!-- ==========================
+             GAME
+        =========================== -->
+
+        <section class="game-area">
+
+            <canvas
+                id="gameCanvas"
+                width="768"
+                height="768">
+            </canvas>
+
+            <!-- Overlay -->
+
+            <div class="overlay hidden" id="startOverlay">
+
+                <div class="overlay-card">
+
+                    <h2>
+
+                        THNAKE
+
+                    </h2>
+
+                    <p>
+
+                        Leave a trail...
+
+                        but don't trap yourself.
+
+                    </p>
+
+                    <button id="startGameButton">
+
+                        Start Mission
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="overlay hidden" id="pauseOverlay">
+
+                <div class="overlay-card">
+
+                    <h2>
+
+                        Paused
+
+                    </h2>
+
+                    <button id="resumeButton">
+
+                        Resume
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="overlay hidden" id="gameOverOverlay">
+
+                <div class="overlay-card">
+
+                    <h2>
+
+                        Mission Failed
+
+                    </h2>
+
+                    <p id="gameOverReason">
+
+                        You trapped yourself.
+
+                    </p>
+
+                    <button id="restartButton">
+
+                        Try Again
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ==========================
+             RIGHT PANEL
+        =========================== -->
+
+        <aside class="side-panel">
+
+            <section class="audio-card">
+
+                <h2>
+
+                    Audio
+
+                </h2>
+
+                <button id="audioButton">
+
+                    🔊 Audio
+
+                </button>
+
+            </section>
+
+            <section class="leaderboard-card">
+
+                <h2>
+
+                    Coming Soon
+
+                </h2>
+
+                <p>
+
+                    🌍 Global Leaderboard
+
+                </p>
+
+                <p>
+
+                    👤 Player Profiles
+
+                </p>
+
+                <p>
+
+                    🏆 Pointless Achievements
+
+                </p>
+
+            </section>
+
+            <section class="tip-card">
+
+                <h2>
+
+                    Tip
+
+                </h2>
+
+                <p id="tipText">
+
+                    Every step matters...
+
+                </p>
+
+            </section>
+
+        </aside>
+
+    </main>
+
+    <!-- =====================================================
+         MOBILE HUD
+    ====================================================== -->
+
+    <section class="mobile-hud">
+
+        <div>
+
+            Score
+
+            <strong id="mobileScore">
+
+                000000
+
+            </strong>
+
+        </div>
+
+        <div>
+
+            Moves
+
+            <strong id="mobileMoves">
+
+                0
+
+            </strong>
+
+        </div>
+
+        <div>
+
+            Treasure
+
+            <strong id="mobileTreasure">
+
+                0 / 1
+
+            </strong>
+
+        </div>
+
+    </section>
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer>
+
+        Pointless Arcade
+
+        •
+
+        Thnake™
+
+        •
+
+        Nobody asked for this.
+
+    </footer>
+
+    <script src="js/levels.js"></script>
+
+    <script src="js/audio.js"></script>
+
+    <script src="js/game.js"></script>
+
 </body>
+
 </html>
