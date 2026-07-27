@@ -5,20 +5,22 @@
    THNAKE
    Pointless Arcade
 
-   Core prototype features:
+   PROCEDURAL HEIST PROTOTYPE
 
-   - Tile-by-tile maze movement
-   - Permanent glowing trail
-   - Trail collision
-   - Rubber duck target
-   - Bonus treasure
+   Features:
+
+   - Procedurally generated museums
+   - Permanent player trail
+   - Main target and optional treasure
    - Return-to-exit objective
+   - Turn-based guard patrols
+   - Visible guard vision
+   - Guard collision and detection
    - Keyboard controls
    - Mobile swipe controls
    - Pause and restart
    - Local best score
-   - Mission completion scoring
-   - Canvas-rendered temporary artwork
+   - Temporary canvas artwork
 ========================================================= */
 
 
@@ -31,6 +33,10 @@ const gameCanvas =
 
 const gameContext =
   gameCanvas?.getContext("2d");
+
+
+const gameArea =
+  document.querySelector(".game-area");
 
 
 const startOverlay =
@@ -90,16 +96,17 @@ const missionObjectives =
 
 if (
   !gameCanvas ||
-  !gameContext
+  !gameContext ||
+  !gameArea
 ) {
   throw new Error(
-    "Thnake could not find the game canvas."
+    "Thnake could not find its required page elements."
   );
 }
 
 
 /* =========================================================
-   2. GAME CONSTANTS
+   2. TILE CONSTANTS
 ========================================================= */
 
 const TILE_FLOOR = 0;
@@ -113,32 +120,40 @@ const TILE_LASER = 7;
 const TILE_OBSTACLE = 8;
 
 
+/* =========================================================
+   3. MOVEMENT CONSTANTS
+========================================================= */
+
 const DIRECTION_UP = {
   x: 0,
-  y: -1
+  y: -1,
+  name: "up"
 };
 
 const DIRECTION_DOWN = {
   x: 0,
-  y: 1
+  y: 1,
+  name: "down"
 };
 
 const DIRECTION_LEFT = {
   x: -1,
-  y: 0
+  y: 0,
+  name: "left"
 };
 
 const DIRECTION_RIGHT = {
   x: 1,
-  y: 0
+  y: 0,
+  name: "right"
 };
 
 
 const VALID_DIRECTIONS = [
   DIRECTION_UP,
+  DIRECTION_RIGHT,
   DIRECTION_DOWN,
-  DIRECTION_LEFT,
-  DIRECTION_RIGHT
+  DIRECTION_LEFT
 ];
 
 
@@ -146,14 +161,33 @@ const SWIPE_THRESHOLD = 28;
 
 const LONG_PRESS_DELAY = 650;
 
+const CURRENT_LEVEL_INDEX = 0;
+
 const BEST_SCORE_STORAGE_KEY =
   "thnakeBestScore";
 
-const CURRENT_LEVEL_INDEX = 0;
+
+/* =========================================================
+   4. GUARD SETTINGS
+========================================================= */
+
+const GUARD_MINIMUM_ENTRANCE_DISTANCE = 7;
+
+const GUARD_MINIMUM_TARGET_DISTANCE = 4;
+
+const GUARD_MINIMUM_PATROL_LENGTH = 4;
+
+const GUARD_MAXIMUM_PATROL_LENGTH = 9;
+
+const GUARD_VISION_DISTANCE = 5;
+
+const GUARD_PLACEMENT_ATTEMPTS = 120;
+
+const GUARD_TURN_PAUSE_MOVES = 1;
 
 
 /* =========================================================
-   3. COLOURS
+   5. COLOURS
 ========================================================= */
 
 const COLOURS = {
@@ -197,6 +231,21 @@ const COLOURS = {
   playerLight:
     "#c4ffda",
 
+  guardMain:
+    "#ff596f",
+
+  guardDark:
+    "#8f1f32",
+
+  guardLight:
+    "#ffb5bf",
+
+  guardVision:
+    "rgba(255, 83, 104, 0.22)",
+
+  guardVisionEdge:
+    "rgba(255, 120, 136, 0.54)",
+
   gold:
     "#ffd369",
 
@@ -219,7 +268,7 @@ const COLOURS = {
 
 
 /* =========================================================
-   4. GAME STATE
+   6. GAME STATE
 ========================================================= */
 
 let currentLevel = null;
@@ -241,6 +290,9 @@ let player = {
   facing: "right"
 
 };
+
+
+let guards = [];
 
 
 let trail = [];
@@ -279,9 +331,22 @@ let animationTime = 0;
 
 let missionCompleteOverlay = null;
 
+let missionBriefingOverlay = null;
+
+
+let canvasMessage = {
+
+  title: "",
+
+  subtitle: "",
+
+  visibleUntil: 0
+
+};
+
 
 /* =========================================================
-   5. POINTER AND GESTURE STATE
+   7. POINTER STATE
 ========================================================= */
 
 const pointerState = {
@@ -310,7 +375,7 @@ const pointerState = {
 
 
 /* =========================================================
-   6. GENERAL HELPERS
+   8. GENERAL HELPERS
 ========================================================= */
 
 function clamp(
@@ -349,6 +414,19 @@ function positionKey(
 ) {
 
   return `${x},${y}`;
+
+}
+
+
+function manhattanDistance(
+  first,
+  second
+) {
+
+  return (
+    Math.abs(first.x - second.x) +
+    Math.abs(first.y - second.y)
+  );
 
 }
 
@@ -407,8 +485,43 @@ function hideElement(element) {
 }
 
 
+function shuffleArray(array) {
+
+  const shuffled =
+    [...array];
+
+
+  for (
+    let index = shuffled.length - 1;
+    index > 0;
+    index -= 1
+  ) {
+
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+        (index + 1)
+      );
+
+
+    [
+      shuffled[index],
+      shuffled[randomIndex]
+    ] = [
+      shuffled[randomIndex],
+      shuffled[index]
+    ];
+
+  }
+
+
+  return shuffled;
+
+}
+
+
 /* =========================================================
-   7. LOCAL STORAGE
+   9. LOCAL STORAGE
 ========================================================= */
 
 function loadBestScore() {
@@ -459,7 +572,7 @@ function saveBestScore() {
 
 
 /* =========================================================
-   8. LEVEL LOADING
+   10. LEVEL LOADING
 ========================================================= */
 
 function loadLevel(index) {
@@ -476,25 +589,29 @@ function loadLevel(index) {
   }
 
 
-  const level =
+  const generatedLevel =
     window.getThnakeLevelByIndex(index);
 
 
-  if (!level) {
+  if (!generatedLevel) {
 
     throw new Error(
-      `Thnake level ${index} could not be loaded.`
+      `Thnake mission ${index} could not be generated.`
     );
 
   }
 
 
-  validateLevel(level);
+  validateLevel(
+    generatedLevel
+  );
 
 
-  currentLevel = level;
+  currentLevel =
+    generatedLevel;
 
-  currentLevelIndex = index;
+  currentLevelIndex =
+    index;
 
 
   gameCanvas.width =
@@ -503,6 +620,59 @@ function loadLevel(index) {
   gameCanvas.height =
     768;
 
+
+  resetPlayer();
+
+  resetMissionState();
+
+  generateMissionGuards();
+
+  updateMissionInformation();
+
+  updateMissionBriefing();
+
+  updateInterface();
+
+  drawGame();
+
+}
+
+
+function validateLevel(level) {
+
+  if (
+    !Array.isArray(level.map) ||
+    level.map.length !== level.height
+  ) {
+
+    throw new Error(
+      `Invalid map height in mission: ${level.name}`
+    );
+
+  }
+
+
+  level.map.forEach(
+    (row, rowIndex) => {
+
+      if (
+        !Array.isArray(row) ||
+        row.length !== level.width
+      ) {
+
+        throw new Error(
+          `Invalid map width on row ${rowIndex} in mission: ${level.name}`
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+function resetPlayer() {
 
   player.x =
     currentLevel.playerStart.x;
@@ -519,6 +689,10 @@ function loadLevel(index) {
   player.facing =
     "right";
 
+}
+
+
+function resetMissionState() {
 
   targetCollected =
     false;
@@ -558,51 +732,173 @@ function loadLevel(index) {
     false;
 
 
-  updateMissionInformation();
+  canvasMessage = {
 
-  updateInterface();
+    title: "",
 
-  drawGame();
+    subtitle: "",
 
-}
+    visibleUntil: 0
 
-
-function validateLevel(level) {
-
-  if (
-    !Array.isArray(level.map) ||
-    level.map.length !== level.height
-  ) {
-
-    throw new Error(
-      `Invalid map height in level: ${level.name}`
-    );
-
-  }
-
-
-  level.map.forEach(
-    (row, rowIndex) => {
-
-      if (
-        !Array.isArray(row) ||
-        row.length !== level.width
-      ) {
-
-        throw new Error(
-          `Invalid map width on row ${rowIndex} in level: ${level.name}`
-        );
-
-      }
-
-    }
-  );
+  };
 
 }
 
 
 /* =========================================================
-   9. TRAIL MANAGEMENT
+   11. MAP HELPERS
+========================================================= */
+
+function getTile(
+  x,
+  y
+) {
+
+  if (!currentLevel) {
+    return TILE_WALL;
+  }
+
+
+  if (
+    x < 0 ||
+    y < 0 ||
+    x >= currentLevel.width ||
+    y >= currentLevel.height
+  ) {
+
+    return TILE_WALL;
+
+  }
+
+
+  return currentLevel.map[y][x];
+
+}
+
+
+function isWallTile(tile) {
+
+  return (
+    tile === TILE_WALL ||
+    tile === TILE_LOCKED_DOOR ||
+    tile === TILE_OBSTACLE
+  );
+
+}
+
+
+function isWalkablePosition(
+  x,
+  y
+) {
+
+  return !isWallTile(
+    getTile(x, y)
+  );
+
+}
+
+
+function isExitPosition(
+  x,
+  y
+) {
+
+  return (
+    x === currentLevel.exit.x &&
+    y === currentLevel.exit.y
+  );
+
+}
+
+
+function isTargetPosition(
+  x,
+  y
+) {
+
+  return (
+    x === currentLevel.target.x &&
+    y === currentLevel.target.y
+  );
+
+}
+
+
+function getCardinalNeighbours(
+  position
+) {
+
+  return VALID_DIRECTIONS
+    .map((direction) => {
+
+      return {
+
+        x:
+          position.x +
+          direction.x,
+
+        y:
+          position.y +
+          direction.y,
+
+        direction
+
+      };
+
+    })
+    .filter((position) => {
+
+      return isWalkablePosition(
+        position.x,
+        position.y
+      );
+
+    });
+
+}
+
+
+function getAllWalkablePositions() {
+
+  const positions = [];
+
+
+  for (
+    let y = 0;
+    y < currentLevel.height;
+    y += 1
+  ) {
+
+    for (
+      let x = 0;
+      x < currentLevel.width;
+      x += 1
+    ) {
+
+      if (
+        isWalkablePosition(x, y)
+      ) {
+
+        positions.push({
+          x,
+          y
+        });
+
+      }
+
+    }
+
+  }
+
+
+  return positions;
+
+}
+
+
+/* =========================================================
+   12. TRAIL MANAGEMENT
 ========================================================= */
 
 function addTrailPosition(
@@ -644,71 +940,14 @@ function isTrailPosition(
 }
 
 
-function isExitPosition(
+function canPlayerEnterPosition(
   x,
   y
 ) {
-
-  return (
-    x === currentLevel.exit.x &&
-    y === currentLevel.exit.y
-  );
-
-}
-
-
-/* =========================================================
-   10. MAP AND COLLISION HELPERS
-========================================================= */
-
-function getTile(
-  x,
-  y
-) {
-
-  if (!currentLevel) {
-    return TILE_WALL;
-  }
-
 
   if (
-    x < 0 ||
-    y < 0 ||
-    x >= currentLevel.width ||
-    y >= currentLevel.height
+    !isWalkablePosition(x, y)
   ) {
-
-    return TILE_WALL;
-
-  }
-
-
-  return currentLevel.map[y][x];
-
-}
-
-
-function isWallTile(tile) {
-
-  return (
-    tile === TILE_WALL ||
-    tile === TILE_LOCKED_DOOR ||
-    tile === TILE_OBSTACLE
-  );
-
-}
-
-
-function canEnterPosition(
-  x,
-  y
-) {
-
-  const tile =
-    getTile(x, y);
-
-
-  if (isWallTile(tile)) {
     return false;
   }
 
@@ -733,24 +972,14 @@ function canEnterPosition(
 }
 
 
-function getAvailableDirections() {
+function getAvailablePlayerDirections() {
 
   return VALID_DIRECTIONS.filter(
     (direction) => {
 
-      const nextX =
-        player.x +
-        direction.x;
-
-
-      const nextY =
-        player.y +
-        direction.y;
-
-
-      return canEnterPosition(
-        nextX,
-        nextY
+      return canPlayerEnterPosition(
+        player.x + direction.x,
+        player.y + direction.y
       );
 
     }
@@ -760,7 +989,688 @@ function getAvailableDirections() {
 
 
 /* =========================================================
-   11. MISSION INFORMATION
+   13. GUARD GENERATION
+========================================================= */
+
+function generateMissionGuards() {
+
+  guards = [];
+
+
+  const desiredGuardCount =
+    getDesiredGuardCount();
+
+
+  for (
+    let index = 0;
+    index < desiredGuardCount;
+    index += 1
+  ) {
+
+    const guard =
+      createGuard(index);
+
+
+    if (guard) {
+
+      guards.push(
+        guard
+      );
+
+    }
+
+  }
+
+
+  currentLevel.guards =
+    guards.map((guard) => {
+
+      return {
+
+        id:
+          guard.id,
+
+        x:
+          guard.x,
+
+        y:
+          guard.y,
+
+        patrol:
+          guard.patrol.map(
+            (position) => ({
+              ...position
+            })
+          )
+
+      };
+
+    });
+
+}
+
+
+function getDesiredGuardCount() {
+
+  const securityRating =
+    Number(
+      currentLevel.securityRating
+    ) || 1;
+
+
+  if (securityRating >= 3) {
+    return 2;
+  }
+
+
+  return 1;
+
+}
+
+
+function createGuard(index) {
+
+  const candidatePositions =
+    shuffleArray(
+      getAllWalkablePositions()
+    );
+
+
+  for (
+    let attempt = 0;
+    attempt <
+      Math.min(
+        GUARD_PLACEMENT_ATTEMPTS,
+        candidatePositions.length
+      );
+    attempt += 1
+  ) {
+
+    const startPosition =
+      candidatePositions[attempt];
+
+
+    if (
+      !isValidGuardStart(
+        startPosition
+      )
+    ) {
+      continue;
+    }
+
+
+    const patrol =
+      generateGuardPatrol(
+        startPosition
+      );
+
+
+    if (
+      patrol.length <
+      GUARD_MINIMUM_PATROL_LENGTH
+    ) {
+      continue;
+    }
+
+
+    const secondGuardConflict =
+      guards.some((guard) => {
+
+        return manhattanDistance(
+          startPosition,
+          guard
+        ) < 5;
+
+      });
+
+
+    if (secondGuardConflict) {
+      continue;
+    }
+
+
+    const initialDirection =
+      directionBetweenPositions(
+        patrol[0],
+        patrol[1]
+      );
+
+
+    return {
+
+      id:
+        `guard-${index + 1}`,
+
+      x:
+        patrol[0].x,
+
+      y:
+        patrol[0].y,
+
+      previousX:
+        patrol[0].x,
+
+      previousY:
+        patrol[0].y,
+
+      patrol,
+
+      patrolIndex:
+        0,
+
+      patrolDirection:
+        1,
+
+      facing:
+        initialDirection?.name ||
+        "right",
+
+      pauseMovesRemaining:
+        0,
+
+      alerted:
+        false
+
+    };
+
+  }
+
+
+  return null;
+
+}
+
+
+function isValidGuardStart(position) {
+
+  if (
+    isExitPosition(
+      position.x,
+      position.y
+    )
+  ) {
+    return false;
+  }
+
+
+  if (
+    isTargetPosition(
+      position.x,
+      position.y
+    )
+  ) {
+    return false;
+  }
+
+
+  if (
+    manhattanDistance(
+      position,
+      currentLevel.exit
+    ) <
+    GUARD_MINIMUM_ENTRANCE_DISTANCE
+  ) {
+    return false;
+  }
+
+
+  if (
+    manhattanDistance(
+      position,
+      currentLevel.target
+    ) <
+    GUARD_MINIMUM_TARGET_DISTANCE
+  ) {
+    return false;
+  }
+
+
+  return (
+    getCardinalNeighbours(
+      position
+    ).length >= 2
+  );
+
+}
+
+
+function generateGuardPatrol(
+  startPosition
+) {
+
+  const maximumLength =
+    GUARD_MAXIMUM_PATROL_LENGTH;
+
+
+  const patrol = [
+    {
+      x:
+        startPosition.x,
+
+      y:
+        startPosition.y
+    }
+  ];
+
+
+  const visited =
+    new Set([
+      positionKey(
+        startPosition.x,
+        startPosition.y
+      )
+    ]);
+
+
+  let current =
+    startPosition;
+
+
+  for (
+    let step = 1;
+    step < maximumLength;
+    step += 1
+  ) {
+
+    const possibleNextPositions =
+      shuffleArray(
+        getCardinalNeighbours(
+          current
+        )
+      )
+        .filter((candidate) => {
+
+          const key =
+            positionKey(
+              candidate.x,
+              candidate.y
+            );
+
+
+          if (
+            visited.has(key)
+          ) {
+            return false;
+          }
+
+
+          if (
+            isExitPosition(
+              candidate.x,
+              candidate.y
+            )
+          ) {
+            return false;
+          }
+
+
+          if (
+            manhattanDistance(
+              candidate,
+              currentLevel.exit
+            ) <
+            GUARD_MINIMUM_ENTRANCE_DISTANCE - 1
+          ) {
+            return false;
+          }
+
+
+          return true;
+
+        });
+
+
+    if (
+      possibleNextPositions.length === 0
+    ) {
+      break;
+    }
+
+
+    const next =
+      possibleNextPositions[0];
+
+
+    patrol.push({
+
+      x:
+        next.x,
+
+      y:
+        next.y
+
+    });
+
+
+    visited.add(
+      positionKey(
+        next.x,
+        next.y
+      )
+    );
+
+
+    current =
+      next;
+
+  }
+
+
+  return patrol;
+
+}
+
+
+/* =========================================================
+   14. GUARD MOVEMENT
+========================================================= */
+
+function moveGuards() {
+
+  for (
+    const guard
+    of guards
+  ) {
+
+    if (
+      missionFailed ||
+      missionComplete
+    ) {
+      return;
+    }
+
+
+    moveSingleGuard(
+      guard
+    );
+
+
+    if (
+      guard.x === player.x &&
+      guard.y === player.y
+    ) {
+
+      failMission(
+        "A guard walked directly into you.",
+        "caught"
+      );
+
+      return;
+
+    }
+
+  }
+
+
+  checkGuardDetection();
+
+}
+
+
+function moveSingleGuard(guard) {
+
+  if (
+    guard.pauseMovesRemaining > 0
+  ) {
+
+    guard.pauseMovesRemaining -= 1;
+
+    return;
+
+  }
+
+
+  const nextPatrolIndex =
+    guard.patrolIndex +
+    guard.patrolDirection;
+
+
+  if (
+    nextPatrolIndex < 0 ||
+    nextPatrolIndex >=
+      guard.patrol.length
+  ) {
+
+    guard.patrolDirection *= -1;
+
+    guard.pauseMovesRemaining =
+      GUARD_TURN_PAUSE_MOVES;
+
+
+    const futureIndex =
+      guard.patrolIndex +
+      guard.patrolDirection;
+
+
+    if (
+      guard.patrol[futureIndex]
+    ) {
+
+      const direction =
+        directionBetweenPositions(
+          guard,
+          guard.patrol[futureIndex]
+        );
+
+
+      if (direction) {
+
+        guard.facing =
+          direction.name;
+
+      }
+
+    }
+
+
+    return;
+
+  }
+
+
+  const nextPosition =
+    guard.patrol[
+      nextPatrolIndex
+    ];
+
+
+  guard.previousX =
+    guard.x;
+
+  guard.previousY =
+    guard.y;
+
+
+  const direction =
+    directionBetweenPositions(
+      guard,
+      nextPosition
+    );
+
+
+  if (direction) {
+
+    guard.facing =
+      direction.name;
+
+  }
+
+
+  guard.x =
+    nextPosition.x;
+
+  guard.y =
+    nextPosition.y;
+
+
+  guard.patrolIndex =
+    nextPatrolIndex;
+
+}
+
+
+function directionBetweenPositions(
+  first,
+  second
+) {
+
+  const deltaX =
+    second.x -
+    first.x;
+
+
+  const deltaY =
+    second.y -
+    first.y;
+
+
+  return VALID_DIRECTIONS.find(
+    (direction) => {
+
+      return (
+        direction.x === deltaX &&
+        direction.y === deltaY
+      );
+
+    }
+  ) || null;
+
+}
+
+
+/* =========================================================
+   15. GUARD VISION
+========================================================= */
+
+function getGuardFacingDirection(
+  guard
+) {
+
+  return VALID_DIRECTIONS.find(
+    (direction) => {
+
+      return (
+        direction.name ===
+        guard.facing
+      );
+
+    }
+  ) || DIRECTION_RIGHT;
+
+}
+
+
+function getGuardVisibleTiles(guard) {
+
+  const visibleTiles = [];
+
+  const direction =
+    getGuardFacingDirection(
+      guard
+    );
+
+
+  for (
+    let distance = 1;
+    distance <=
+      GUARD_VISION_DISTANCE;
+    distance += 1
+  ) {
+
+    const x =
+      guard.x +
+      direction.x *
+      distance;
+
+
+    const y =
+      guard.y +
+      direction.y *
+      distance;
+
+
+    if (
+      !isWalkablePosition(x, y)
+    ) {
+      break;
+    }
+
+
+    visibleTiles.push({
+      x,
+      y,
+      distance
+    });
+
+  }
+
+
+  return visibleTiles;
+
+}
+
+
+function canGuardSeePlayer(guard) {
+
+  return getGuardVisibleTiles(
+    guard
+  ).some((position) => {
+
+    return (
+      position.x === player.x &&
+      position.y === player.y
+    );
+
+  });
+
+}
+
+
+function checkGuardDetection() {
+
+  for (
+    const guard
+    of guards
+  ) {
+
+    const guardTouchedPlayer =
+      (
+        guard.x === player.x &&
+        guard.y === player.y
+      );
+
+
+    if (
+      guardTouchedPlayer ||
+      canGuardSeePlayer(guard)
+    ) {
+
+      guard.alerted =
+        true;
+
+
+      failMission(
+        guardTouchedPlayer
+          ? "You collided with a security guard."
+          : "A security guard spotted you.",
+        "caught"
+      );
+
+
+      return true;
+
+    }
+
+  }
+
+
+  return false;
+
+}
+
+
+/* =========================================================
+   16. MISSION INFORMATION
 ========================================================= */
 
 function updateMissionInformation() {
@@ -826,7 +1736,7 @@ function updateObjectives() {
 
 
 /* =========================================================
-   12. SCORE
+   17. SCORE
 ========================================================= */
 
 function calculateCurrentScore() {
@@ -900,18 +1810,19 @@ function calculateFinalScore() {
   }
 
 
-  const collectedBonusCount =
-    collectedBonusTreasureIds.size;
-
-
   if (
-    collectedBonusCount ===
+    collectedBonusTreasureIds.size ===
     currentLevel.bonusTreasures.length
   ) {
 
-    finalScore += 1500;
+    finalScore +=
+      1500;
 
   }
+
+
+  finalScore +=
+    guards.length * 500;
 
 
   return Math.max(
@@ -923,7 +1834,7 @@ function calculateFinalScore() {
 
 
 /* =========================================================
-   13. INTERFACE
+   18. INTERFACE
 ========================================================= */
 
 function formatScore(value) {
@@ -942,6 +1853,11 @@ function formatScore(value) {
 
 
 function updateInterface() {
+
+  if (!currentLevel) {
+    return;
+  }
+
 
   score =
     missionComplete
@@ -1021,36 +1937,135 @@ function updateInterface() {
 
 
 /* =========================================================
-   14. MISSION START
+   19. MISSION BRIEFING OVERLAY
 ========================================================= */
 
-function startMission() {
+function createMissionBriefingOverlay() {
 
-  if (!currentLevel) {
+  const overlay =
+    document.createElement("div");
+
+
+  overlay.id =
+    "missionBriefingOverlay";
+
+
+  overlay.className =
+    "overlay hidden";
+
+
+  overlay.innerHTML = `
+    <div class="overlay-card">
+
+      <h2 id="missionBriefingTitle">
+        Mission Briefing
+      </h2>
+
+      <p id="missionBriefingText">
+        Classified mission details.
+      </p>
+
+      <button
+        id="missionBriefingStartButton"
+        type="button"
+      >
+        Begin Mission
+      </button>
+
+    </div>
+  `;
+
+
+  gameArea.appendChild(
+    overlay
+  );
+
+
+  overlay
+    .querySelector(
+      "#missionBriefingStartButton"
+    )
+    ?.addEventListener(
+      "click",
+      activateMission
+    );
+
+
+  return overlay;
+
+}
+
+
+function updateMissionBriefing() {
+
+  if (
+    !missionBriefingOverlay ||
+    !currentLevel
+  ) {
     return;
   }
 
 
+  const title =
+    missionBriefingOverlay.querySelector(
+      "#missionBriefingTitle"
+    );
+
+
+  const text =
+    missionBriefingOverlay.querySelector(
+      "#missionBriefingText"
+    );
+
+
+  if (title) {
+
+    title.textContent =
+      currentLevel.name;
+
+  }
+
+
+  if (text) {
+
+    const displayedSeed =
+      currentLevel.seed ||
+      "CLASSIFIED";
+
+
+    text.textContent =
+      `MISSION #${String(
+        currentLevel.number
+      ).padStart(5, "0")}
+
+LOCATION
+${currentLevel.location}
+
+OBJECTIVE
+Steal the ${currentLevel.targetName}
+
+SECURITY
+${guards.length} guard${guards.length === 1 ? "" : "s"}
+
+DIFFICULTY
+${currentLevel.difficulty}
+
+MISSION SEED
+${displayedSeed}`;
+
+  }
+
+}
+
+
+/* =========================================================
+   20. STARTING A MISSION
+========================================================= */
+
+function startMission() {
+
   loadLevel(
     currentLevelIndex
-  );
-
-
-  missionStarted =
-    true;
-
-  missionPaused =
-    false;
-
-  missionFailed =
-    false;
-
-  missionComplete =
-    false;
-
-
-  document.body.classList.add(
-    "game-running"
   );
 
 
@@ -1074,6 +2089,40 @@ function startMission() {
   );
 
 
+  updateMissionBriefing();
+
+  showElement(
+    missionBriefingOverlay
+  );
+
+}
+
+
+function activateMission() {
+
+  missionStarted =
+    true;
+
+  missionPaused =
+    false;
+
+  missionFailed =
+    false;
+
+  missionComplete =
+    false;
+
+
+  document.body.classList.add(
+    "game-running"
+  );
+
+
+  hideElement(
+    missionBriefingOverlay
+  );
+
+
   gameCanvas.focus();
 
 
@@ -1085,7 +2134,22 @@ function startMission() {
   }
 
 
+  showCanvasMessage(
+    "MISSION START",
+    guards.length === 1
+      ? "Avoid the guard."
+      : `Avoid ${guards.length} guards.`
+  );
+
+
   vibrate([18]);
+
+
+  window.setTimeout(() => {
+
+    checkGuardDetection();
+
+  }, 100);
 
 
   updateInterface();
@@ -1096,7 +2160,7 @@ function startMission() {
 
 
 /* =========================================================
-   15. PAUSE
+   21. PAUSE
 ========================================================= */
 
 function pauseMission() {
@@ -1181,7 +2245,7 @@ function togglePause() {
 
 
 /* =========================================================
-   16. MOVEMENT
+   22. PLAYER MOVEMENT
 ========================================================= */
 
 function attemptMove(direction) {
@@ -1212,7 +2276,7 @@ function attemptMove(direction) {
 
 
   if (
-    !canEnterPosition(
+    !canPlayerEnterPosition(
       nextX,
       nextY
     )
@@ -1271,7 +2335,41 @@ function attemptMove(direction) {
   vibrate([7]);
 
 
+  if (
+    guardOccupiesPosition(
+      player.x,
+      player.y
+    )
+  ) {
+
+    failMission(
+      "You walked directly into a security guard.",
+      "caught"
+    );
+
+    return false;
+
+  }
+
+
   handleCurrentTile();
+
+
+  if (
+    missionFailed ||
+    missionComplete
+  ) {
+
+    updateInterface();
+
+    drawGame();
+
+    return true;
+
+  }
+
+
+  moveGuards();
 
 
   if (
@@ -1294,37 +2392,29 @@ function attemptMove(direction) {
 }
 
 
-function updatePlayerFacing(
-  direction
+function updatePlayerFacing(direction) {
+
+  player.facing =
+    direction.name;
+
+}
+
+
+function guardOccupiesPosition(
+  x,
+  y
 ) {
 
-  if (direction.x > 0) {
+  return guards.some(
+    (guard) => {
 
-    player.facing =
-      "right";
+      return (
+        guard.x === x &&
+        guard.y === y
+      );
 
-  } else if (
-    direction.x < 0
-  ) {
-
-    player.facing =
-      "left";
-
-  } else if (
-    direction.y < 0
-  ) {
-
-    player.facing =
-      "up";
-
-  } else if (
-    direction.y > 0
-  ) {
-
-    player.facing =
-      "down";
-
-  }
+    }
+  );
 
 }
 
@@ -1366,7 +2456,7 @@ function handleBlockedMovement() {
 
 
 /* =========================================================
-   17. TILE INTERACTIONS
+   23. TILE INTERACTIONS
 ========================================================= */
 
 function handleCurrentTile() {
@@ -1483,13 +2573,13 @@ function collectBonusTreasureIfPresent() {
 
 
 /* =========================================================
-   18. TRAPPED CHECK
+   24. TRAPPED CHECK
 ========================================================= */
 
 function checkWhetherPlayerIsTrapped() {
 
   const availableDirections =
-    getAvailableDirections();
+    getAvailablePlayerDirections();
 
 
   if (
@@ -1508,7 +2598,7 @@ function checkWhetherPlayerIsTrapped() {
 
 
 /* =========================================================
-   19. MISSION FAILURE
+   25. MISSION FAILURE
 ========================================================= */
 
 function failMission(
@@ -1554,10 +2644,29 @@ function failMission(
 
   if (window.ThnakeAudio) {
 
-    window.ThnakeAudio
-      .missionFailed(
-        failureType
-      );
+    if (
+      failureType === "caught"
+    ) {
+
+      window.ThnakeAudio.alarm();
+
+      window.setTimeout(() => {
+
+        window.ThnakeAudio
+          .missionFailed(
+            "caught"
+          );
+
+      }, 500);
+
+    } else {
+
+      window.ThnakeAudio
+        .missionFailed(
+          failureType
+        );
+
+    }
 
   }
 
@@ -1575,7 +2684,7 @@ function failMission(
 
 
 /* =========================================================
-   20. MISSION COMPLETION
+   26. MISSION COMPLETION
 ========================================================= */
 
 function completeMission() {
@@ -1598,11 +2707,19 @@ function completeMission() {
     false;
 
 
+  const previousBestScore =
+    bestScore;
+
+
   score =
     calculateFinalScore();
 
 
-  if (score > bestScore) {
+  const achievedNewBest =
+    score > previousBestScore;
+
+
+  if (achievedNewBest) {
 
     bestScore =
       score;
@@ -1637,7 +2754,10 @@ function completeMission() {
   ]);
 
 
-  updateMissionCompleteOverlay();
+  updateMissionCompleteOverlay(
+    achievedNewBest
+  );
+
 
   showElement(
     missionCompleteOverlay
@@ -1650,7 +2770,7 @@ function completeMission() {
 
 
 /* =========================================================
-   21. MISSION COMPLETE OVERLAY
+   27. MISSION COMPLETE OVERLAY
 ========================================================= */
 
 function createMissionCompleteOverlay() {
@@ -1680,28 +2800,26 @@ function createMissionCompleteOverlay() {
         id="missionCompleteRestartButton"
         type="button"
       >
-        Play Again
+        New Mission
       </button>
 
     </div>
   `;
 
 
-  document
-    .querySelector(".game-area")
-    ?.appendChild(overlay);
-
-
-  const restartCompleteButton =
-    overlay.querySelector(
-      "#missionCompleteRestartButton"
-    );
-
-
-  restartCompleteButton?.addEventListener(
-    "click",
-    startMission
+  gameArea.appendChild(
+    overlay
   );
+
+
+  overlay
+    .querySelector(
+      "#missionCompleteRestartButton"
+    )
+    ?.addEventListener(
+      "click",
+      startMission
+    );
 
 
   return overlay;
@@ -1709,7 +2827,9 @@ function createMissionCompleteOverlay() {
 }
 
 
-function updateMissionCompleteOverlay() {
+function updateMissionCompleteOverlay(
+  achievedNewBest
+) {
 
   if (!missionCompleteOverlay) {
     return;
@@ -1744,37 +2864,30 @@ function updateMissionCompleteOverlay() {
       : `${collectedBonusTreasureIds.size} of ${currentLevel.bonusTreasures.length} optional treasures stolen.`;
 
 
-  const newBestMessage =
-    score >= bestScore
-      ? "\nNew best score!"
-      : "";
+  const bestMessage =
+    achievedNewBest
+      ? "\nNEW BEST SCORE!"
+      : `\nBest score: ${formatScore(bestScore)}`;
 
 
   summary.textContent =
-    `The rubber duck has been recovered.
+    `The ${currentLevel.targetName.toLowerCase()} has been recovered.
 
 Score: ${formatScore(score)}
 Moves: ${moves}
+Guards avoided: ${guards.length}
 ${parResult}
-${treasureResult}${newBestMessage}`;
+${treasureResult}${bestMessage}
+
+Mission seed:
+${currentLevel.seed}`;
 
 }
 
 
 /* =========================================================
-   22. TEMPORARY CANVAS MESSAGE
+   28. TEMPORARY CANVAS MESSAGE
 ========================================================= */
-
-let canvasMessage = {
-
-  title: "",
-
-  subtitle: "",
-
-  visibleUntil: 0
-
-};
-
 
 function showCanvasMessage(
   title,
@@ -1795,7 +2908,7 @@ function showCanvasMessage(
 
 
 /* =========================================================
-   23. DRAWING: MAIN FRAME
+   29. DRAWING MAIN FRAME
 ========================================================= */
 
 function drawGame(
@@ -1844,6 +2957,13 @@ function drawGame(
   );
 
 
+  drawGuardVision(
+    tileWidth,
+    tileHeight,
+    timestamp
+  );
+
+
   drawTrail(
     tileWidth,
     tileHeight,
@@ -1852,6 +2972,13 @@ function drawGame(
 
 
   drawTreasures(
+    tileWidth,
+    tileHeight,
+    timestamp
+  );
+
+
+  drawGuards(
     tileWidth,
     tileHeight,
     timestamp
@@ -1873,7 +3000,7 @@ function drawGame(
 
 
 /* =========================================================
-   24. DRAWING: FLOOR
+   30. DRAWING FLOOR
 ========================================================= */
 
 function drawFloor(
@@ -1921,7 +3048,8 @@ function drawFloor(
     COLOURS.floorGrid;
 
 
-  gameContext.lineWidth = 1;
+  gameContext.lineWidth =
+    1;
 
 
   for (
@@ -1982,7 +3110,7 @@ function drawFloor(
 
 
 /* =========================================================
-   25. DRAWING: MAP OBJECTS
+   31. DRAWING MAP OBJECTS
 ========================================================= */
 
 function drawMapObjects(
@@ -1996,7 +3124,9 @@ function drawMapObjects(
       row.forEach(
         (tile, x) => {
 
-          if (tile === TILE_WALL) {
+          if (
+            tile === TILE_WALL
+          ) {
 
             drawWallTile(
               x,
@@ -2065,10 +3195,8 @@ function drawWallTile(
     gameContext.createLinearGradient(
       x,
       y,
-      x +
-      tileWidth,
-      y +
-      tileHeight
+      x + tileWidth,
+      y + tileHeight
     );
 
 
@@ -2121,7 +3249,8 @@ function drawWallTile(
   gameContext.fill();
 
 
-  gameContext.shadowBlur = 0;
+  gameContext.shadowBlur =
+    0;
 
 
   gameContext.strokeStyle =
@@ -2200,7 +3329,7 @@ function drawObstacleTile(
 
 
 /* =========================================================
-   26. DRAWING: EXIT
+   32. DRAWING EXIT
 ========================================================= */
 
 function drawExit(
@@ -2278,12 +3407,13 @@ function drawExit(
   );
 
 
-  gameContext.shadowBlur = 0;
+  gameContext.shadowBlur =
+    0;
 
 
   gameContext.fillStyle =
     active
-      ? COLOURS.greenLight
+      ? COLOURS.playerLight
       : COLOURS.exitInactive;
 
 
@@ -2314,7 +3444,126 @@ function drawExit(
 
 
 /* =========================================================
-   27. DRAWING: TRAIL
+   33. DRAWING GUARD VISION
+========================================================= */
+
+function drawGuardVision(
+  tileWidth,
+  tileHeight,
+  timestamp
+) {
+
+  const pulse =
+    0.82 +
+    Math.sin(
+      timestamp * 0.007
+    ) * 0.08;
+
+
+  guards.forEach((guard) => {
+
+    const visibleTiles =
+      getGuardVisibleTiles(
+        guard
+      );
+
+
+    visibleTiles.forEach(
+      (position, index) => {
+
+        const x =
+          position.x *
+          tileWidth;
+
+
+        const y =
+          position.y *
+          tileHeight;
+
+
+        const distanceAlpha =
+          1 -
+          index /
+          Math.max(
+            visibleTiles.length + 1,
+            1
+          );
+
+
+        gameContext.save();
+
+
+        gameContext.globalAlpha =
+          pulse *
+          distanceAlpha;
+
+
+        const gradient =
+          gameContext.createRadialGradient(
+            x + tileWidth / 2,
+            y + tileHeight / 2,
+            0,
+            x + tileWidth / 2,
+            y + tileHeight / 2,
+            tileWidth * 0.75
+          );
+
+
+        gradient.addColorStop(
+          0,
+          COLOURS.guardVision
+        );
+
+
+        gradient.addColorStop(
+          1,
+          "rgba(255,83,104,0)"
+        );
+
+
+        gameContext.fillStyle =
+          gradient;
+
+
+        gameContext.fillRect(
+          x,
+          y,
+          tileWidth,
+          tileHeight
+        );
+
+
+        gameContext.strokeStyle =
+          COLOURS.guardVisionEdge;
+
+
+        gameContext.lineWidth =
+          Math.max(
+            1,
+            tileWidth * 0.025
+          );
+
+
+        gameContext.strokeRect(
+          x + 2,
+          y + 2,
+          tileWidth - 4,
+          tileHeight - 4
+        );
+
+
+        gameContext.restore();
+
+      }
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   34. DRAWING TRAIL
 ========================================================= */
 
 function drawTrail(
@@ -2429,7 +3678,9 @@ function drawTrail(
   );
 
 
-  if (trail.length < 2) {
+  if (
+    trail.length < 2
+  ) {
     return;
   }
 
@@ -2479,7 +3730,9 @@ function drawTrail(
         tileHeight / 2;
 
 
-      if (index === 0) {
+      if (
+        index === 0
+      ) {
 
         gameContext.moveTo(
           centreX,
@@ -2507,7 +3760,7 @@ function drawTrail(
 
 
 /* =========================================================
-   28. DRAWING: TREASURES
+   35. DRAWING TREASURES
 ========================================================= */
 
 function drawTreasures(
@@ -2637,7 +3890,329 @@ function drawTreasureIcon(
 
 
 /* =========================================================
-   29. DRAWING: PLAYER
+   36. DRAWING GUARDS
+========================================================= */
+
+function drawGuards(
+  tileWidth,
+  tileHeight,
+  timestamp
+) {
+
+  guards.forEach((guard) => {
+
+    drawGuard(
+      guard,
+      tileWidth,
+      tileHeight,
+      timestamp
+    );
+
+  });
+
+}
+
+
+function drawGuard(
+  guard,
+  tileWidth,
+  tileHeight,
+  timestamp
+) {
+
+  const centreX =
+    guard.x *
+    tileWidth +
+    tileWidth / 2;
+
+
+  const centreY =
+    guard.y *
+    tileHeight +
+    tileHeight / 2;
+
+
+  const breathing =
+    1 +
+    Math.sin(
+      timestamp * 0.006 +
+      guard.patrolIndex
+    ) *
+    0.025;
+
+
+  const radius =
+    tileWidth *
+    0.31 *
+    breathing;
+
+
+  gameContext.save();
+
+
+  gameContext.shadowColor =
+    guard.alerted
+      ? "#ff152f"
+      : COLOURS.guardMain;
+
+
+  gameContext.shadowBlur =
+    guard.alerted
+      ? tileWidth * 0.7
+      : tileWidth * 0.38;
+
+
+  const bodyGradient =
+    gameContext.createRadialGradient(
+      centreX -
+      radius * 0.28,
+      centreY -
+      radius * 0.35,
+      radius * 0.08,
+      centreX,
+      centreY,
+      radius
+    );
+
+
+  bodyGradient.addColorStop(
+    0,
+    COLOURS.guardLight
+  );
+
+
+  bodyGradient.addColorStop(
+    0.38,
+    COLOURS.guardMain
+  );
+
+
+  bodyGradient.addColorStop(
+    1,
+    COLOURS.guardDark
+  );
+
+
+  gameContext.fillStyle =
+    bodyGradient;
+
+
+  gameContext.beginPath();
+
+
+  gameContext.arc(
+    centreX,
+    centreY,
+    radius,
+    0,
+    Math.PI * 2
+  );
+
+
+  gameContext.fill();
+
+
+  gameContext.shadowBlur =
+    0;
+
+
+  gameContext.strokeStyle =
+    "rgba(255,255,255,0.36)";
+
+
+  gameContext.lineWidth =
+    Math.max(
+      1.5,
+      tileWidth * 0.035
+    );
+
+
+  gameContext.stroke();
+
+
+  drawGuardHat(
+    centreX,
+    centreY,
+    radius
+  );
+
+
+  drawGuardFace(
+    guard,
+    centreX,
+    centreY,
+    radius
+  );
+
+
+  gameContext.restore();
+
+}
+
+
+function drawGuardHat(
+  centreX,
+  centreY,
+  radius
+) {
+
+  gameContext.fillStyle =
+    "#171b1a";
+
+
+  createRoundedRectangle(
+    centreX -
+    radius * 0.68,
+    centreY -
+    radius * 0.83,
+    radius * 1.36,
+    radius * 0.43,
+    radius * 0.16
+  );
+
+
+  gameContext.fill();
+
+
+  gameContext.fillRect(
+    centreX -
+    radius * 0.86,
+    centreY -
+    radius * 0.47,
+    radius * 1.72,
+    radius * 0.16
+  );
+
+
+  gameContext.fillStyle =
+    COLOURS.gold;
+
+
+  gameContext.beginPath();
+
+
+  gameContext.arc(
+    centreX,
+    centreY -
+    radius * 0.62,
+    radius * 0.1,
+    0,
+    Math.PI * 2
+  );
+
+
+  gameContext.fill();
+
+}
+
+
+function drawGuardFace(
+  guard,
+  centreX,
+  centreY,
+  radius
+) {
+
+  const facingOffset =
+    getFacingOffsetForDirection(
+      guard.facing,
+      radius * 0.18
+    );
+
+
+  const eyeY =
+    centreY -
+    radius * 0.08 +
+    facingOffset.y;
+
+
+  const leftEyeX =
+    centreX -
+    radius * 0.23 +
+    facingOffset.x;
+
+
+  const rightEyeX =
+    centreX +
+    radius * 0.23 +
+    facingOffset.x;
+
+
+  const eyeRadius =
+    radius * 0.11;
+
+
+  gameContext.fillStyle =
+    "#ffffff";
+
+
+  gameContext.beginPath();
+
+
+  gameContext.arc(
+    leftEyeX,
+    eyeY,
+    eyeRadius,
+    0,
+    Math.PI * 2
+  );
+
+
+  gameContext.arc(
+    rightEyeX,
+    eyeY,
+    eyeRadius,
+    0,
+    Math.PI * 2
+  );
+
+
+  gameContext.fill();
+
+
+  const pupilOffset =
+    getFacingOffsetForDirection(
+      guard.facing,
+      eyeRadius * 0.55
+    );
+
+
+  gameContext.fillStyle =
+    "#140306";
+
+
+  gameContext.beginPath();
+
+
+  gameContext.arc(
+    leftEyeX +
+    pupilOffset.x,
+    eyeY +
+    pupilOffset.y,
+    eyeRadius * 0.46,
+    0,
+    Math.PI * 2
+  );
+
+
+  gameContext.arc(
+    rightEyeX +
+    pupilOffset.x,
+    eyeY +
+    pupilOffset.y,
+    eyeRadius * 0.46,
+    0,
+    Math.PI * 2
+  );
+
+
+  gameContext.fill();
+
+}
+
+
+/* =========================================================
+   37. DRAWING PLAYER
 ========================================================= */
 
 function drawPlayer(
@@ -2733,7 +4308,8 @@ function drawPlayer(
   gameContext.fill();
 
 
-  gameContext.shadowBlur = 0;
+  gameContext.shadowBlur =
+    0;
 
 
   gameContext.strokeStyle =
@@ -2769,8 +4345,9 @@ function drawPlayerFace(
 ) {
 
   const facingOffset =
-    getFacingOffset(
-      radius
+    getFacingOffsetForDirection(
+      player.facing,
+      radius * 0.18
     );
 
 
@@ -2825,7 +4402,8 @@ function drawPlayerFace(
 
 
   const pupilOffset =
-    getFacingOffset(
+    getFacingOffsetForDirection(
+      player.facing,
       eyeRadius * 0.65
     );
 
@@ -2894,9 +4472,14 @@ function drawPlayerFace(
 }
 
 
-function getFacingOffset(amount) {
+function getFacingOffsetForDirection(
+  direction,
+  amount
+) {
 
-  if (player.facing === "left") {
+  if (
+    direction === "left"
+  ) {
 
     return {
       x: -amount,
@@ -2906,7 +4489,9 @@ function getFacingOffset(amount) {
   }
 
 
-  if (player.facing === "right") {
+  if (
+    direction === "right"
+  ) {
 
     return {
       x: amount,
@@ -2916,7 +4501,9 @@ function getFacingOffset(amount) {
   }
 
 
-  if (player.facing === "up") {
+  if (
+    direction === "up"
+  ) {
 
     return {
       x: 0,
@@ -2935,7 +4522,7 @@ function getFacingOffset(amount) {
 
 
 /* =========================================================
-   30. DRAWING: CANVAS MESSAGE
+   38. DRAWING CANVAS MESSAGE
 ========================================================= */
 
 function drawCanvasMessage(timestamp) {
@@ -3007,7 +4594,8 @@ function drawCanvasMessage(timestamp) {
     "rgba(77, 255, 145, 0.5)";
 
 
-  gameContext.lineWidth = 2;
+  gameContext.lineWidth =
+    2;
 
 
   gameContext.stroke();
@@ -3022,7 +4610,7 @@ function drawCanvasMessage(timestamp) {
 
 
   gameContext.fillStyle =
-    COLOURS.greenLight;
+    COLOURS.playerLight;
 
 
   gameContext.font =
@@ -3059,7 +4647,7 @@ function drawCanvasMessage(timestamp) {
 
 
 /* =========================================================
-   31. ROUNDED RECTANGLE HELPER
+   39. ROUNDED RECTANGLE HELPER
 ========================================================= */
 
 function createRoundedRectangle(
@@ -3106,9 +4694,7 @@ function createRoundedRectangle(
 
 
   gameContext.lineTo(
-    x +
-    width -
-    safeRadius,
+    x + width - safeRadius,
     y
   );
 
@@ -3123,18 +4709,14 @@ function createRoundedRectangle(
 
   gameContext.lineTo(
     x + width,
-    y +
-    height -
-    safeRadius
+    y + height - safeRadius
   );
 
 
   gameContext.quadraticCurveTo(
     x + width,
     y + height,
-    x +
-    width -
-    safeRadius,
+    x + width - safeRadius,
     y + height
   );
 
@@ -3149,9 +4731,7 @@ function createRoundedRectangle(
     x,
     y + height,
     x,
-    y +
-    height -
-    safeRadius
+    y + height - safeRadius
   );
 
 
@@ -3175,7 +4755,7 @@ function createRoundedRectangle(
 
 
 /* =========================================================
-   32. KEYBOARD CONTROLS
+   40. KEYBOARD CONTROLS
 ========================================================= */
 
 function handleKeyDown(event) {
@@ -3285,7 +4865,7 @@ function handleKeyDown(event) {
 
 
 /* =========================================================
-   33. SWIPE CONTROLS
+   41. SWIPE CONTROLS
 ========================================================= */
 
 function clearLongPressTimer() {
@@ -3427,7 +5007,7 @@ function handlePointerMove(event) {
   if (
     !pointerState.active ||
     pointerState.pointerId !==
-    event.pointerId
+      event.pointerId
   ) {
     return;
   }
@@ -3457,8 +5037,7 @@ function handlePointerMove(event) {
     Math.hypot(
       deltaX,
       deltaY
-    ) >
-    12
+    ) > 12
   ) {
 
     pointerState.moved =
@@ -3477,7 +5056,7 @@ function handlePointerUp(event) {
   if (
     !pointerState.active ||
     pointerState.pointerId !==
-    event.pointerId
+      event.pointerId
   ) {
     return;
   }
@@ -3527,10 +5106,8 @@ function handlePointerUp(event) {
 
 
   if (
-    absoluteX <
-      SWIPE_THRESHOLD &&
-    absoluteY <
-      SWIPE_THRESHOLD
+    absoluteX < SWIPE_THRESHOLD &&
+    absoluteY < SWIPE_THRESHOLD
   ) {
 
     return;
@@ -3539,8 +5116,7 @@ function handlePointerUp(event) {
 
 
   if (
-    absoluteX >
-    absoluteY
+    absoluteX > absoluteY
   ) {
 
     attemptMove(
@@ -3563,7 +5139,7 @@ function handlePointerUp(event) {
 
 
 /* =========================================================
-   34. EVENT LISTENERS
+   42. EVENT LISTENERS
 ========================================================= */
 
 function initialiseEvents() {
@@ -3670,7 +5246,7 @@ function initialiseEvents() {
 
 
 /* =========================================================
-   35. ANIMATION LOOP
+   43. ANIMATION LOOP
 ========================================================= */
 
 function animationLoop(timestamp) {
@@ -3702,13 +5278,17 @@ function animationLoop(timestamp) {
 
 
 /* =========================================================
-   36. INITIALISATION
+   44. INITIALISATION
 ========================================================= */
 
 function initialiseThnake() {
 
   missionCompleteOverlay =
     createMissionCompleteOverlay();
+
+
+  missionBriefingOverlay =
+    createMissionBriefingOverlay();
 
 
   loadLevel(
@@ -3736,6 +5316,11 @@ function initialiseThnake() {
 
   hideElement(
     missionCompleteOverlay
+  );
+
+
+  hideElement(
+    missionBriefingOverlay
   );
 
 
