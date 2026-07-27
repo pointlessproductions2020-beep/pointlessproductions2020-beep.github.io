@@ -1,6 +1,6 @@
 /* =========================================================
    BLOCK DROP REMASTERED
-   MOBILE + TABLET GAME MODE
+   GESTURE + CENTRED MOBILE EDITION
    Pointless Productions
 ========================================================= */
 
@@ -53,7 +53,7 @@
   --transition-medium: 320ms ease;
 
   --mobile-hud-height: 72px;
-  --mobile-dock-height: 178px;
+  --mobile-dock-height: 94px;
 }
 
 
@@ -110,12 +110,12 @@ body.game-running {
   user-select: none;
 }
 
-body.is-shaking {
-  animation: screenShake 180ms linear;
-}
-
 body.audio-panel-open {
   overflow: hidden;
+}
+
+body.is-shaking {
+  animation: screenShake 180ms linear;
 }
 
 img,
@@ -150,7 +150,8 @@ dd {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+canvas:focus-visible {
   outline: 3px solid var(--yellow);
   outline-offset: 4px;
 }
@@ -448,7 +449,7 @@ input:focus-visible {
 
 
 /* =========================================================
-   6. MOBILE GAME HUD
+   6. MOBILE HUD
 ========================================================= */
 
 .mobile-game-hud {
@@ -457,7 +458,7 @@ input:focus-visible {
 
 
 /* =========================================================
-   7. PAGE LAYOUT
+   7. PAGE AND TITLE
 ========================================================= */
 
 .game-page {
@@ -581,7 +582,7 @@ input:focus-visible {
 
 
 /* =========================================================
-   8. GAME CABINET GRID
+   8. GAME CABINET
 ========================================================= */
 
 .game-cabinet {
@@ -859,10 +860,6 @@ kbd {
   gap: 12px;
 }
 
-.status-display strong {
-  font-size: 1rem;
-}
-
 .status-light {
   width: 12px;
   height: 12px;
@@ -870,7 +867,6 @@ kbd {
   border-radius: 50%;
 
   background: var(--text-muted);
-
   box-shadow: 0 0 12px currentColor;
 }
 
@@ -930,7 +926,7 @@ kbd {
 
 
 /* =========================================================
-   10. PLAYFIELD CABINET
+   10. PLAYFIELD
 ========================================================= */
 
 .playfield-column {
@@ -939,9 +935,17 @@ kbd {
   align-items: stretch;
 }
 
+.playfield-centre-wrapper {
+  display: grid;
+  place-items: center;
+
+  width: 100%;
+}
+
 .playfield-shell {
   position: relative;
 
+  width: 100%;
   padding: 16px 17px 13px;
 
   border: 1px solid rgba(202, 131, 255, 0.38);
@@ -986,8 +990,7 @@ kbd {
       transparent
     );
 
-  box-shadow:
-    0 0 15px var(--purple);
+  box-shadow: 0 0 15px var(--purple);
 }
 
 .playfield-shell::after {
@@ -1001,8 +1004,7 @@ kbd {
       transparent
     );
 
-  box-shadow:
-    0 0 15px var(--cyan);
+  box-shadow: 0 0 15px var(--cyan);
 }
 
 .playfield-lights {
@@ -1045,6 +1047,7 @@ kbd {
 .playfield-frame {
   position: relative;
 
+  width: 100%;
   overflow: hidden;
 
   border: 2px solid rgba(213, 160, 255, 0.5);
@@ -1083,7 +1086,89 @@ kbd {
 
 
 /* =========================================================
-   11. GAME OVERLAYS
+   11. GESTURE LAYER
+========================================================= */
+
+.gesture-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+
+  display: none;
+
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.gesture-help {
+  position: absolute;
+  inset: auto 8px 8px;
+  z-index: 9;
+
+  display: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+
+  padding: 6px;
+
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+
+  background: rgba(4, 2, 8, 0.78);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  pointer-events: none;
+
+  opacity: 0;
+  transform: translateY(10px);
+
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.gesture-help.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gesture-help div {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+
+  min-width: 0;
+
+  color: var(--text-soft);
+
+  text-align: center;
+}
+
+.gesture-help span {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.gesture-help strong {
+  font-size: 0.45rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gesture-help small {
+  color: var(--text-muted);
+
+  font-size: 0.38rem;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   12. OVERLAYS
 ========================================================= */
 
 .game-overlay {
@@ -1300,7 +1385,7 @@ kbd {
 
 
 /* =========================================================
-   12. LINE ANNOUNCEMENT
+   13. LINE ANNOUNCEMENT
 ========================================================= */
 
 .line-announcement {
@@ -1346,7 +1431,7 @@ kbd {
 
 
 /* =========================================================
-   13. BUTTONS
+   14. STANDARD BUTTONS
 ========================================================= */
 
 .game-actions {
@@ -1462,7 +1547,7 @@ kbd {
 
 
 /* =========================================================
-   14. FIXED MOBILE CONTROL DOCK
+   15. MOBILE CONTROL DOCK
 ========================================================= */
 
 .mobile-control-dock {
@@ -1474,9 +1559,11 @@ kbd {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 2px;
 
-  min-height: 54px;
-  padding: 8px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 6px;
 
   border: 1px solid rgba(203, 136, 255, 0.35);
   border-radius: 14px;
@@ -1500,6 +1587,7 @@ kbd {
   transition:
     transform 100ms ease,
     background 100ms ease,
+    border-color 100ms ease,
     box-shadow 100ms ease;
 }
 
@@ -1509,63 +1597,78 @@ kbd {
     translateY(2px)
     scale(0.96);
 
-  background:
-    rgba(168, 76, 255, 0.3);
+  background: rgba(168, 76, 255, 0.3);
 
   box-shadow:
     inset 0 0 22px rgba(168, 76, 255, 0.2),
     0 0 18px rgba(168, 76, 255, 0.2);
 }
 
-.touch-button span {
-  font-size: 1.2rem;
+.touch-button > span {
+  font-size: 1.25rem;
   font-weight: 1000;
+  line-height: 1;
 }
 
-.touch-button small {
-  margin-top: 2px;
+.touch-button > strong {
+  max-width: 100%;
 
+  overflow: hidden;
+
+  font-size: 0.6rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.touch-button > small {
   color: var(--text-muted);
 
-  font-size: 0.5rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 0.43rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.touch-button--direction {
-  min-height: 64px;
-
-  font-size: 1.65rem;
-  font-weight: 1000;
+.touch-button--hold {
+  border-color: rgba(53, 231, 255, 0.3);
 }
 
-.touch-button--hard-drop {
-  min-height: 64px;
-
-  flex-direction: row;
-  gap: 7px;
-
-  border-color:
-    rgba(255, 146, 46, 0.48);
+.touch-button--rotation {
+  border-color: rgba(255, 216, 79, 0.4);
 
   background:
     linear-gradient(
-      135deg,
-      rgba(206, 76, 26, 0.3),
-      rgba(255, 148, 47, 0.14)
+      to bottom,
+      rgba(255, 216, 79, 0.14),
+      rgba(255, 255, 255, 0.03)
     );
 }
 
-.touch-button--hard-drop strong {
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.touch-button--rotation.is-switching {
+  animation: rotationSwitch 320ms ease;
+}
+
+.rotation-direction-icon {
+  color: var(--yellow);
+
+  text-shadow:
+    0 0 12px rgba(255, 216, 79, 0.55);
+}
+
+.touch-button--audio {
+  border-color: rgba(168, 76, 255, 0.42);
+}
+
+.touch-button--pause {
+  border-color: rgba(255, 146, 46, 0.35);
 }
 
 
 /* =========================================================
-   15. AUDIO SETTINGS PANEL
+   16. AUDIO PANEL
 ========================================================= */
 
 .audio-settings-panel {
@@ -1787,7 +1890,7 @@ kbd {
 
 
 /* =========================================================
-   16. INFORMATION CARDS
+   17. INFORMATION AND FOOTER
 ========================================================= */
 
 .game-information {
@@ -1841,11 +1944,6 @@ kbd {
   font-size: 0.8rem;
 }
 
-
-/* =========================================================
-   17. FOOTER
-========================================================= */
-
 .game-footer {
   display: flex;
   justify-content: center;
@@ -1891,23 +1989,19 @@ kbd {
   inset: 0;
   z-index: 9999;
 
-  background:
-    rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.8);
 
   opacity: 0;
   pointer-events: none;
 }
 
 .screen-flash.is-active {
-  animation:
-    flashScreen
-    230ms
-    ease-out;
+  animation: flashScreen 230ms ease-out;
 }
 
 
 /* =========================================================
-   19. MEDIUM DESKTOP
+   19. DESKTOP RESPONSIVE
 ========================================================= */
 
 @media (max-width: 1180px) {
@@ -1926,11 +2020,6 @@ kbd {
   }
 
 }
-
-
-/* =========================================================
-   20. TABLET WEBSITE VIEW
-========================================================= */
 
 @media (max-width: 980px) {
 
@@ -1969,7 +2058,7 @@ kbd {
 
 
 /* =========================================================
-   21. MOBILE + TABLET GAME MODE
+   20. MOBILE + TABLET GAME MODE
 ========================================================= */
 
 @media (max-width: 1024px) {
@@ -1990,10 +2079,6 @@ kbd {
       #030106;
 
     touch-action: none;
-  }
-
-  body.mobile-game-mode .background-effects {
-    opacity: 0.6;
   }
 
   body.mobile-game-mode #website-header,
@@ -2018,7 +2103,7 @@ kbd {
 
     grid-template-columns:
       48px
-      minmax(76px, 1.4fr)
+      minmax(76px, 1.45fr)
       minmax(44px, 0.7fr)
       minmax(44px, 0.7fr)
       62px
@@ -2043,8 +2128,7 @@ kbd {
     border-bottom:
       1px solid rgba(203, 136, 255, 0.3);
 
-    background:
-      rgba(5, 3, 10, 0.96);
+    background: rgba(5, 3, 10, 0.96);
 
     box-shadow:
       0 8px 30px rgba(0, 0, 0, 0.5);
@@ -2066,8 +2150,7 @@ kbd {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 11px;
 
-    background:
-      rgba(255, 255, 255, 0.045);
+    background: rgba(255, 255, 255, 0.045);
 
     color: var(--white);
 
@@ -2090,11 +2173,6 @@ kbd {
     text-transform: uppercase;
   }
 
-  .mobile-hud-button--exit {
-    border-color:
-      rgba(255, 79, 103, 0.25);
-  }
-
   .mobile-hud-stat {
     min-width: 0;
     padding: 5px 7px;
@@ -2104,8 +2182,7 @@ kbd {
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 10px;
 
-    background:
-      rgba(255, 255, 255, 0.025);
+    background: rgba(255, 255, 255, 0.025);
   }
 
   .mobile-hud-stat span,
@@ -2152,48 +2229,68 @@ kbd {
 
   body.mobile-game-mode .game-page {
     position: fixed;
-    inset:
+
+    top:
       calc(
         var(--mobile-hud-height) +
         env(safe-area-inset-top)
-      )
-      0
+      );
+
+    right: 0;
+
+    bottom:
       calc(
         var(--mobile-dock-height) +
         env(safe-area-inset-bottom)
-      )
-      0;
+      );
 
-    display: grid;
-    place-items: center;
+    left: 0;
+
+    display: block;
 
     width: 100%;
     height: auto;
     margin: 0;
-    padding: 6px;
+    padding: 0;
 
     overflow: hidden;
   }
 
   body.mobile-game-mode .game-cabinet {
-    display: grid;
-    place-items: center;
+    display: block;
 
     width: 100%;
     height: 100%;
   }
 
   body.mobile-game-mode .playfield-column {
-    display: grid;
-    place-items: center;
+    display: block;
 
     width: 100%;
     height: 100%;
   }
 
+  body.mobile-game-mode .playfield-centre-wrapper {
+    position: absolute;
+    inset: 0;
+
+    display: grid;
+    place-items: center;
+
+    width: 100%;
+    height: 100%;
+
+    padding:
+      6px
+      max(6px, env(safe-area-inset-right))
+      6px
+      max(6px, env(safe-area-inset-left));
+  }
+
   body.mobile-game-mode .playfield-shell {
     width:
       min(
+        calc(100vw - 18px),
         calc(
           (
             100dvh -
@@ -2201,16 +2298,17 @@ kbd {
             var(--mobile-dock-height) -
             env(safe-area-inset-top) -
             env(safe-area-inset-bottom) -
-            28px
+            20px
           ) *
           0.6
         ),
-        calc(100vw - 14px),
         520px
       );
 
+    max-width: 100%;
     max-height: 100%;
 
+    margin: 0;
     padding: 5px;
 
     border-radius: 17px;
@@ -2239,10 +2337,18 @@ kbd {
         var(--mobile-dock-height) -
         env(safe-area-inset-top) -
         env(safe-area-inset-bottom) -
-        28px
+        20px
       );
 
     aspect-ratio: 3 / 5;
+  }
+
+  body.mobile-game-mode .gesture-surface {
+    display: block;
+  }
+
+  body.mobile-game-mode .gesture-help {
+    display: grid;
   }
 
   body.mobile-game-mode .game-overlay {
@@ -2284,19 +2390,24 @@ kbd {
 
   body.mobile-game-mode .mobile-control-dock {
     position: fixed;
-    left: 0;
-    right: 0;
+    left: 50%;
     bottom: 0;
     z-index: 3000;
 
     display: grid;
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
     gap: 7px;
 
+    width: min(100%, 760px);
     min-height:
       calc(
         var(--mobile-dock-height) +
         env(safe-area-inset-bottom)
       );
+
+    margin: 0;
 
     padding:
       8px
@@ -2307,8 +2418,12 @@ kbd {
     border-top:
       1px solid rgba(203, 136, 255, 0.32);
 
-    background:
-      rgba(5, 3, 10, 0.965);
+    border-inline:
+      1px solid rgba(203, 136, 255, 0.1);
+
+    border-radius: 20px 20px 0 0;
+
+    background: rgba(5, 3, 10, 0.965);
 
     box-shadow:
       0 -12px 40px rgba(0, 0, 0, 0.55);
@@ -2316,49 +2431,34 @@ kbd {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 
+    transform: translateX(-50%);
+
     touch-action: none;
-  }
-
-  .mobile-control-dock__utility {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 7px;
-  }
-
-  .mobile-control-dock__movement {
-    display: grid;
-    grid-template-columns:
-      1fr
-      1fr
-      1fr
-      1.35fr;
-
-    gap: 7px;
   }
 
 }
 
 
 /* =========================================================
-   22. NARROW PHONE / FOLD COVER SCREEN
+   21. NARROW PHONES / FOLD COVER
 ========================================================= */
 
 @media (max-width: 430px) {
 
   :root {
     --mobile-hud-height: 64px;
-    --mobile-dock-height: 156px;
+    --mobile-dock-height: 82px;
   }
 
   body.mobile-game-mode .mobile-game-hud {
     grid-template-columns:
-      42px
-      minmax(64px, 1.45fr)
       40px
+      minmax(62px, 1.45fr)
+      38px
+      38px
+      46px
       40px
-      48px
-      42px
-      42px;
+      40px;
 
     gap: 3px;
 
@@ -2370,7 +2470,7 @@ kbd {
   }
 
   .mobile-hud-button {
-    min-height: 42px;
+    min-height: 40px;
 
     border-radius: 9px;
   }
@@ -2393,17 +2493,22 @@ kbd {
   }
 
   #mobile-preview {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
   }
 
-  body.mobile-game-mode .game-page {
-    padding: 3px;
+  body.mobile-game-mode .playfield-centre-wrapper {
+    padding:
+      3px
+      max(3px, env(safe-area-inset-right))
+      3px
+      max(3px, env(safe-area-inset-left));
   }
 
   body.mobile-game-mode .playfield-shell {
     width:
       min(
+        calc(100vw - 8px),
         calc(
           (
             100dvh -
@@ -2411,11 +2516,10 @@ kbd {
             var(--mobile-dock-height) -
             env(safe-area-inset-top) -
             env(safe-area-inset-bottom) -
-            16px
+            10px
           ) *
           0.6
-        ),
-        calc(100vw - 8px)
+        )
       );
 
     padding: 3px;
@@ -2436,7 +2540,7 @@ kbd {
         var(--mobile-dock-height) -
         env(safe-area-inset-top) -
         env(safe-area-inset-bottom) -
-        16px
+        10px
       );
   }
 
@@ -2448,39 +2552,27 @@ kbd {
       max(5px, env(safe-area-inset-right))
       calc(6px + env(safe-area-inset-bottom))
       max(5px, env(safe-area-inset-left));
-  }
 
-  .mobile-control-dock__utility,
-  .mobile-control-dock__movement {
-    gap: 5px;
+    border-radius: 15px 15px 0 0;
   }
 
   .touch-button {
-    min-height: 45px;
-    padding: 5px;
+    min-height: 58px;
+    padding: 5px 3px;
 
     border-radius: 10px;
   }
 
-  .touch-button--direction,
-  .touch-button--hard-drop {
-    min-height: 57px;
-  }
-
-  .touch-button span {
+  .touch-button > span {
     font-size: 1rem;
   }
 
-  .touch-button small {
-    font-size: 0.42rem;
+  .touch-button > strong {
+    font-size: 0.5rem;
   }
 
-  .touch-button--direction {
-    font-size: 1.35rem;
-  }
-
-  .touch-button--hard-drop strong {
-    font-size: 0.56rem;
+  .touch-button > small {
+    display: none;
   }
 
   body.mobile-game-mode .overlay-icon {
@@ -2504,11 +2596,34 @@ kbd {
     font-size: 1.5rem;
   }
 
+  .gesture-help {
+    inset:
+      auto
+      4px
+      4px;
+
+    gap: 2px;
+
+    padding: 4px;
+  }
+
+  .gesture-help span {
+    font-size: 0.82rem;
+  }
+
+  .gesture-help strong {
+    font-size: 0.37rem;
+  }
+
+  .gesture-help small {
+    display: none;
+  }
+
 }
 
 
 /* =========================================================
-   23. VERY SHORT PHONE SCREENS
+   22. VERY SHORT PORTRAIT SCREENS
 ========================================================= */
 
 @media
@@ -2517,8 +2632,8 @@ kbd {
   and (orientation: portrait) {
 
   :root {
-    --mobile-hud-height: 58px;
-    --mobile-dock-height: 138px;
+    --mobile-hud-height: 56px;
+    --mobile-dock-height: 72px;
   }
 
   body.mobile-game-mode .mobile-game-hud {
@@ -2530,7 +2645,7 @@ kbd {
   }
 
   .mobile-hud-button {
-    min-height: 38px;
+    min-height: 36px;
   }
 
   body.mobile-game-mode .mobile-control-dock {
@@ -2542,11 +2657,6 @@ kbd {
   }
 
   .touch-button {
-    min-height: 39px;
-  }
-
-  .touch-button--direction,
-  .touch-button--hard-drop {
     min-height: 49px;
   }
 
@@ -2567,7 +2677,7 @@ kbd {
 
 
 /* =========================================================
-   24. TABLETS IN GAME MODE
+   23. TABLETS PORTRAIT
 ========================================================= */
 
 @media
@@ -2577,10 +2687,13 @@ kbd {
 
   :root {
     --mobile-hud-height: 82px;
-    --mobile-dock-height: 190px;
+    --mobile-dock-height: 112px;
   }
 
   body.mobile-game-mode .mobile-game-hud {
+    left: 50%;
+    right: auto;
+
     grid-template-columns:
       58px
       minmax(110px, 1.5fr)
@@ -2590,18 +2703,12 @@ kbd {
       58px
       58px;
 
-    max-width: 900px;
-    margin: 0 auto;
-
-    left: 50%;
-    right: auto;
-
     width: min(100%, 900px);
-
-    transform: translateX(-50%);
 
     border-inline:
       1px solid rgba(203, 136, 255, 0.16);
+
+    transform: translateX(-50%);
   }
 
   body.mobile-game-mode .playfield-shell {
@@ -2614,7 +2721,7 @@ kbd {
             var(--mobile-dock-height) -
             env(safe-area-inset-top) -
             env(safe-area-inset-bottom) -
-            34px
+            30px
           ) *
           0.6
         ),
@@ -2623,33 +2730,30 @@ kbd {
   }
 
   body.mobile-game-mode .mobile-control-dock {
-    left: 50%;
-    right: auto;
-
     width: min(100%, 760px);
-
-    transform: translateX(-50%);
-
-    border-inline:
-      1px solid rgba(203, 136, 255, 0.16);
-
-    border-radius: 22px 22px 0 0;
   }
 
   .touch-button {
-    min-height: 60px;
+    min-height: 78px;
   }
 
-  .touch-button--direction,
-  .touch-button--hard-drop {
-    min-height: 76px;
+  .touch-button > span {
+    font-size: 1.45rem;
+  }
+
+  .touch-button > strong {
+    font-size: 0.7rem;
+  }
+
+  .touch-button > small {
+    font-size: 0.5rem;
   }
 
 }
 
 
 /* =========================================================
-   25. LANDSCAPE PHONES AND TABLETS
+   24. LANDSCAPE
 ========================================================= */
 
 @media
@@ -2662,6 +2766,10 @@ kbd {
   }
 
   body.mobile-game-mode .mobile-game-hud {
+    right: 170px;
+
+    width: auto;
+
     grid-template-columns:
       42px
       minmax(90px, 1.4fr)
@@ -2670,35 +2778,34 @@ kbd {
       54px
       42px
       42px;
-
-    width: calc(100% - 190px);
-    right: 190px;
   }
 
   body.mobile-game-mode .game-page {
-    inset:
-      calc(
-        var(--mobile-hud-height) +
-        env(safe-area-inset-top)
-      )
-      190px
-      0
-      0;
+    right: 170px;
+    bottom: 0;
+  }
+
+  body.mobile-game-mode .playfield-centre-wrapper {
+    padding:
+      4px
+      max(4px, env(safe-area-inset-right))
+      4px
+      max(4px, env(safe-area-inset-left));
   }
 
   body.mobile-game-mode .playfield-shell {
     width:
       min(
+        calc(100vw - 190px),
         calc(
           (
             100dvh -
             var(--mobile-hud-height) -
             env(safe-area-inset-top) -
-            12px
+            10px
           ) *
           0.6
         ),
-        calc(100vw - 210px),
         480px
       );
   }
@@ -2709,7 +2816,7 @@ kbd {
         100dvh -
         var(--mobile-hud-height) -
         env(safe-area-inset-top) -
-        12px
+        10px
       );
   }
 
@@ -2719,9 +2826,12 @@ kbd {
     bottom: 0;
     left: auto;
 
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+
     width:
       calc(
-        190px +
+        170px +
         env(safe-area-inset-right)
       );
 
@@ -2733,35 +2843,27 @@ kbd {
       calc(8px + env(safe-area-inset-bottom))
       8px;
 
-    align-content: center;
-
     border-top: 0;
     border-left:
       1px solid rgba(203, 136, 255, 0.32);
 
+    border-radius: 18px 0 0 18px;
+
     box-shadow:
       -12px 0 40px rgba(0, 0, 0, 0.55);
+
+    transform: none;
   }
 
-  .mobile-control-dock__utility {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .mobile-control-dock__movement {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .touch-button,
-  .touch-button--direction,
-  .touch-button--hard-drop {
-    min-height: clamp(46px, 16vh, 76px);
+  .touch-button {
+    min-height: clamp(54px, 18vh, 86px);
   }
 
 }
 
 
 /* =========================================================
-   26. EXTREMELY NARROW LANDSCAPE
+   25. VERY SHORT LANDSCAPE
 ========================================================= */
 
 @media
@@ -2770,37 +2872,41 @@ kbd {
   and (max-width: 900px) {
 
   body.mobile-game-mode .mobile-game-hud {
-    width: calc(100% - 160px);
-    right: 160px;
+    right: 148px;
   }
 
   body.mobile-game-mode .game-page {
-    right: 160px;
+    right: 148px;
   }
 
   body.mobile-game-mode .mobile-control-dock {
     width:
       calc(
-        160px +
+        148px +
         env(safe-area-inset-right)
       );
+
+    gap: 5px;
   }
 
-  .touch-button,
-  .touch-button--direction,
-  .touch-button--hard-drop {
+  .touch-button {
     min-height: 44px;
+    padding: 4px;
   }
 
-  .touch-button small {
+  .touch-button > small {
     display: none;
+  }
+
+  .touch-button > strong {
+    font-size: 0.48rem;
   }
 
 }
 
 
 /* =========================================================
-   27. NORMAL MOBILE WEBSITE VIEW
+   26. NORMAL MOBILE WEBSITE VIEW
 ========================================================= */
 
 @media (max-width: 760px) {
@@ -2866,7 +2972,7 @@ kbd {
 
 
 /* =========================================================
-   28. REDUCED MOTION
+   27. REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2886,7 +2992,7 @@ kbd {
 
 
 /* =========================================================
-   29. KEYFRAMES
+   28. KEYFRAMES
 ========================================================= */
 
 @keyframes floatBlock {
@@ -3000,6 +3106,33 @@ kbd {
   100% {
     opacity: 1;
 
+    transform:
+      scale(1)
+      rotate(0);
+  }
+
+}
+
+
+@keyframes rotationSwitch {
+
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform:
+      scale(0.9)
+      rotate(-18deg);
+  }
+
+  70% {
+    transform:
+      scale(1.06)
+      rotate(8deg);
+  }
+
+  100% {
     transform:
       scale(1)
       rotate(0);
