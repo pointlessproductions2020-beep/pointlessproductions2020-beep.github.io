@@ -439,7 +439,7 @@
               ></canvas>
 
 
-              <!-- Gesture capture surface -->
+              <!-- Portrait gesture capture surface -->
 
               <div
                 class="gesture-surface"
@@ -536,18 +536,28 @@
                       <input
                         type="radio"
                         name="control-mode"
-                        value="gesture"
-                        id="control-mode-gesture"
+                        value="portrait-gesture"
+                        id="control-mode-portrait-gesture"
                         checked
                       >
 
-                      <span class="control-choice-card__icon" aria-hidden="true">
+                      <span
+                        class="control-choice-card__icon"
+                        aria-hidden="true"
+                      >
                         👆
                       </span>
 
                       <span class="control-choice-card__text">
-                        <strong>Gesture Mode</strong>
-                        <small>Best in portrait</small>
+
+                        <strong>
+                          Portrait Gesture
+                        </strong>
+
+                        <small>
+                          Swipe directly on the board
+                        </small>
+
                       </span>
 
                     </label>
@@ -558,18 +568,104 @@
                       <input
                         type="radio"
                         name="control-mode"
-                        value="buttons"
-                        id="control-mode-buttons"
+                        value="landscape-touchpad"
+                        id="control-mode-landscape-touchpad"
                       >
 
-                      <span class="control-choice-card__icon" aria-hidden="true">
+                      <span
+                        class="control-choice-card__icon"
+                        aria-hidden="true"
+                      >
+                        🖐️
+                      </span>
+
+                      <span class="control-choice-card__text">
+
+                        <strong>
+                          Landscape Touchpad
+                        </strong>
+
+                        <small>
+                          Swipe in a separate control area
+                        </small>
+
+                      </span>
+
+                    </label>
+
+
+                    <label class="control-choice-card">
+
+                      <input
+                        type="radio"
+                        name="control-mode"
+                        value="landscape-buttons"
+                        id="control-mode-landscape-buttons"
+                      >
+
+                      <span
+                        class="control-choice-card__icon"
+                        aria-hidden="true"
+                      >
                         🎮
                       </span>
 
                       <span class="control-choice-card__text">
-                        <strong>Button Mode</strong>
-                        <small>Best in landscape</small>
+
+                        <strong>
+                          Landscape Buttons
+                        </strong>
+
+                        <small>
+                          DS-style physical controls
+                        </small>
+
                       </span>
+
+                    </label>
+
+                  </fieldset>
+
+
+                  <fieldset
+                    class="control-side-choice"
+                    id="control-side-choice"
+                  >
+
+                    <legend>
+                      Control side
+                    </legend>
+
+
+                    <label>
+
+                      <input
+                        type="radio"
+                        name="control-side"
+                        value="left"
+                        id="control-side-left"
+                      >
+
+                      <span aria-hidden="true">⬅</span>
+
+                      Controls Left
+
+                    </label>
+
+
+                    <label>
+
+                      <input
+                        type="radio"
+                        name="control-side"
+                        value="right"
+                        id="control-side-right"
+                        checked
+                      >
+
+                      <span aria-hidden="true">➡</span>
+
+                      Controls Right
 
                     </label>
 
@@ -638,8 +734,7 @@
                   </h2>
 
                   <p>
-                    Button Mode works best in landscape, with the board on
-                    one side and the controls on the other.
+                    This control mode is designed for landscape play.
                   </p>
 
                   <button
@@ -652,10 +747,10 @@
 
                   <button
                     class="game-button game-button--secondary"
-                    id="switch-to-gesture-button"
+                    id="switch-to-portrait-gesture-button"
                     type="button"
                   >
-                    Use Gesture Mode
+                    Use Portrait Gesture
                   </button>
 
                 </div>
@@ -761,7 +856,7 @@
 
 
               <!-- =========================================
-                   CONTROL MODE PANEL
+                   CONTROL SETTINGS
               ========================================== -->
 
               <div
@@ -770,7 +865,7 @@
                 aria-hidden="true"
               >
 
-                <div class="overlay-content">
+                <div class="overlay-content overlay-content--wide">
 
                   <p class="overlay-kicker">
                     Control settings
@@ -785,15 +880,15 @@
 
                     <button
                       class="control-settings-button"
-                      id="choose-gesture-button"
+                      id="choose-portrait-gesture-button"
                       type="button"
                     >
 
                       <span aria-hidden="true">👆</span>
 
                       <span>
-                        <strong>Gesture Mode</strong>
-                        <small>Portrait, clean screen, no control dock</small>
+                        <strong>Portrait Gesture</strong>
+                        <small>Swipe directly on the board</small>
                       </span>
 
                     </button>
@@ -801,20 +896,78 @@
 
                     <button
                       class="control-settings-button"
-                      id="choose-buttons-button"
+                      id="choose-landscape-touchpad-button"
+                      type="button"
+                    >
+
+                      <span aria-hidden="true">🖐️</span>
+
+                      <span>
+                        <strong>Landscape Touchpad</strong>
+                        <small>Swipe in a separate side panel</small>
+                      </span>
+
+                    </button>
+
+
+                    <button
+                      class="control-settings-button"
+                      id="choose-landscape-buttons-button"
                       type="button"
                     >
 
                       <span aria-hidden="true">🎮</span>
 
                       <span>
-                        <strong>Button Mode</strong>
-                        <small>Landscape, DS-style control layout</small>
+                        <strong>Landscape Buttons</strong>
+                        <small>DS-style physical controls</small>
                       </span>
 
                     </button>
 
                   </div>
+
+
+                  <fieldset class="control-side-choice control-side-choice--settings">
+
+                    <legend>
+                      Landscape control side
+                    </legend>
+
+
+                    <label>
+
+                      <input
+                        type="radio"
+                        name="settings-control-side"
+                        value="left"
+                        id="settings-control-side-left"
+                      >
+
+                      <span aria-hidden="true">⬅</span>
+
+                      Left
+
+                    </label>
+
+
+                    <label>
+
+                      <input
+                        type="radio"
+                        name="settings-control-side"
+                        value="right"
+                        id="settings-control-side-right"
+                        checked
+                      >
+
+                      <span aria-hidden="true">➡</span>
+
+                      Right
+
+                    </label>
+
+                  </fieldset>
 
 
                   <button
@@ -909,10 +1062,6 @@
 
               </div>
 
-
-              <!-- =========================================
-                   LINE CLEAR TEXT
-              ========================================== -->
 
               <div
                 class="line-announcement"
@@ -1152,11 +1301,12 @@
         <div>
 
           <h2>
-            Local High Score
+            Saved Preferences
           </h2>
 
           <p>
-            Your best score and control preference are saved in this browser.
+            High score, controls, control side and rotation direction
+            are remembered in this browser.
           </p>
 
         </div>
@@ -1310,7 +1460,90 @@
 
 
   <!-- =====================================================
-       BUTTON MODE CONTROL DOCK
+       LANDSCAPE TOUCHPAD
+  ====================================================== -->
+
+  <aside
+    class="landscape-touchpad"
+    id="landscape-touchpad"
+    aria-label="Landscape gesture control area"
+  >
+
+    <div class="landscape-touchpad__surface" id="landscape-touchpad-surface">
+
+      <div class="landscape-touchpad__hint" aria-hidden="true">
+
+        <span>↔</span>
+
+        <strong>
+          Swipe Area
+        </strong>
+
+        <small>
+          Tap to rotate · Swipe to move · Swipe down to drop
+        </small>
+
+      </div>
+
+    </div>
+
+
+    <div class="landscape-touchpad__actions">
+
+      <button
+        class="touch-button"
+        data-action="hold"
+        type="button"
+        aria-label="Hold current piece"
+      >
+
+        <span aria-hidden="true">C</span>
+        <strong>Hold</strong>
+
+      </button>
+
+
+      <button
+        class="touch-button touch-button--rotation"
+        id="touchpad-rotation-direction-button"
+        type="button"
+        aria-label="Rotation direction is clockwise. Press to change."
+        aria-pressed="false"
+      >
+
+        <span
+          id="touchpad-rotation-direction-icon"
+          aria-hidden="true"
+        >
+          ↻
+        </span>
+
+        <strong id="touchpad-rotation-direction-label">
+          Clockwise
+        </strong>
+
+      </button>
+
+
+      <button
+        class="touch-button touch-button--pause"
+        data-action="pause"
+        type="button"
+        aria-label="Pause game"
+      >
+
+        <span aria-hidden="true">Ⅱ</span>
+        <strong>Pause</strong>
+
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- =====================================================
+       LANDSCAPE BUTTON CONTROLS
   ====================================================== -->
 
   <nav
