@@ -46,11 +46,6 @@
     <div class="background-glow background-glow--one"></div>
     <div class="background-glow background-glow--two"></div>
 
-    <div class="floating-block floating-block--one"></div>
-    <div class="floating-block floating-block--two"></div>
-    <div class="floating-block floating-block--three"></div>
-    <div class="floating-block floating-block--four"></div>
-
   </div>
 
 
@@ -93,7 +88,7 @@
 
 
   <!-- =====================================================
-       MOBILE / TABLET GAME HUD
+       MOBILE GAME HUD
   ====================================================== -->
 
   <header
@@ -156,7 +151,7 @@
         id="mobile-preview"
         width="72"
         height="72"
-        aria-label="Next block"
+        aria-label="Next piece"
       ></canvas>
 
     </div>
@@ -177,15 +172,15 @@
 
     <button
       class="mobile-hud-button"
-      id="mobile-audio-button"
+      id="mobile-menu-button"
       type="button"
-      aria-label="Open audio settings"
+      aria-label="Open game menu"
       aria-expanded="false"
-      aria-controls="audio-settings-panel"
+      aria-controls="mobile-quick-menu"
     >
 
-      <span aria-hidden="true">🎚️</span>
-      <small>Audio</small>
+      <span aria-hidden="true">•••</span>
+      <small>Menu</small>
 
     </button>
 
@@ -251,8 +246,6 @@
       <aside class="dashboard dashboard--left">
 
 
-        <!-- Hold -->
-
         <section class="dashboard-panel hold-panel">
 
           <div class="panel-heading">
@@ -282,8 +275,6 @@
 
         </section>
 
-
-        <!-- Statistics -->
 
         <section class="dashboard-panel stats-panel">
 
@@ -357,12 +348,10 @@
         </section>
 
 
-        <!-- Keyboard controls -->
-
         <section class="dashboard-panel controls-panel">
 
           <div class="panel-heading">
-            <span>Controls</span>
+            <span>Keyboard</span>
           </div>
 
           <dl class="keyboard-controls">
@@ -445,12 +434,12 @@
                 id="tetris"
                 width="360"
                 height="600"
-                aria-label="Block Drop game board. Tap to rotate, swipe horizontally to move and swipe down to hard drop."
+                aria-label="Block Drop game board"
                 tabindex="0"
               ></canvas>
 
 
-              <!-- Gesture capture layer -->
+              <!-- Gesture capture surface -->
 
               <div
                 class="gesture-surface"
@@ -459,43 +448,55 @@
               ></div>
 
 
-              <!-- Gesture help -->
+              <!-- First-time gesture tutorial -->
 
               <div
-                class="gesture-help"
-                id="gesture-help"
+                class="gesture-tutorial"
+                id="gesture-tutorial"
                 aria-hidden="true"
               >
 
-                <div>
-                  <span>👆</span>
-                  <strong>Tap</strong>
-                  <small>Rotate</small>
-                </div>
+                <div class="gesture-tutorial__card">
 
-                <div>
-                  <span>↔</span>
-                  <strong>Swipe</strong>
-                  <small>Move</small>
-                </div>
+                  <p class="overlay-kicker">
+                    Gesture controls
+                  </p>
 
-                <div>
-                  <span>↓</span>
-                  <strong>Swipe Down</strong>
-                  <small>Hard Drop</small>
-                </div>
+                  <div class="gesture-tutorial__grid">
 
-                <div>
-                  <span>✋</span>
-                  <strong>Hold</strong>
-                  <small>Soft Drop</small>
+                    <div>
+                      <span aria-hidden="true">👆</span>
+                      <strong>Tap</strong>
+                      <small>Rotate</small>
+                    </div>
+
+                    <div>
+                      <span aria-hidden="true">↔</span>
+                      <strong>Swipe</strong>
+                      <small>Move</small>
+                    </div>
+
+                    <div>
+                      <span aria-hidden="true">↓</span>
+                      <strong>Swipe down</strong>
+                      <small>Hard drop</small>
+                    </div>
+
+                    <div>
+                      <span aria-hidden="true">✋</span>
+                      <strong>Hold</strong>
+                      <small>Soft drop</small>
+                    </div>
+
+                  </div>
+
                 </div>
 
               </div>
 
 
               <!-- =========================================
-                   START / AUDIO CHOICE
+                   START / SETUP
               ========================================== -->
 
               <div
@@ -504,7 +505,7 @@
                 aria-hidden="false"
               >
 
-                <div class="overlay-content">
+                <div class="overlay-content overlay-content--wide">
 
                   <span
                     class="overlay-icon"
@@ -518,9 +519,62 @@
                   </h2>
 
                   <p>
-                    Choose your audio, then prepare for a completely
-                    unnecessary dramatic countdown.
+                    Choose your controls and audio, then prepare for a
+                    completely unnecessary dramatic countdown.
                   </p>
+
+
+                  <fieldset class="control-choice">
+
+                    <legend>
+                      Choose controls
+                    </legend>
+
+
+                    <label class="control-choice-card">
+
+                      <input
+                        type="radio"
+                        name="control-mode"
+                        value="gesture"
+                        id="control-mode-gesture"
+                        checked
+                      >
+
+                      <span class="control-choice-card__icon" aria-hidden="true">
+                        👆
+                      </span>
+
+                      <span class="control-choice-card__text">
+                        <strong>Gesture Mode</strong>
+                        <small>Best in portrait</small>
+                      </span>
+
+                    </label>
+
+
+                    <label class="control-choice-card">
+
+                      <input
+                        type="radio"
+                        name="control-mode"
+                        value="buttons"
+                        id="control-mode-buttons"
+                      >
+
+                      <span class="control-choice-card__icon" aria-hidden="true">
+                        🎮
+                      </span>
+
+                      <span class="control-choice-card__text">
+                        <strong>Button Mode</strong>
+                        <small>Best in landscape</small>
+                      </span>
+
+                    </label>
+
+                  </fieldset>
+
 
                   <div
                     class="audio-choice"
@@ -554,6 +608,55 @@
                     </button>
 
                   </div>
+
+                </div>
+
+              </div>
+
+
+              <!-- =========================================
+                   ROTATE DEVICE PROMPT
+              ========================================== -->
+
+              <div
+                class="game-overlay rotate-device-overlay"
+                id="rotate-device-overlay"
+                aria-hidden="true"
+              >
+
+                <div class="overlay-content">
+
+                  <span
+                    class="overlay-icon"
+                    aria-hidden="true"
+                  >
+                    📱
+                  </span>
+
+                  <h2>
+                    Rotate Your Device
+                  </h2>
+
+                  <p>
+                    Button Mode works best in landscape, with the board on
+                    one side and the controls on the other.
+                  </p>
+
+                  <button
+                    class="game-button game-button--primary"
+                    id="continue-portrait-button"
+                    type="button"
+                  >
+                    Continue Anyway
+                  </button>
+
+                  <button
+                    class="game-button game-button--secondary"
+                    id="switch-to-gesture-button"
+                    type="button"
+                  >
+                    Use Gesture Mode
+                  </button>
 
                 </div>
 
@@ -598,7 +701,7 @@
                 aria-hidden="true"
               >
 
-                <div class="overlay-content">
+                <div class="overlay-content overlay-content--pause">
 
                   <span
                     class="overlay-icon"
@@ -615,20 +718,111 @@
                     The blocks will wait. They have nowhere else to be.
                   </p>
 
-                  <button
-                    class="game-button game-button--primary"
-                    id="resume-button"
-                    type="button"
-                  >
-                    Resume
-                  </button>
+
+                  <div class="pause-actions">
+
+                    <button
+                      class="game-button game-button--primary"
+                      id="resume-button"
+                      type="button"
+                    >
+                      Resume
+                    </button>
+
+                    <button
+                      class="game-button game-button--secondary"
+                      id="pause-controls-button"
+                      type="button"
+                    >
+                      Change Controls
+                    </button>
+
+                    <button
+                      class="game-button game-button--secondary"
+                      id="pause-audio-button"
+                      type="button"
+                    >
+                      Audio Settings
+                    </button>
+
+                    <button
+                      class="game-button game-button--secondary"
+                      id="pause-exit-button"
+                      type="button"
+                    >
+                      Exit Game Mode
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <!-- =========================================
+                   CONTROL MODE PANEL
+              ========================================== -->
+
+              <div
+                class="game-overlay"
+                id="controls-overlay"
+                aria-hidden="true"
+              >
+
+                <div class="overlay-content">
+
+                  <p class="overlay-kicker">
+                    Control settings
+                  </p>
+
+                  <h2>
+                    Choose Controls
+                  </h2>
+
+
+                  <div class="control-settings-list">
+
+                    <button
+                      class="control-settings-button"
+                      id="choose-gesture-button"
+                      type="button"
+                    >
+
+                      <span aria-hidden="true">👆</span>
+
+                      <span>
+                        <strong>Gesture Mode</strong>
+                        <small>Portrait, clean screen, no control dock</small>
+                      </span>
+
+                    </button>
+
+
+                    <button
+                      class="control-settings-button"
+                      id="choose-buttons-button"
+                      type="button"
+                    >
+
+                      <span aria-hidden="true">🎮</span>
+
+                      <span>
+                        <strong>Button Mode</strong>
+                        <small>Landscape, DS-style control layout</small>
+                      </span>
+
+                    </button>
+
+                  </div>
+
 
                   <button
-                    class="game-button game-button--secondary overlay-exit-button"
-                    id="pause-exit-button"
+                    class="game-button game-button--secondary"
+                    id="close-controls-overlay-button"
                     type="button"
                   >
-                    Exit Game Mode
+                    Back
                   </button>
 
                 </div>
@@ -695,6 +889,14 @@
 
                     <button
                       class="game-button game-button--secondary"
+                      id="game-over-controls-button"
+                      type="button"
+                    >
+                      Change Controls
+                    </button>
+
+                    <button
+                      class="game-button game-button--secondary"
                       id="game-over-exit-button"
                       type="button"
                     >
@@ -730,7 +932,9 @@
         </div>
 
 
-        <!-- Desktop action buttons -->
+        <!-- =================================================
+             DESKTOP TOOLBAR
+        ================================================== -->
 
         <div class="game-actions">
 
@@ -756,6 +960,28 @@
             <span aria-hidden="true">↻</span>
 
             Restart
+
+          </button>
+
+
+          <button
+            class="game-button game-button--secondary rotation-toggle"
+            id="desktop-rotation-button"
+            type="button"
+            aria-pressed="false"
+            aria-label="Rotation direction is clockwise. Press to change."
+          >
+
+            <span
+              id="desktop-rotation-icon"
+              aria-hidden="true"
+            >
+              ↻
+            </span>
+
+            <span id="desktop-rotation-label">
+              Clockwise
+            </span>
 
           </button>
 
@@ -811,8 +1037,6 @@
       <aside class="dashboard dashboard--right">
 
 
-        <!-- Next piece -->
-
         <section class="dashboard-panel next-panel">
 
           <div class="panel-heading">
@@ -832,8 +1056,6 @@
 
         </section>
 
-
-        <!-- Status -->
 
         <section class="dashboard-panel status-panel">
 
@@ -857,8 +1079,6 @@
         </section>
 
 
-        <!-- Combo -->
-
         <section class="dashboard-panel achievement-panel">
 
           <div class="panel-heading">
@@ -877,8 +1097,6 @@
 
         </section>
 
-
-        <!-- Tip -->
 
         <section class="dashboard-panel tip-panel">
 
@@ -918,8 +1136,8 @@
           </h2>
 
           <p>
-            See exactly where your current block will land before
-            committing to your questionable decision.
+            See where your current block will land before committing
+            to your questionable decision.
           </p>
 
         </div>
@@ -938,7 +1156,7 @@
           </h2>
 
           <p>
-            Your best score is saved automatically in this browser.
+            Your best score and control preference are saved in this browser.
           </p>
 
         </div>
@@ -957,8 +1175,7 @@
           </h2>
 
           <p>
-            Clear lines to level up. Every level makes the blocks
-            fall faster.
+            Clear lines to level up. Every level makes the blocks fall faster.
           </p>
 
         </div>
@@ -971,13 +1188,135 @@
 
 
   <!-- =====================================================
-       FIXED MOBILE / TABLET CONTROL DOCK
+       GESTURE MODE FLOATING BUTTON
+  ====================================================== -->
+
+  <button
+    class="gesture-menu-button"
+    id="gesture-menu-button"
+    type="button"
+    aria-label="Open gesture mode menu"
+    aria-expanded="false"
+    aria-controls="mobile-quick-menu"
+  >
+    •••
+  </button>
+
+
+  <!-- =====================================================
+       MOBILE QUICK MENU
+  ====================================================== -->
+
+  <aside
+    class="mobile-quick-menu"
+    id="mobile-quick-menu"
+    aria-hidden="true"
+  >
+
+    <div class="mobile-quick-menu__header">
+
+      <div>
+        <p>Block Drop</p>
+        <strong>Quick Menu</strong>
+      </div>
+
+      <button
+        id="close-mobile-menu-button"
+        type="button"
+        aria-label="Close quick menu"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <button
+      class="quick-menu-action"
+      id="quick-menu-pause-button"
+      type="button"
+    >
+
+      <span aria-hidden="true">⏸</span>
+      <strong>Pause</strong>
+
+    </button>
+
+
+    <button
+      class="quick-menu-action"
+      id="quick-menu-audio-button"
+      type="button"
+    >
+
+      <span aria-hidden="true">🎚️</span>
+      <strong>Audio</strong>
+
+    </button>
+
+
+    <button
+      class="quick-menu-action"
+      id="quick-menu-rotation-button"
+      type="button"
+      aria-pressed="false"
+    >
+
+      <span
+        id="quick-menu-rotation-icon"
+        aria-hidden="true"
+      >
+        ↻
+      </span>
+
+      <strong id="quick-menu-rotation-label">
+        Clockwise
+      </strong>
+
+    </button>
+
+
+    <button
+      class="quick-menu-action"
+      id="quick-menu-controls-button"
+      type="button"
+    >
+
+      <span aria-hidden="true">🎮</span>
+      <strong>Switch Controls</strong>
+
+    </button>
+
+
+    <button
+      class="quick-menu-action quick-menu-action--danger"
+      id="quick-menu-exit-button"
+      type="button"
+    >
+
+      <span aria-hidden="true">←</span>
+      <strong>Exit Game Mode</strong>
+
+    </button>
+
+  </aside>
+
+
+  <div
+    class="mobile-quick-menu-backdrop"
+    id="mobile-quick-menu-backdrop"
+    aria-hidden="true"
+  ></div>
+
+
+  <!-- =====================================================
+       BUTTON MODE CONTROL DOCK
   ====================================================== -->
 
   <nav
     class="mobile-control-dock"
     id="mobile-control-dock"
-    aria-label="Block Drop mobile controls"
+    aria-label="Block Drop button controls"
   >
 
     <button
@@ -988,10 +1327,46 @@
     >
 
       <span aria-hidden="true">C</span>
+      <strong>Hold</strong>
 
-      <strong>
-        Hold
-      </strong>
+    </button>
+
+
+    <button
+      class="touch-button"
+      data-action="left"
+      type="button"
+      aria-label="Move left"
+    >
+
+      <span aria-hidden="true">←</span>
+      <strong>Left</strong>
+
+    </button>
+
+
+    <button
+      class="touch-button"
+      data-action="soft-drop"
+      type="button"
+      aria-label="Soft drop"
+    >
+
+      <span aria-hidden="true">↓</span>
+      <strong>Down</strong>
+
+    </button>
+
+
+    <button
+      class="touch-button"
+      data-action="right"
+      type="button"
+      aria-label="Move right"
+    >
+
+      <span aria-hidden="true">→</span>
+      <strong>Right</strong>
 
     </button>
 
@@ -1000,7 +1375,7 @@
       class="touch-button touch-button--rotation"
       id="rotation-direction-button"
       type="button"
-      aria-label="Tap rotation is clockwise. Press to change direction."
+      aria-label="Rotation direction is clockwise. Press to change."
       aria-pressed="false"
     >
 
@@ -1016,27 +1391,31 @@
         Clockwise
       </strong>
 
-      <small>
-        Tap direction
-      </small>
+    </button>
+
+
+    <button
+      class="touch-button"
+      data-action="rotate"
+      type="button"
+      aria-label="Rotate piece"
+    >
+
+      <span aria-hidden="true">⟳</span>
+      <strong>Rotate</strong>
 
     </button>
 
 
     <button
-      class="touch-button touch-button--audio"
-      id="dock-audio-button"
+      class="touch-button touch-button--drop"
+      data-action="hard-drop"
       type="button"
-      aria-label="Open audio settings"
-      aria-expanded="false"
-      aria-controls="audio-settings-panel"
+      aria-label="Hard drop"
     >
 
-      <span aria-hidden="true">🎚️</span>
-
-      <strong>
-        Audio
-      </strong>
+      <span aria-hidden="true">⇩</span>
+      <strong>Drop</strong>
 
     </button>
 
@@ -1049,10 +1428,7 @@
     >
 
       <span aria-hidden="true">Ⅱ</span>
-
-      <strong>
-        Pause
-      </strong>
+      <strong>Pause</strong>
 
     </button>
 
@@ -1125,7 +1501,7 @@
       >
 
       <p>
-        Background menu, gameplay and danger tracks.
+        Menu, gameplay and danger music.
       </p>
 
     </div>
@@ -1159,7 +1535,7 @@
       >
 
       <p>
-        Drops, movement, rotations and line-clear sounds.
+        Drops, movement, rotations and line clears.
       </p>
 
     </div>
@@ -1193,8 +1569,7 @@
       >
 
       <p>
-        The highly professional voice saying things such as
-        “Nice”, “Beautiful” and “Clockwise”.
+        Voice reactions, including clockwise and anticlockwise.
       </p>
 
     </div>
