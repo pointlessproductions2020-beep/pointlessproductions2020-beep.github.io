@@ -1,14 +1,15 @@
 "use strict";
 
+
 /* =========================================================
-   BLOCK DROP REMASTERED
-   GESTURE + CENTRED MOBILE EDITION
+   BLOCK DROP V2
+   DESKTOP + PORTRAIT GESTURES + LANDSCAPE CONTROLS
    Pointless Productions
 ========================================================= */
 
 
 /* =========================================================
-   1. CANVAS AND DOM REFERENCES
+   1. DOM REFERENCES
 ========================================================= */
 
 const canvas = document.querySelector("#tetris");
@@ -17,179 +18,348 @@ const context = canvas?.getContext("2d");
 const previewCanvas = document.querySelector("#preview");
 const previewContext = previewCanvas?.getContext("2d");
 
-const mobilePreviewCanvas = document.querySelector(
-  "#mobile-preview"
-);
+const mobilePreviewCanvas =
+  document.querySelector("#mobile-preview");
 
 const mobilePreviewContext =
   mobilePreviewCanvas?.getContext("2d");
 
-const holdCanvas = document.querySelector("#hold-canvas");
-const holdContext = holdCanvas?.getContext("2d");
+const holdCanvas =
+  document.querySelector("#hold-canvas");
 
-const gestureSurface = document.querySelector(
-  "#gesture-surface"
-);
+const holdContext =
+  holdCanvas?.getContext("2d");
 
-const gestureHelp = document.querySelector("#gesture-help");
 
-const scoreElement = document.querySelector("#score");
-const highScoreElement = document.querySelector("#high-score");
-const levelElement = document.querySelector("#level");
-const linesElement = document.querySelector("#lines");
-const comboElement = document.querySelector("#combo");
+const gestureSurface =
+  document.querySelector("#gesture-surface");
 
-const mobileScoreElement = document.querySelector(
-  "#mobile-score"
-);
+const landscapeTouchpadSurface =
+  document.querySelector("#landscape-touchpad-surface");
 
-const mobileLevelElement = document.querySelector(
-  "#mobile-level"
-);
+const gestureTutorial =
+  document.querySelector("#gesture-tutorial");
 
-const mobileLinesElement = document.querySelector(
-  "#mobile-lines"
-);
 
-const finalScoreElement = document.querySelector(
-  "#final-score"
-);
+const scoreElement =
+  document.querySelector("#score");
 
-const highScoreMessage = document.querySelector(
-  "#new-high-score-message"
-);
+const highScoreElement =
+  document.querySelector("#high-score");
 
-const statusElement = document.querySelector("#game-status");
-const statusLight = document.querySelector("#status-light");
+const levelElement =
+  document.querySelector("#level");
 
-const startOverlay = document.querySelector("#start-overlay");
+const linesElement =
+  document.querySelector("#lines");
 
-const countdownOverlay = document.querySelector(
-  "#countdown-overlay"
-);
+const comboElement =
+  document.querySelector("#combo");
 
-const countdownNumber = document.querySelector(
-  "#countdown-number"
-);
 
-const pauseOverlay = document.querySelector("#pause-overlay");
+const mobileScoreElement =
+  document.querySelector("#mobile-score");
 
-const gameOverOverlay = document.querySelector(
-  "#game-over-overlay"
-);
+const mobileLevelElement =
+  document.querySelector("#mobile-level");
 
-const audioOnButton = document.querySelector(
-  "#audio-on-button"
-);
+const mobileLinesElement =
+  document.querySelector("#mobile-lines");
 
-const audioOffButton = document.querySelector(
-  "#audio-off-button"
-);
 
-const resumeButton = document.querySelector("#resume-button");
+const finalScoreElement =
+  document.querySelector("#final-score");
 
-const playAgainButton = document.querySelector(
-  "#play-again-button"
-);
+const highScoreMessage =
+  document.querySelector("#new-high-score-message");
 
-const pauseButton = document.querySelector("#pause-button");
-const restartButton = document.querySelector("#restart-button");
-const soundButton = document.querySelector("#sound-button");
+const holdEmptyMessage =
+  document.querySelector("#hold-empty-message");
 
-const audioSettingsButton = document.querySelector(
-  "#audio-settings-button"
-);
+const gameTipElement =
+  document.querySelector("#game-tip");
 
-const mobilePauseButton = document.querySelector(
-  "#mobile-pause-button"
-);
 
-const mobileAudioButton = document.querySelector(
-  "#mobile-audio-button"
-);
+const statusElement =
+  document.querySelector("#game-status");
 
-const dockAudioButton = document.querySelector(
-  "#dock-audio-button"
-);
+const statusLight =
+  document.querySelector("#status-light");
 
-const mobileExitButton = document.querySelector(
-  "#mobile-exit-button"
-);
 
-const pauseExitButton = document.querySelector(
-  "#pause-exit-button"
-);
+const startOverlay =
+  document.querySelector("#start-overlay");
 
-const gameOverExitButton = document.querySelector(
-  "#game-over-exit-button"
-);
+const rotateDeviceOverlay =
+  document.querySelector("#rotate-device-overlay");
 
-const rotationDirectionButton = document.querySelector(
-  "#rotation-direction-button"
-);
+const countdownOverlay =
+  document.querySelector("#countdown-overlay");
 
-const rotationDirectionIcon = document.querySelector(
-  "#rotation-direction-icon"
-);
+const countdownNumber =
+  document.querySelector("#countdown-number");
 
-const rotationDirectionLabel = document.querySelector(
-  "#rotation-direction-label"
-);
+const pauseOverlay =
+  document.querySelector("#pause-overlay");
 
-const holdEmptyMessage = document.querySelector(
-  "#hold-empty-message"
-);
+const controlsOverlay =
+  document.querySelector("#controls-overlay");
 
-const lineAnnouncement = document.querySelector(
-  "#line-announcement"
-);
+const gameOverOverlay =
+  document.querySelector("#game-over-overlay");
 
-const screenFlash = document.querySelector("#screen-flash");
-const gameTipElement = document.querySelector("#game-tip");
 
-const audioSettingsPanel = document.querySelector(
-  "#audio-settings-panel"
-);
+const audioOnButton =
+  document.querySelector("#audio-on-button");
 
-const audioSettingsBackdrop = document.querySelector(
-  "#audio-settings-backdrop"
-);
+const audioOffButton =
+  document.querySelector("#audio-off-button");
 
-const audioSettingsClose = document.querySelector(
-  "#audio-settings-close"
-);
+const continuePortraitButton =
+  document.querySelector("#continue-portrait-button");
 
-const musicVolumeSlider = document.querySelector(
-  "#music-volume"
-);
+const switchToPortraitGestureButton =
+  document.querySelector(
+    "#switch-to-portrait-gesture-button"
+  );
 
-const effectsVolumeSlider = document.querySelector(
-  "#effects-volume"
-);
 
-const voiceVolumeSlider = document.querySelector(
-  "#voice-volume"
-);
+const resumeButton =
+  document.querySelector("#resume-button");
 
-const musicVolumeOutput = document.querySelector(
-  "#music-volume-output"
-);
+const playAgainButton =
+  document.querySelector("#play-again-button");
 
-const effectsVolumeOutput = document.querySelector(
-  "#effects-volume-output"
-);
+const pauseButton =
+  document.querySelector("#pause-button");
 
-const voiceVolumeOutput = document.querySelector(
-  "#voice-volume-output"
-);
+const restartButton =
+  document.querySelector("#restart-button");
 
-const muteAllButton = document.querySelector(
-  "#mute-all-button"
-);
+const soundButton =
+  document.querySelector("#sound-button");
 
-const resetAudioButton = document.querySelector(
-  "#reset-audio-button"
-);
+
+const pauseControlsButton =
+  document.querySelector("#pause-controls-button");
+
+const pauseAudioButton =
+  document.querySelector("#pause-audio-button");
+
+const pauseExitButton =
+  document.querySelector("#pause-exit-button");
+
+const gameOverControlsButton =
+  document.querySelector("#game-over-controls-button");
+
+const gameOverExitButton =
+  document.querySelector("#game-over-exit-button");
+
+
+const choosePortraitGestureButton =
+  document.querySelector(
+    "#choose-portrait-gesture-button"
+  );
+
+const chooseLandscapeTouchpadButton =
+  document.querySelector(
+    "#choose-landscape-touchpad-button"
+  );
+
+const chooseLandscapeButtonsButton =
+  document.querySelector(
+    "#choose-landscape-buttons-button"
+  );
+
+const closeControlsOverlayButton =
+  document.querySelector(
+    "#close-controls-overlay-button"
+  );
+
+
+const mobilePauseButton =
+  document.querySelector("#mobile-pause-button");
+
+const mobileMenuButton =
+  document.querySelector("#mobile-menu-button");
+
+const mobileExitButton =
+  document.querySelector("#mobile-exit-button");
+
+
+const gestureMenuButton =
+  document.querySelector("#gesture-menu-button");
+
+const mobileQuickMenu =
+  document.querySelector("#mobile-quick-menu");
+
+const mobileQuickMenuBackdrop =
+  document.querySelector(
+    "#mobile-quick-menu-backdrop"
+  );
+
+const closeMobileMenuButton =
+  document.querySelector(
+    "#close-mobile-menu-button"
+  );
+
+const quickMenuPauseButton =
+  document.querySelector(
+    "#quick-menu-pause-button"
+  );
+
+const quickMenuAudioButton =
+  document.querySelector(
+    "#quick-menu-audio-button"
+  );
+
+const quickMenuRotationButton =
+  document.querySelector(
+    "#quick-menu-rotation-button"
+  );
+
+const quickMenuRotationIcon =
+  document.querySelector(
+    "#quick-menu-rotation-icon"
+  );
+
+const quickMenuRotationLabel =
+  document.querySelector(
+    "#quick-menu-rotation-label"
+  );
+
+const quickMenuControlsButton =
+  document.querySelector(
+    "#quick-menu-controls-button"
+  );
+
+const quickMenuExitButton =
+  document.querySelector(
+    "#quick-menu-exit-button"
+  );
+
+
+const desktopRotationButton =
+  document.querySelector(
+    "#desktop-rotation-button"
+  );
+
+const desktopRotationIcon =
+  document.querySelector(
+    "#desktop-rotation-icon"
+  );
+
+const desktopRotationLabel =
+  document.querySelector(
+    "#desktop-rotation-label"
+  );
+
+
+const rotationDirectionButton =
+  document.querySelector(
+    "#rotation-direction-button"
+  );
+
+const rotationDirectionIcon =
+  document.querySelector(
+    "#rotation-direction-icon"
+  );
+
+const rotationDirectionLabel =
+  document.querySelector(
+    "#rotation-direction-label"
+  );
+
+
+const touchpadRotationButton =
+  document.querySelector(
+    "#touchpad-rotation-direction-button"
+  );
+
+const touchpadRotationIcon =
+  document.querySelector(
+    "#touchpad-rotation-direction-icon"
+  );
+
+const touchpadRotationLabel =
+  document.querySelector(
+    "#touchpad-rotation-direction-label"
+  );
+
+
+const controlModeInputs =
+  document.querySelectorAll(
+    'input[name="control-mode"]'
+  );
+
+const controlSideInputs =
+  document.querySelectorAll(
+    'input[name="control-side"]'
+  );
+
+const settingsControlSideInputs =
+  document.querySelectorAll(
+    'input[name="settings-control-side"]'
+  );
+
+
+const lineAnnouncement =
+  document.querySelector("#line-announcement");
+
+const screenFlash =
+  document.querySelector("#screen-flash");
+
+
+const audioSettingsButton =
+  document.querySelector(
+    "#audio-settings-button"
+  );
+
+const audioSettingsPanel =
+  document.querySelector(
+    "#audio-settings-panel"
+  );
+
+const audioSettingsBackdrop =
+  document.querySelector(
+    "#audio-settings-backdrop"
+  );
+
+const audioSettingsClose =
+  document.querySelector(
+    "#audio-settings-close"
+  );
+
+const musicVolumeSlider =
+  document.querySelector("#music-volume");
+
+const effectsVolumeSlider =
+  document.querySelector("#effects-volume");
+
+const voiceVolumeSlider =
+  document.querySelector("#voice-volume");
+
+const musicVolumeOutput =
+  document.querySelector(
+    "#music-volume-output"
+  );
+
+const effectsVolumeOutput =
+  document.querySelector(
+    "#effects-volume-output"
+  );
+
+const voiceVolumeOutput =
+  document.querySelector(
+    "#voice-volume-output"
+  );
+
+const muteAllButton =
+  document.querySelector("#mute-all-button");
+
+const resetAudioButton =
+  document.querySelector("#reset-audio-button");
+
 
 if (
   !canvas ||
@@ -215,12 +385,6 @@ const BOARD_ROWS = 20;
 const BOARD_BLOCK_SIZE =
   canvas.width / BOARD_COLUMNS;
 
-const PREVIEW_BLOCK_SIZE = 28;
-const HOLD_BLOCK_SIZE = 24;
-const MOBILE_PREVIEW_BLOCK_SIZE = 15;
-
-const MOBILE_GAME_BREAKPOINT = 1024;
-
 const PIECE_TYPES = [
   "T",
   "J",
@@ -231,7 +395,48 @@ const PIECE_TYPES = [
   "I"
 ];
 
+
+const PIECE_SHAPES = {
+
+  T: [
+    [0, 1, 0],
+    [1, 1, 1]
+  ],
+
+  J: [
+    [1, 0, 0],
+    [1, 1, 1]
+  ],
+
+  L: [
+    [0, 0, 1],
+    [1, 1, 1]
+  ],
+
+  O: [
+    [1, 1],
+    [1, 1]
+  ],
+
+  S: [
+    [0, 1, 1],
+    [1, 1, 0]
+  ],
+
+  Z: [
+    [1, 1, 0],
+    [0, 1, 1]
+  ],
+
+  I: [
+    [1, 1, 1, 1]
+  ]
+
+};
+
+
 const PIECE_COLOURS = {
+
   T: {
     main: "#c64fff",
     light: "#e9a8ff",
@@ -273,7 +478,9 @@ const PIECE_COLOURS = {
     light: "#a0f6ff",
     dark: "#147b8a"
   }
+
 };
+
 
 const LINE_SCORE_VALUES = {
   1: 100,
@@ -282,35 +489,77 @@ const LINE_SCORE_VALUES = {
   4: 800
 };
 
-const ANNOUNCEMENT_TEXT = {
+
+const LINE_ANNOUNCEMENTS = {
   1: "Single!",
   2: "Double!",
   3: "Triple!",
   4: "Block Drop!"
 };
 
+
 const GAME_TIPS = [
+
   "Leave a gap for the long piece. It will arrive immediately after you stop waiting for it.",
 
   "The ghost piece shows where a block will land. It cannot show whether the decision is wise.",
 
   "Holding a piece is strategic. Holding every piece because you panicked is less strategic.",
 
-  "Clearing four lines at once earns the biggest standard line bonus.",
+  "Clear four lines together for the largest standard line bonus.",
 
   "The blocks speed up every ten cleared lines. This is apparently considered encouragement.",
 
-  "Soft drops score a little. Hard drops score more and look considerably more dramatic.",
+  "Soft drops earn a little score. Hard drops earn more and look considerably more dramatic.",
 
   "Do not build a beautiful tower. The game is specifically asking you to destroy it.",
 
-  "A flat board is usually safer than a skyline inspired by central London."
+  "A flat board is normally safer than a skyline inspired by central London."
+
 ];
 
 
 /* =========================================================
-   3. GESTURE CONSTANTS
+   3. CONTROL CONSTANTS
 ========================================================= */
+
+const MOBILE_GAME_BREAKPOINT = 1024;
+
+const CONTROL_MODE_STORAGE_KEY =
+  "blockDropControlMode";
+
+const CONTROL_SIDE_STORAGE_KEY =
+  "blockDropControlSide";
+
+const ROTATION_STORAGE_KEY =
+  "blockDropRotationDirection";
+
+const GESTURE_TUTORIAL_STORAGE_KEY =
+  "blockDropGestureTutorialSeen";
+
+
+const CONTROL_MODE_PORTRAIT_GESTURE =
+  "portrait-gesture";
+
+const CONTROL_MODE_LANDSCAPE_TOUCHPAD =
+  "landscape-touchpad";
+
+const CONTROL_MODE_LANDSCAPE_BUTTONS =
+  "landscape-buttons";
+
+
+const VALID_CONTROL_MODES = [
+  CONTROL_MODE_PORTRAIT_GESTURE,
+  CONTROL_MODE_LANDSCAPE_TOUCHPAD,
+  CONTROL_MODE_LANDSCAPE_BUTTONS
+];
+
+
+const VALID_CONTROL_SIDES = [
+  "left",
+  "right"
+];
+
 
 const TAP_MOVEMENT_LIMIT = 14;
 const TAP_DURATION_LIMIT = 360;
@@ -322,19 +571,14 @@ const MAX_SWIPE_STEPS = 5;
 const HOLD_DELAY = 300;
 const HOLD_DROP_INTERVAL = 85;
 
-const ROTATION_STORAGE_KEY =
-  "blockDropRotationDirection";
-
-const GESTURE_HELP_STORAGE_KEY =
-  "blockDropGestureHelpSeen";
-
 
 /* =========================================================
-   4. AUDIO DEFAULTS AND STORAGE
+   4. AUDIO CONSTANTS
 ========================================================= */
 
 const AUDIO_STORAGE_KEY =
   "blockDropAudioSettings";
+
 
 const DEFAULT_AUDIO_SETTINGS = {
   music: 0.3,
@@ -343,16 +587,9 @@ const DEFAULT_AUDIO_SETTINGS = {
   muted: false
 };
 
-const MUSIC_FADE_DURATION = 850;
-
-let audioSettings = loadAudioSettings();
-
-
-/* =========================================================
-   5. AUDIO FILES
-========================================================= */
 
 const musicTracks = {
+
   menu: createAudio(
     "assets/sounds/music/block-drop-menu.mp3",
     true
@@ -367,9 +604,12 @@ const musicTracks = {
     "assets/sounds/music/block-drop-danger.mp3",
     true
   )
+
 };
 
+
 const effectPaths = {
+
   titleOne:
     "assets/sounds/effects/blockdrop.mp3",
 
@@ -390,9 +630,12 @@ const effectPaths = {
 
   gameOverWhispered:
     "assets/sounds/effects/game-over-whispered.mp3"
+
 };
 
+
 const voicePaths = {
+
   beautiful:
     "assets/sounds/voices/beautiful.mp3",
 
@@ -413,74 +656,41 @@ const voicePaths = {
 
   anticlockwise:
     "assets/sounds/voices/anticlockwise.mp3"
+
 };
 
 
 /* =========================================================
-   6. PIECE SHAPES
+   5. GAME STATE
 ========================================================= */
 
-const PIECE_SHAPES = {
-  T: [
-    [0, 1, 0],
-    [1, 1, 1]
-  ],
+const arena =
+  createMatrix(
+    BOARD_COLUMNS,
+    BOARD_ROWS
+  );
 
-  J: [
-    [1, 0, 0],
-    [1, 1, 1]
-  ],
-
-  L: [
-    [0, 0, 1],
-    [1, 1, 1]
-  ],
-
-  O: [
-    [1, 1],
-    [1, 1]
-  ],
-
-  S: [
-    [0, 1, 1],
-    [1, 1, 0]
-  ],
-
-  Z: [
-    [1, 1, 0],
-    [0, 1, 1]
-  ],
-
-  I: [
-    [1, 1, 1, 1]
-  ]
-};
-
-
-/* =========================================================
-   7. GAME STATE
-========================================================= */
-
-const arena = createMatrix(
-  BOARD_COLUMNS,
-  BOARD_ROWS
-);
 
 const player = {
+
   matrix: null,
+
   type: null,
 
   position: {
     x: 0,
     y: 0
   }
+
 };
+
 
 let nextPiece = null;
 let heldPieceType = null;
 
-let canHold = true;
 let pieceBag = [];
+let canHold = true;
+
 
 let score = 0;
 let highScore = loadHighScore();
@@ -492,8 +702,6 @@ let clearedLines = 0;
 let combo = -1;
 let bestCombo = 0;
 
-let dropCounter = 0;
-let lastFrameTime = performance.now();
 
 let gameStarted = false;
 let gamePaused = false;
@@ -502,34 +710,54 @@ let countdownRunning = false;
 
 let mobileGameModeActive = false;
 
+
+let currentControlMode =
+  loadControlMode();
+
+let currentControlSide =
+  loadControlSide();
+
 let tapRotationDirection =
   loadRotationDirection();
 
-let particles = [];
 
-let announcementTimer = null;
-let tipTimer = null;
-let gestureHelpTimer = null;
+let pendingAudioEnabled = true;
+let waitingForLandscapeRotation = false;
+
+let controlsOverlayReturnTarget = "pause";
+
+
+let dropCounter = 0;
+let lastFrameTime = performance.now();
+
 
 let dangerActive = false;
 let dangerVoicePlayed = false;
 
-let activeMusic = null;
-let activeMusicName = null;
+let announcementTimer = null;
+let tutorialTimer = null;
+
+
+let audioSettings =
+  loadAudioSettings();
 
 let audioContext = null;
-let activeVoice = null;
 
-const activeImportedClips = new Set();
-const audioFadeFrames = new WeakMap();
+let activeMusic = null;
+let activeMusicName = "";
+
+let activeVoice = null;
 
 
 /* =========================================================
-   8. GESTURE STATE
+   6. GESTURE STATE
 ========================================================= */
 
 const gestureState = {
+
   pointerId: null,
+
+  surface: null,
 
   startX: 0,
   startY: 0,
@@ -544,14 +772,490 @@ const gestureState = {
 
   holdTimeout: null,
   holdInterval: null
+
 };
 
 
 /* =========================================================
-   9. RESPONSIVE GAME MODE
+   7. MATRIX UTILITIES
+========================================================= */
+
+function createMatrix(width, height) {
+
+  return Array.from(
+    {
+      length: height
+    },
+    () => new Array(width).fill(0)
+  );
+
+}
+
+
+function cloneMatrix(matrix) {
+
+  return matrix.map(
+    (row) => [...row]
+  );
+
+}
+
+
+function clearArena() {
+
+  arena.forEach((row) => {
+    row.fill(0);
+  });
+
+}
+
+
+function createPiece(type) {
+
+  const shape =
+    PIECE_SHAPES[type];
+
+  if (!shape) {
+
+    throw new Error(
+      `Unknown Block Drop piece type: ${type}`
+    );
+
+  }
+
+  return {
+    type,
+    matrix: cloneMatrix(shape)
+  };
+
+}
+
+
+/* =========================================================
+   8. RANDOM PIECE BAG
+========================================================= */
+
+function shuffleArray(array) {
+
+  const copy = [...array];
+
+  for (
+    let index = copy.length - 1;
+    index > 0;
+    index -= 1
+  ) {
+
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+        (index + 1)
+      );
+
+    [
+      copy[index],
+      copy[randomIndex]
+    ] = [
+      copy[randomIndex],
+      copy[index]
+    ];
+
+  }
+
+  return copy;
+
+}
+
+
+function getNextPieceType() {
+
+  if (pieceBag.length === 0) {
+
+    pieceBag =
+      shuffleArray(PIECE_TYPES);
+
+  }
+
+  return pieceBag.pop();
+
+}
+
+
+/* =========================================================
+   9. SAVED PREFERENCES
+========================================================= */
+
+function loadHighScore() {
+
+  try {
+
+    const storedValue =
+      Number.parseInt(
+        localStorage.getItem(
+          "blockDropHighScore"
+        ) || "",
+        10
+      );
+
+    return Number.isFinite(storedValue)
+      ? storedValue
+      : 0;
+
+  } catch (error) {
+
+    return 0;
+
+  }
+
+}
+
+
+function saveHighScore() {
+
+  try {
+
+    localStorage.setItem(
+      "blockDropHighScore",
+      String(highScore)
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Block Drop could not save the high score.",
+      error
+    );
+
+  }
+
+}
+
+
+function loadControlMode() {
+
+  try {
+
+    const stored =
+      localStorage.getItem(
+        CONTROL_MODE_STORAGE_KEY
+      );
+
+    return VALID_CONTROL_MODES.includes(stored)
+      ? stored
+      : CONTROL_MODE_PORTRAIT_GESTURE;
+
+  } catch (error) {
+
+    return CONTROL_MODE_PORTRAIT_GESTURE;
+
+  }
+
+}
+
+
+function saveControlMode() {
+
+  try {
+
+    localStorage.setItem(
+      CONTROL_MODE_STORAGE_KEY,
+      currentControlMode
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Block Drop could not save the control mode.",
+      error
+    );
+
+  }
+
+}
+
+
+function loadControlSide() {
+
+  try {
+
+    const stored =
+      localStorage.getItem(
+        CONTROL_SIDE_STORAGE_KEY
+      );
+
+    return VALID_CONTROL_SIDES.includes(stored)
+      ? stored
+      : "right";
+
+  } catch (error) {
+
+    return "right";
+
+  }
+
+}
+
+
+function saveControlSide() {
+
+  try {
+
+    localStorage.setItem(
+      CONTROL_SIDE_STORAGE_KEY,
+      currentControlSide
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Block Drop could not save the control side.",
+      error
+    );
+
+  }
+
+}
+
+
+function loadRotationDirection() {
+
+  try {
+
+    const stored =
+      localStorage.getItem(
+        ROTATION_STORAGE_KEY
+      );
+
+    return stored === "anticlockwise"
+      ? -1
+      : 1;
+
+  } catch (error) {
+
+    return 1;
+
+  }
+
+}
+
+
+function saveRotationDirection() {
+
+  try {
+
+    localStorage.setItem(
+      ROTATION_STORAGE_KEY,
+      tapRotationDirection === 1
+        ? "clockwise"
+        : "anticlockwise"
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Block Drop could not save rotation direction.",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   10. CONTROL MODE INTERFACE
+========================================================= */
+
+function applyControlPreferences() {
+
+  document.body.classList.remove(
+    "control-mode-portrait-gesture",
+    "control-mode-landscape-touchpad",
+    "control-mode-landscape-buttons",
+    "control-side-left",
+    "control-side-right"
+  );
+
+
+  document.body.classList.add(
+    `control-mode-${currentControlMode}`,
+    `control-side-${currentControlSide}`
+  );
+
+
+  controlModeInputs.forEach((input) => {
+
+    input.checked =
+      input.value === currentControlMode;
+
+  });
+
+
+  controlSideInputs.forEach((input) => {
+
+    input.checked =
+      input.value === currentControlSide;
+
+  });
+
+
+  settingsControlSideInputs.forEach(
+    (input) => {
+
+      input.checked =
+        input.value === currentControlSide;
+
+    }
+  );
+
+
+  choosePortraitGestureButton?.classList.toggle(
+    "is-active",
+    currentControlMode ===
+      CONTROL_MODE_PORTRAIT_GESTURE
+  );
+
+
+  chooseLandscapeTouchpadButton?.classList.toggle(
+    "is-active",
+    currentControlMode ===
+      CONTROL_MODE_LANDSCAPE_TOUCHPAD
+  );
+
+
+  chooseLandscapeButtonsButton?.classList.toggle(
+    "is-active",
+    currentControlMode ===
+      CONTROL_MODE_LANDSCAPE_BUTTONS
+  );
+
+}
+
+
+function setControlMode(mode, options = {}) {
+
+  if (!VALID_CONTROL_MODES.includes(mode)) {
+    return;
+  }
+
+
+  const {
+    save = true,
+    closeOverlay = true
+  } = options;
+
+
+  cancelGesture();
+
+  currentControlMode = mode;
+
+  if (save) {
+    saveControlMode();
+  }
+
+  applyControlPreferences();
+
+
+  if (
+    mobileGameModeActive &&
+    isLandscapeControlMode() &&
+    isPortraitOrientation()
+  ) {
+
+    showRotateDeviceOverlay();
+
+  } else {
+
+    hideRotateDeviceOverlay();
+
+  }
+
+
+  if (closeOverlay) {
+    closeControlsOverlay();
+  }
+
+}
+
+
+function setControlSide(side) {
+
+  if (!VALID_CONTROL_SIDES.includes(side)) {
+    return;
+  }
+
+  currentControlSide = side;
+
+  saveControlSide();
+  applyControlPreferences();
+
+}
+
+
+function isLandscapeControlMode() {
+
+  return (
+    currentControlMode ===
+      CONTROL_MODE_LANDSCAPE_TOUCHPAD ||
+    currentControlMode ===
+      CONTROL_MODE_LANDSCAPE_BUTTONS
+  );
+
+}
+
+
+function isPortraitOrientation() {
+
+  return window.matchMedia(
+    "(orientation: portrait)"
+  ).matches;
+
+}
+
+
+function readStartScreenPreferences() {
+
+  const selectedMode =
+    document.querySelector(
+      'input[name="control-mode"]:checked'
+    )?.value;
+
+
+  const selectedSide =
+    document.querySelector(
+      'input[name="control-side"]:checked'
+    )?.value;
+
+
+  if (VALID_CONTROL_MODES.includes(selectedMode)) {
+
+    currentControlMode =
+      selectedMode;
+
+  }
+
+
+  if (VALID_CONTROL_SIDES.includes(selectedSide)) {
+
+    currentControlSide =
+      selectedSide;
+
+  }
+
+
+  saveControlMode();
+  saveControlSide();
+
+  applyControlPreferences();
+
+}
+
+
+/* =========================================================
+   11. MOBILE GAME MODE
 ========================================================= */
 
 function shouldUseMobileGameMode() {
+
   return (
     window.matchMedia(
       `(max-width: ${MOBILE_GAME_BREAKPOINT}px)`
@@ -560,13 +1264,16 @@ function shouldUseMobileGameMode() {
       "(pointer: coarse)"
     ).matches
   );
+
 }
 
 
 function enterMobileGameMode() {
+
   if (!shouldUseMobileGameMode()) {
     return;
   }
+
 
   mobileGameModeActive = true;
 
@@ -574,86 +1281,122 @@ function enterMobileGameMode() {
     "mobile-game-mode"
   );
 
+  applyControlPreferences();
+
+  document.documentElement.style.overscrollBehavior =
+    "none";
+
+
   window.scrollTo({
     top: 0,
     left: 0,
     behavior: "instant"
   });
 
-  preventGameplayScrolling();
-
-  window.setTimeout(() => {
-    showGestureHelp();
-  }, 650);
 }
 
 
-function exitMobileGameMode({
-  pauseFirst = true
-} = {}) {
+function exitMobileGameMode(options = {}) {
+
+  const {
+    pauseFirst = true
+  } = options;
+
+
   if (
     pauseFirst &&
     gameStarted &&
     !gamePaused &&
     !gameOver
   ) {
+
     pauseGame();
+
   }
+
+
+  mobileGameModeActive = false;
 
   cancelGesture();
 
-  mobileGameModeActive = false;
+  closeMobileQuickMenu();
+  closeAudioSettings();
 
   document.body.classList.remove(
     "mobile-game-mode"
   );
 
-  closeAudioSettings();
+  document.documentElement.style.overscrollBehavior =
+    "";
 
-  restoreGameplayScrolling();
 
   window.scrollTo({
     top: 0,
     left: 0,
     behavior: "smooth"
   });
-}
 
-
-function handleViewportChange() {
-  if (
-    mobileGameModeActive &&
-    !shouldUseMobileGameMode()
-  ) {
-    exitMobileGameMode({
-      pauseFirst: false
-    });
-  }
-
-  drawPreviewPiece();
-}
-
-
-function preventGameplayScrolling() {
-  document.documentElement.style.overscrollBehavior =
-    "none";
-}
-
-
-function restoreGameplayScrolling() {
-  document.documentElement.style.overscrollBehavior =
-    "";
 }
 
 
 /* =========================================================
-   10. BASIC AUDIO UTILITIES
+   12. ROTATE DEVICE OVERLAY
+========================================================= */
+
+function showRotateDeviceOverlay() {
+
+  if (!rotateDeviceOverlay) {
+    return;
+  }
+
+  waitingForLandscapeRotation = true;
+
+  rotateDeviceOverlay.classList.add(
+    "is-visible"
+  );
+
+  rotateDeviceOverlay.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+}
+
+
+function hideRotateDeviceOverlay() {
+
+  if (!rotateDeviceOverlay) {
+    return;
+  }
+
+  waitingForLandscapeRotation = false;
+
+  rotateDeviceOverlay.classList.remove(
+    "is-visible"
+  );
+
+  rotateDeviceOverlay.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+}
+
+
+/* =========================================================
+   PART 1 ENDS HERE
+   PASTE PART 2 DIRECTLY BELOW THIS COMMENT
+========================================================= */
+
+/* =========================================================
+   13. BASIC AUDIO UTILITIES
 ========================================================= */
 
 function createAudio(
   path,
   shouldLoop = false
 ) {
+
   const audio = new Audio(path);
 
   audio.preload = "auto";
@@ -661,10 +1404,12 @@ function createAudio(
   audio.volume = 0;
 
   return audio;
+
 }
 
 
 function clampVolume(value) {
+
   return Math.min(
     1,
     Math.max(
@@ -672,24 +1417,12 @@ function clampVolume(value) {
       Number(value) || 0
     )
   );
-}
 
-
-function getMusicTargetVolume(trackName) {
-  const baseVolume =
-    audioSettings.music;
-
-  if (trackName === "danger") {
-    return clampVolume(
-      baseVolume * 1.12
-    );
-  }
-
-  return clampVolume(baseVolume);
 }
 
 
 function safelyPlay(audio) {
+
   if (
     !audio ||
     audioSettings.muted
@@ -697,104 +1430,63 @@ function safelyPlay(audio) {
     return;
   }
 
-  const playPromise = audio.play();
+
+  const playPromise =
+    audio.play();
+
 
   if (
     playPromise &&
     typeof playPromise.catch === "function"
   ) {
+
     playPromise.catch((error) => {
+
       console.warn(
         "Block Drop audio could not play.",
         error
       );
+
     });
+
   }
+
 }
 
 
-function stopAudioFade(audio) {
-  const frameId =
-    audioFadeFrames.get(audio);
+function initialiseAudioContext() {
 
-  if (frameId) {
-    cancelAnimationFrame(frameId);
-
-    audioFadeFrames.delete(audio);
-  }
-}
-
-
-function fadeAudio(
-  audio,
-  targetVolume,
-  duration = MUSIC_FADE_DURATION,
-  onComplete = null
-) {
-  if (!audio) {
+  if (audioSettings.muted) {
     return;
   }
 
-  stopAudioFade(audio);
 
-  const startingVolume =
-    audio.volume;
+  const AudioContextClass =
+    window.AudioContext ||
+    window.webkitAudioContext;
 
-  const startedAt =
-    performance.now();
 
-  function fadeStep(currentTime) {
-    const progress = Math.min(
-      (
-        currentTime -
-        startedAt
-      ) / duration,
-      1
-    );
-
-    audio.volume =
-      startingVolume +
-      (
-        targetVolume -
-        startingVolume
-      ) *
-        progress;
-
-    audio.volume =
-      clampVolume(audio.volume);
-
-    if (progress < 1) {
-      const frameId =
-        requestAnimationFrame(
-          fadeStep
-        );
-
-      audioFadeFrames.set(
-        audio,
-        frameId
-      );
-
-      return;
-    }
-
-    audioFadeFrames.delete(audio);
-
-    if (
-      typeof onComplete === "function"
-    ) {
-      onComplete();
-    }
+  if (!AudioContextClass) {
+    return;
   }
 
-  const frameId =
-    requestAnimationFrame(
-      fadeStep
-    );
 
-  audioFadeFrames.set(
-    audio,
-    frameId
-  );
+  if (!audioContext) {
+
+    audioContext =
+      new AudioContextClass();
+
+  }
+
+
+  if (audioContext.state === "suspended") {
+
+    audioContext
+      .resume()
+      .catch(() => {});
+
+  }
+
 }
 
 
@@ -803,80 +1495,73 @@ function playImportedClip(
   channel = "effects",
   delay = 0
 ) {
+
   if (
-    audioSettings.muted ||
-    !path
+    !path ||
+    audioSettings.muted
   ) {
-    return null;
+    return;
   }
+
 
   const channelVolume =
     channel === "voice"
       ? audioSettings.voice
       : audioSettings.effects;
 
+
   if (channelVolume <= 0) {
-    return null;
+    return;
   }
 
-  return window.setTimeout(() => {
+
+  window.setTimeout(() => {
+
     if (audioSettings.muted) {
       return;
     }
 
-    const clip = createAudio(
-      path,
-      false
-    );
+
+    const clip =
+      createAudio(
+        path,
+        false
+      );
+
 
     clip.volume =
       clampVolume(channelVolume);
 
-    activeImportedClips.add(clip);
-
-    const removeClip = () => {
-      activeImportedClips.delete(
-        clip
-      );
-    };
-
-    clip.addEventListener(
-      "ended",
-      removeClip,
-      {
-        once: true
-      }
-    );
-
-    clip.addEventListener(
-      "error",
-      removeClip,
-      {
-        once: true
-      }
-    );
 
     safelyPlay(clip);
+
   }, delay);
+
 }
 
 
 function playVoiceClip(
   path,
   delay = 0,
-  {
-    interrupt = false
-  } = {}
+  options = {}
 ) {
+
+  const {
+    interrupt = false
+  } = options;
+
+
   if (
+    !path ||
     audioSettings.muted ||
-    audioSettings.voice <= 0 ||
-    !path
+    audioSettings.voice <= 0
   ) {
     return;
   }
 
+
   window.setTimeout(() => {
+
     if (
       audioSettings.muted ||
       audioSettings.voice <= 0
@@ -884,33 +1569,51 @@ function playVoiceClip(
       return;
     }
 
-    if (activeVoice && !interrupt) {
+
+    if (
+      activeVoice &&
+      !interrupt
+    ) {
       return;
     }
 
-    if (activeVoice && interrupt) {
+
+    if (
+      activeVoice &&
+      interrupt
+    ) {
+
       activeVoice.pause();
       activeVoice.currentTime = 0;
       activeVoice = null;
+
     }
 
-    const clip = createAudio(
-      path,
-      false
-    );
+
+    const clip =
+      createAudio(
+        path,
+        false
+      );
+
 
     clip.volume =
       clampVolume(
         audioSettings.voice
       );
 
+
     activeVoice = clip;
 
+
     const releaseVoice = () => {
+
       if (activeVoice === clip) {
         activeVoice = null;
       }
+
     };
+
 
     clip.addEventListener(
       "ended",
@@ -920,6 +1623,7 @@ function playVoiceClip(
       }
     );
 
+
     clip.addEventListener(
       "error",
       releaseVoice,
@@ -928,77 +1632,49 @@ function playVoiceClip(
       }
     );
 
+
     safelyPlay(clip);
+
   }, delay);
+
 }
 
 
-function stopAllImportedClips() {
-  activeImportedClips.forEach(
-    (clip) => {
-      clip.pause();
-      clip.currentTime = 0;
-    }
-  );
+function stopActiveVoice() {
 
-  activeImportedClips.clear();
-
-  if (activeVoice) {
-    activeVoice.pause();
-    activeVoice.currentTime = 0;
-    activeVoice = null;
-  }
-}
-
-
-function stopAllMusic() {
-  Object.values(musicTracks).forEach(
-    (track) => {
-      stopAudioFade(track);
-
-      track.pause();
-      track.currentTime = 0;
-      track.volume = 0;
-    }
-  );
-
-  activeMusic = null;
-  activeMusicName = null;
-}
-
-
-function synchroniseTrackPosition(
-  previousTrack,
-  nextTrack
-) {
-  if (
-    !previousTrack ||
-    !nextTrack ||
-    !Number.isFinite(
-      previousTrack.currentTime
-    )
-  ) {
-    nextTrack.currentTime = 0;
+  if (!activeVoice) {
     return;
   }
 
-  const nextDuration =
-    nextTrack.duration;
+  activeVoice.pause();
+  activeVoice.currentTime = 0;
+  activeVoice = null;
 
-  if (
-    Number.isFinite(nextDuration) &&
-    nextDuration > 0
-  ) {
-    nextTrack.currentTime =
-      previousTrack.currentTime %
-      nextDuration;
-  } else {
-    nextTrack.currentTime = 0;
+}
+
+
+function getMusicVolume(trackName) {
+
+  const baseVolume =
+    audioSettings.music;
+
+
+  if (trackName === "danger") {
+
+    return clampVolume(
+      baseVolume * 1.12
+    );
+
   }
+
+
+  return clampVolume(baseVolume);
+
 }
 
 
 function changeMusic(trackName) {
+
   if (
     audioSettings.muted ||
     audioSettings.music <= 0
@@ -1006,129 +1682,287 @@ function changeMusic(trackName) {
     return;
   }
 
+
   const nextTrack =
     musicTracks[trackName];
+
 
   if (!nextTrack) {
     return;
   }
 
-  const targetVolume =
-    getMusicTargetVolume(
-      trackName
-    );
 
   if (
-    activeMusicName === trackName
+    activeMusic &&
+    activeMusic !== nextTrack
   ) {
-    if (nextTrack.paused) {
-      safelyPlay(nextTrack);
-    }
 
-    fadeAudio(
-      nextTrack,
-      targetVolume,
-      350
-    );
+    activeMusic.pause();
 
-    return;
   }
 
-  const previousTrack =
-    activeMusic;
-
-  synchroniseTrackPosition(
-    previousTrack,
-    nextTrack
-  );
-
-  nextTrack.volume = 0;
-
-  safelyPlay(nextTrack);
 
   activeMusic = nextTrack;
   activeMusicName = trackName;
 
-  fadeAudio(
-    nextTrack,
-    targetVolume,
-    MUSIC_FADE_DURATION
-  );
 
-  if (
-    previousTrack &&
-    previousTrack !== nextTrack
-  ) {
-    fadeAudio(
-      previousTrack,
-      0,
-      MUSIC_FADE_DURATION,
-      () => {
-        previousTrack.pause();
-        previousTrack.volume = 0;
-      }
-    );
-  }
+  nextTrack.volume =
+    getMusicVolume(trackName);
+
+
+  safelyPlay(nextTrack);
+
 }
 
 
 function refreshCurrentMusicVolume() {
-  if (
-    !activeMusic ||
-    !activeMusicName ||
-    audioSettings.muted
-  ) {
+
+  if (!activeMusic) {
     return;
   }
 
-  if (audioSettings.music <= 0) {
-    fadeAudio(
-      activeMusic,
-      0,
-      250,
-      () => {
-        activeMusic?.pause();
-      }
+
+  if (
+    audioSettings.muted ||
+    audioSettings.music <= 0
+  ) {
+
+    activeMusic.pause();
+    return;
+
+  }
+
+
+  activeMusic.volume =
+    getMusicVolume(
+      activeMusicName
     );
 
-    return;
-  }
 
   if (activeMusic.paused) {
+
     safelyPlay(activeMusic);
+
   }
 
-  fadeAudio(
-    activeMusic,
-    getMusicTargetVolume(
-      activeMusicName
-    ),
-    250
-  );
+}
+
+
+function stopAllMusic() {
+
+  Object.values(
+    musicTracks
+  ).forEach((track) => {
+
+    track.pause();
+    track.currentTime = 0;
+    track.volume = 0;
+
+  });
+
+
+  activeMusic = null;
+  activeMusicName = "";
+
 }
 
 
 /* =========================================================
-   11. AUDIO SETTINGS
+   14. GENERATED GAME SOUNDS
+========================================================= */
+
+function playGeneratedSound(name) {
+
+  if (
+    audioSettings.muted ||
+    audioSettings.effects <= 0
+  ) {
+    return;
+  }
+
+
+  initialiseAudioContext();
+
+
+  if (!audioContext) {
+    return;
+  }
+
+
+  const sounds = {
+
+    move: {
+      startFrequency: 180,
+      endFrequency: 145,
+      duration: 0.035,
+      volume: 0.018,
+      type: "square"
+    },
+
+    blocked: {
+      startFrequency: 95,
+      endFrequency: 95,
+      duration: 0.045,
+      volume: 0.018,
+      type: "square"
+    },
+
+    rotate: {
+      startFrequency: 290,
+      endFrequency: 420,
+      duration: 0.055,
+      volume: 0.022,
+      type: "triangle"
+    },
+
+    hold: {
+      startFrequency: 340,
+      endFrequency: 210,
+      duration: 0.1,
+      volume: 0.025,
+      type: "sine"
+    },
+
+    land: {
+      startFrequency: 115,
+      endFrequency: 75,
+      duration: 0.085,
+      volume: 0.035,
+      type: "square"
+    },
+
+    hardDrop: {
+      startFrequency: 280,
+      endFrequency: 70,
+      duration: 0.13,
+      volume: 0.045,
+      type: "sawtooth"
+    },
+
+    pause: {
+      startFrequency: 330,
+      endFrequency: 180,
+      duration: 0.14,
+      volume: 0.028,
+      type: "sine"
+    },
+
+    resume: {
+      startFrequency: 220,
+      endFrequency: 440,
+      duration: 0.14,
+      volume: 0.028,
+      type: "sine"
+    },
+
+    countdown: {
+      startFrequency: 520,
+      endFrequency: 420,
+      duration: 0.1,
+      volume: 0.04,
+      type: "square"
+    }
+
+  };
+
+
+  const sound =
+    sounds[name];
+
+
+  if (!sound) {
+    return;
+  }
+
+
+  const oscillator =
+    audioContext.createOscillator();
+
+
+  const gain =
+    audioContext.createGain();
+
+
+  const startTime =
+    audioContext.currentTime;
+
+
+  oscillator.type =
+    sound.type;
+
+
+  oscillator.frequency.setValueAtTime(
+    sound.startFrequency,
+    startTime
+  );
+
+
+  oscillator.frequency.exponentialRampToValueAtTime(
+    Math.max(
+      1,
+      sound.endFrequency
+    ),
+    startTime + sound.duration
+  );
+
+
+  gain.gain.setValueAtTime(
+    Math.max(
+      0.0001,
+      sound.volume *
+        audioSettings.effects
+    ),
+    startTime
+  );
+
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    startTime + sound.duration
+  );
+
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+
+
+  oscillator.start(startTime);
+  oscillator.stop(
+    startTime + sound.duration
+  );
+
+}
+
+
+/* =========================================================
+   15. AUDIO SETTINGS
 ========================================================= */
 
 function loadAudioSettings() {
+
   try {
-    const saved =
+
+    const stored =
       localStorage.getItem(
         AUDIO_STORAGE_KEY
       );
 
-    if (!saved) {
+
+    if (!stored) {
+
       return {
         ...DEFAULT_AUDIO_SETTINGS
       };
+
     }
 
+
     const parsed =
-      JSON.parse(saved);
+      JSON.parse(stored);
+
 
     return {
+
       music:
         clampVolume(
           parsed.music ??
@@ -1152,95 +1986,133 @@ function loadAudioSettings() {
           parsed.muted ??
             DEFAULT_AUDIO_SETTINGS.muted
         )
+
     };
+
   } catch (error) {
+
     console.warn(
       "Block Drop could not load audio settings.",
       error
     );
 
+
     return {
       ...DEFAULT_AUDIO_SETTINGS
     };
+
   }
+
 }
 
 
 function saveAudioSettings() {
+
   try {
+
     localStorage.setItem(
       AUDIO_STORAGE_KEY,
       JSON.stringify(
         audioSettings
       )
     );
+
   } catch (error) {
+
     console.warn(
       "Block Drop could not save audio settings.",
       error
     );
+
   }
+
 }
 
 
 function applyAudioSettingsToInterface() {
+
   const musicPercent =
     Math.round(
       audioSettings.music * 100
     );
+
 
   const effectsPercent =
     Math.round(
       audioSettings.effects * 100
     );
 
+
   const voicePercent =
     Math.round(
       audioSettings.voice * 100
     );
 
+
   if (musicVolumeSlider) {
+
     musicVolumeSlider.value =
       String(musicPercent);
+
   }
+
 
   if (effectsVolumeSlider) {
+
     effectsVolumeSlider.value =
       String(effectsPercent);
+
   }
+
 
   if (voiceVolumeSlider) {
+
     voiceVolumeSlider.value =
       String(voicePercent);
+
   }
+
 
   if (musicVolumeOutput) {
+
     musicVolumeOutput.textContent =
       `${musicPercent}%`;
+
   }
+
 
   if (effectsVolumeOutput) {
+
     effectsVolumeOutput.textContent =
       `${effectsPercent}%`;
+
   }
+
 
   if (voiceVolumeOutput) {
+
     voiceVolumeOutput.textContent =
       `${voicePercent}%`;
+
   }
 
+
   updateMuteButtons();
+
 }
 
 
 function updateMuteButtons() {
+
   const isMuted =
     audioSettings.muted;
+
 
   soundButton?.setAttribute(
     "aria-pressed",
     String(isMuted)
   );
+
 
   soundButton?.setAttribute(
     "aria-label",
@@ -1249,63 +2121,76 @@ function updateMuteButtons() {
       : "Mute all audio"
   );
 
+
   muteAllButton?.setAttribute(
     "aria-pressed",
     String(isMuted)
   );
 
+
   if (muteAllButton) {
+
     muteAllButton.innerHTML =
       isMuted
         ? `
-          <span aria-hidden="true">🔊</span>
-          Unmute All
-        `
+            <span aria-hidden="true">🔊</span>
+            Unmute All
+          `
         : `
-          <span aria-hidden="true">🔇</span>
-          Mute All
-        `;
+            <span aria-hidden="true">🔇</span>
+            Mute All
+          `;
+
   }
+
 }
 
 
 function setMasterMuted(isMuted) {
+
   audioSettings.muted =
     Boolean(isMuted);
+
 
   saveAudioSettings();
   updateMuteButtons();
 
-  if (audioSettings.muted) {
-    Object.values(
-      musicTracks
-    ).forEach((track) => {
-      stopAudioFade(track);
-      track.pause();
-    });
 
-    stopAllImportedClips();
+  if (audioSettings.muted) {
+
+    stopAllMusic();
+    stopActiveVoice();
 
     return;
+
   }
 
+
   initialiseAudioContext();
+
 
   if (
     gameStarted &&
     !gameOver
   ) {
+
     updateDynamicMusic(true);
+
   } else {
+
     changeMusic("menu");
+
   }
+
 }
 
 
 function resetAudioMix() {
+
   audioSettings = {
     ...DEFAULT_AUDIO_SETTINGS
   };
+
 
   saveAudioSettings();
 
@@ -1313,13 +2198,18 @@ function resetAudioMix() {
 
   refreshCurrentMusicVolume();
 
+
   if (!audioSettings.muted) {
+
     playGeneratedSound("resume");
+
   }
+
 }
 
 
 function openAudioSettings() {
+
   if (
     !audioSettingsPanel ||
     !audioSettingsBackdrop
@@ -1327,48 +2217,48 @@ function openAudioSettings() {
     return;
   }
 
+
   cancelGesture();
+  closeMobileQuickMenu();
+
 
   audioSettingsPanel.classList.add(
     "is-open"
   );
 
+
   audioSettingsBackdrop.classList.add(
     "is-visible"
   );
+
 
   audioSettingsPanel.setAttribute(
     "aria-hidden",
     "false"
   );
 
+
   audioSettingsBackdrop.setAttribute(
     "aria-hidden",
     "false"
   );
+
 
   audioSettingsButton?.setAttribute(
     "aria-expanded",
     "true"
   );
 
-  mobileAudioButton?.setAttribute(
-    "aria-expanded",
-    "true"
-  );
-
-  dockAudioButton?.setAttribute(
-    "aria-expanded",
-    "true"
-  );
 
   document.body.classList.add(
     "audio-panel-open"
   );
+
 }
 
 
 function closeAudioSettings() {
+
   if (
     !audioSettingsPanel ||
     !audioSettingsBackdrop
@@ -1376,139 +2266,211 @@ function closeAudioSettings() {
     return;
   }
 
+
   audioSettingsPanel.classList.remove(
     "is-open"
   );
 
+
   audioSettingsBackdrop.classList.remove(
     "is-visible"
   );
+
 
   audioSettingsPanel.setAttribute(
     "aria-hidden",
     "true"
   );
 
+
   audioSettingsBackdrop.setAttribute(
     "aria-hidden",
     "true"
   );
+
 
   audioSettingsButton?.setAttribute(
     "aria-expanded",
     "false"
   );
 
-  mobileAudioButton?.setAttribute(
-    "aria-expanded",
-    "false"
-  );
-
-  dockAudioButton?.setAttribute(
-    "aria-expanded",
-    "false"
-  );
 
   document.body.classList.remove(
     "audio-panel-open"
   );
+
 }
 
 
 /* =========================================================
-   12. ROTATION DIRECTION
+   16. ROTATION DIRECTION
 ========================================================= */
 
-function loadRotationDirection() {
-  try {
-    const stored =
-      localStorage.getItem(
-        ROTATION_STORAGE_KEY
-      );
-
-    return stored === "anticlockwise"
-      ? -1
-      : 1;
-  } catch (error) {
-    return 1;
-  }
-}
-
-
-function saveRotationDirection() {
-  try {
-    localStorage.setItem(
-      ROTATION_STORAGE_KEY,
-      tapRotationDirection === 1
-        ? "clockwise"
-        : "anticlockwise"
-    );
-  } catch (error) {
-    console.warn(
-      "Block Drop could not save rotation direction.",
-      error
-    );
-  }
-}
-
-
 function updateRotationDirectionInterface() {
+
   const clockwise =
     tapRotationDirection === 1;
 
+
+  const icon =
+    clockwise
+      ? "↻"
+      : "↺";
+
+
+  const label =
+    clockwise
+      ? "Clockwise"
+      : "Anticlockwise";
+
+
+  const ariaLabel =
+    clockwise
+      ? "Rotation direction is clockwise. Press to change to anticlockwise."
+      : "Rotation direction is anticlockwise. Press to change to clockwise.";
+
+
+  if (desktopRotationIcon) {
+    desktopRotationIcon.textContent =
+      icon;
+  }
+
+
+  if (desktopRotationLabel) {
+    desktopRotationLabel.textContent =
+      label;
+  }
+
+
+  desktopRotationButton?.setAttribute(
+    "aria-pressed",
+    String(!clockwise)
+  );
+
+
+  desktopRotationButton?.setAttribute(
+    "aria-label",
+    ariaLabel
+  );
+
+
   if (rotationDirectionIcon) {
     rotationDirectionIcon.textContent =
-      clockwise
-        ? "↻"
-        : "↺";
+      icon;
   }
+
 
   if (rotationDirectionLabel) {
     rotationDirectionLabel.textContent =
-      clockwise
-        ? "Clockwise"
-        : "Anticlockwise";
+      label;
   }
+
 
   rotationDirectionButton?.setAttribute(
     "aria-pressed",
     String(!clockwise)
   );
 
+
   rotationDirectionButton?.setAttribute(
     "aria-label",
-    clockwise
-      ? "Tap rotation is clockwise. Press to change to anticlockwise."
-      : "Tap rotation is anticlockwise. Press to change to clockwise."
+    ariaLabel
   );
+
+
+  if (touchpadRotationIcon) {
+    touchpadRotationIcon.textContent =
+      icon;
+  }
+
+
+  if (touchpadRotationLabel) {
+    touchpadRotationLabel.textContent =
+      label;
+  }
+
+
+  touchpadRotationButton?.setAttribute(
+    "aria-pressed",
+    String(!clockwise)
+  );
+
+
+  touchpadRotationButton?.setAttribute(
+    "aria-label",
+    ariaLabel
+  );
+
+
+  if (quickMenuRotationIcon) {
+    quickMenuRotationIcon.textContent =
+      icon;
+  }
+
+
+  if (quickMenuRotationLabel) {
+    quickMenuRotationLabel.textContent =
+      label;
+  }
+
+
+  quickMenuRotationButton?.setAttribute(
+    "aria-pressed",
+    String(!clockwise)
+  );
+
 }
 
 
-function toggleRotationDirection() {
+function animateRotationButton(button) {
+
+  if (!button) {
+    return;
+  }
+
+
+  button.classList.remove(
+    "is-switching"
+  );
+
+
+  void button.offsetWidth;
+
+
+  button.classList.add(
+    "is-switching"
+  );
+
+
+  window.setTimeout(() => {
+
+    button.classList.remove(
+      "is-switching"
+    );
+
+  }, 340);
+
+}
+
+
+function toggleRotationDirection(
+  sourceButton = null
+) {
+
   tapRotationDirection *= -1;
+
 
   saveRotationDirection();
   updateRotationDirectionInterface();
 
-  if (rotationDirectionButton) {
-    rotationDirectionButton.classList.remove(
-      "is-switching"
-    );
 
-    void rotationDirectionButton.offsetWidth;
+  animateRotationButton(
+    sourceButton
+  );
 
-    rotationDirectionButton.classList.add(
-      "is-switching"
-    );
-
-    window.setTimeout(() => {
-      rotationDirectionButton.classList.remove(
-        "is-switching"
-      );
-    }, 340);
-  }
 
   vibrateDevice([15]);
+
 
   playVoiceClip(
     tapRotationDirection === 1
@@ -1519,152 +2481,81 @@ function toggleRotationDirection() {
       interrupt: true
     }
   );
+
 }
 
 
 /* =========================================================
-   13. MATRIX UTILITIES
-========================================================= */
-
-function createMatrix(
-  width,
-  height
-) {
-  return Array.from(
-    {
-      length: height
-    },
-    () => new Array(width).fill(0)
-  );
-}
-
-
-function cloneMatrix(matrix) {
-  return matrix.map(
-    (row) => [...row]
-  );
-}
-
-
-function clearArena() {
-  arena.forEach((row) => {
-    row.fill(0);
-  });
-}
-
-
-function createPiece(type) {
-  const shape =
-    PIECE_SHAPES[type];
-
-  if (!shape) {
-    throw new Error(
-      `Unknown Block Drop piece: ${type}`
-    );
-  }
-
-  return {
-    type,
-    matrix: cloneMatrix(shape)
-  };
-}
-
-
-/* =========================================================
-   14. SEVEN-BAG RANDOM PIECES
-========================================================= */
-
-function shuffleArray(array) {
-  const copy = [...array];
-
-  for (
-    let index = copy.length - 1;
-    index > 0;
-    index -= 1
-  ) {
-    const randomIndex =
-      Math.floor(
-        Math.random() *
-          (index + 1)
-      );
-
-    [
-      copy[index],
-      copy[randomIndex]
-    ] = [
-      copy[randomIndex],
-      copy[index]
-    ];
-  }
-
-  return copy;
-}
-
-
-function getNextPieceType() {
-  if (pieceBag.length === 0) {
-    pieceBag =
-      shuffleArray(PIECE_TYPES);
-  }
-
-  return pieceBag.pop();
-}
-
-
-/* =========================================================
-   15. COLLISION AND MERGING
+   17. COLLISION AND MERGING
 ========================================================= */
 
 function collides(
   matrix = player.matrix,
   position = player.position
 ) {
+
   if (!matrix) {
     return false;
   }
+
 
   for (
     let y = 0;
     y < matrix.length;
     y += 1
   ) {
+
     for (
       let x = 0;
       x < matrix[y].length;
       x += 1
     ) {
+
       if (matrix[y][x] === 0) {
         continue;
       }
 
+
       const arenaX =
         x + position.x;
 
+
       const arenaY =
         y + position.y;
+
 
       if (
         arenaX < 0 ||
         arenaX >= BOARD_COLUMNS ||
         arenaY >= BOARD_ROWS
       ) {
+
         return true;
+
       }
+
 
       if (
         arenaY >= 0 &&
         arena[arenaY][arenaX] !== 0
       ) {
+
         return true;
+
       }
+
     }
+
   }
 
+
   return false;
+
 }
 
 
 function mergePlayerIntoArena() {
+
   if (
     !player.matrix ||
     !player.type
@@ -1672,19 +2563,25 @@ function mergePlayerIntoArena() {
     return;
   }
 
+
   player.matrix.forEach(
     (row, y) => {
+
       row.forEach(
         (value, x) => {
+
           if (value === 0) {
             return;
           }
 
+
           const arenaX =
             x + player.position.x;
 
+
           const arenaY =
             y + player.position.y;
+
 
           if (
             arenaY >= 0 &&
@@ -1692,40 +2589,56 @@ function mergePlayerIntoArena() {
             arenaX >= 0 &&
             arenaX < BOARD_COLUMNS
           ) {
+
             arena[arenaY][arenaX] =
               player.type;
+
           }
+
         }
       );
+
     }
   );
+
 }
 
 
 /* =========================================================
-   16. PIECE SPAWNING
+   18. PIECE SPAWNING
 ========================================================= */
 
 function getTopEmptyRows(matrix) {
+
   let emptyRows = 0;
 
+
   for (const row of matrix) {
+
     if (
       row.every(
         (value) => value === 0
       )
     ) {
+
       emptyRows += 1;
+
     } else {
+
       break;
+
     }
+
   }
 
+
   return emptyRows;
+
 }
 
 
 function centrePlayerPiece() {
+
   player.position.x =
     Math.floor(
       BOARD_COLUMNS / 2
@@ -1734,67 +2647,120 @@ function centrePlayerPiece() {
       player.matrix[0].length / 2
     );
 
+
   player.position.y =
     -getTopEmptyRows(
       player.matrix
     );
+
 }
 
 
 function spawnNextPiece() {
+
   if (!nextPiece) {
-    nextPiece = createPiece(
-      getNextPieceType()
-    );
+
+    nextPiece =
+      createPiece(
+        getNextPieceType()
+      );
+
   }
+
 
   player.type =
     nextPiece.type;
+
 
   player.matrix =
     cloneMatrix(
       nextPiece.matrix
     );
 
-  nextPiece = createPiece(
-    getNextPieceType()
-  );
+
+  nextPiece =
+    createPiece(
+      getNextPieceType()
+    );
+
 
   centrePlayerPiece();
 
+
   canHold = true;
+
 
   drawPreviewPiece();
   drawHeldPiece();
 
+
   if (collides()) {
+
     endGame();
+
   }
+
 }
 
 
 /* =========================================================
-   17. MOVEMENT
+   19. PLAYER CONTROLS
 ========================================================= */
 
+function canControlPlayer() {
+
+  return (
+    gameStarted &&
+    !gamePaused &&
+    !gameOver &&
+    !countdownRunning &&
+    !waitingForLandscapeRotation &&
+    !document.body.classList.contains(
+      "audio-panel-open"
+    ) &&
+    !document.body.classList.contains(
+      "mobile-menu-open"
+    ) &&
+    Boolean(player.matrix)
+  );
+
+}
+
+
 function movePlayer(direction) {
+
   if (!canControlPlayer()) {
     return false;
   }
 
-  player.position.x += direction;
+
+  player.position.x +=
+    direction;
+
 
   if (collides()) {
-    player.position.x -= direction;
 
-    playGeneratedSound("blocked");
+    player.position.x -=
+      direction;
+
+
+    playGeneratedSound(
+      "blocked"
+    );
+
 
     return false;
+
   }
 
-  playGeneratedSound("move");
+
+  playGeneratedSound(
+    "move"
+  );
+
 
   return true;
+
 }
 
 
@@ -1802,130 +2768,188 @@ function movePlayerMultiple(
   direction,
   numberOfSteps
 ) {
+
   let moved = false;
+
 
   for (
     let index = 0;
     index < numberOfSteps;
     index += 1
   ) {
+
     if (!movePlayer(direction)) {
       break;
     }
 
+
     moved = true;
+
   }
 
+
   if (moved) {
+
     vibrateDevice([7]);
+
   }
+
 }
 
 
-function softDropPlayer({
-  reward = true
-} = {}) {
+function softDropPlayer(
+  options = {}
+) {
+
+  const {
+    reward = true
+  } = options;
+
+
   if (!canControlPlayer()) {
     return false;
   }
 
+
   player.position.y += 1;
 
+
   if (collides()) {
+
     player.position.y -= 1;
 
     lockCurrentPiece();
 
     return false;
+
   }
 
+
   if (reward) {
+
     addScore(1);
+
   }
+
 
   dropCounter = 0;
 
+
   return true;
+
 }
 
 
 function hardDropPlayer() {
+
   if (!canControlPlayer()) {
     return;
   }
 
+
   let distance = 0;
 
+
   while (!collides()) {
+
     player.position.y += 1;
     distance += 1;
+
   }
+
 
   player.position.y -= 1;
   distance -= 1;
 
+
   if (distance > 0) {
+
     addScore(
       distance * 2
     );
+
   }
 
-  playGeneratedSound("hardDrop");
+
+  playGeneratedSound(
+    "hardDrop"
+  );
+
 
   vibrateDevice([28]);
 
   shakeScreen();
 
   lockCurrentPiece();
+
 }
 
 
 /* =========================================================
-   18. ROTATION
+   20. ROTATING PIECES
 ========================================================= */
 
 function rotateMatrix(
   matrix,
   direction
 ) {
-  const rows = matrix.length;
+
+  const rows =
+    matrix.length;
+
+
   const columns =
     matrix[0].length;
 
-  const rotated = Array.from(
-    {
-      length: columns
-    },
-    () => new Array(rows).fill(0)
-  );
+
+  const rotated =
+    Array.from(
+      {
+        length: columns
+      },
+      () =>
+        new Array(rows).fill(0)
+    );
+
 
   for (
     let y = 0;
     y < rows;
     y += 1
   ) {
+
     for (
       let x = 0;
       x < columns;
       x += 1
     ) {
+
       if (direction > 0) {
+
         rotated[x][rows - 1 - y] =
           matrix[y][x];
+
       } else {
+
         rotated[
           columns - 1 - x
         ][y] =
           matrix[y][x];
+
       }
+
     }
+
   }
 
+
   return rotated;
+
 }
 
 
 function rotatePlayer(direction) {
+
   if (
     !canControlPlayer() ||
     player.type === "O"
@@ -1933,17 +2957,21 @@ function rotatePlayer(direction) {
     return false;
   }
 
+
   const originalMatrix =
     player.matrix;
 
+
   const originalX =
     player.position.x;
+
 
   player.matrix =
     rotateMatrix(
       player.matrix,
       direction
     );
+
 
   const wallKickOffsets = [
     0,
@@ -1953,38 +2981,57 @@ function rotatePlayer(direction) {
     -2
   ];
 
+
   for (
     const offset
     of wallKickOffsets
   ) {
+
     player.position.x =
       originalX + offset;
 
+
     if (!collides()) {
-      playGeneratedSound("rotate");
+
+      playGeneratedSound(
+        "rotate"
+      );
+
+
       vibrateDevice([9]);
 
+
       return true;
+
     }
+
   }
+
 
   player.matrix =
     originalMatrix;
 
+
   player.position.x =
     originalX;
 
-  playGeneratedSound("blocked");
+
+  playGeneratedSound(
+    "blocked"
+  );
+
 
   return false;
+
 }
 
 
 /* =========================================================
-   19. HOLD PIECE
+   21. HOLD PIECE
 ========================================================= */
 
 function holdCurrentPiece() {
+
   if (
     !canControlPlayer() ||
     !canHold
@@ -1992,17 +3039,24 @@ function holdCurrentPiece() {
     return;
   }
 
+
   const currentPieceType =
     player.type;
 
+
   if (!heldPieceType) {
+
     heldPieceType =
       currentPieceType;
 
+
     spawnNextPiece();
+
   } else {
+
     player.type =
       heldPieceType;
+
 
     player.matrix =
       cloneMatrix(
@@ -2011,42 +3065,63 @@ function holdCurrentPiece() {
         ]
       );
 
+
     heldPieceType =
       currentPieceType;
 
+
     centrePlayerPiece();
 
+
     if (collides()) {
+
       endGame();
       return;
+
     }
+
   }
+
 
   canHold = false;
 
+
   drawHeldPiece();
 
-  playGeneratedSound("hold");
+
+  playGeneratedSound(
+    "hold"
+  );
+
+
   vibrateDevice([12]);
+
 }
 
 
 /* =========================================================
-   20. GHOST PIECE
+   22. GHOST PIECE
 ========================================================= */
 
 function getGhostPosition() {
+
   if (!player.matrix) {
+
     return {
       x: 0,
       y: 0
     };
+
   }
 
+
   const ghostPosition = {
+
     x: player.position.x,
     y: player.position.y
+
   };
+
 
   while (
     !collides(
@@ -2054,20 +3129,26 @@ function getGhostPosition() {
       ghostPosition
     )
   ) {
+
     ghostPosition.y += 1;
+
   }
+
 
   ghostPosition.y -= 1;
 
+
   return ghostPosition;
+
 }
 
 
 /* =========================================================
-   21. PIECE LOCKING AND LINE CLEARING
+   23. LOCKING AND LINE CLEARING
 ========================================================= */
 
 function lockCurrentPiece() {
+
   if (
     !player.matrix ||
     gameOver
@@ -2075,86 +3156,103 @@ function lockCurrentPiece() {
     return;
   }
 
+
   mergePlayerIntoArena();
 
-  createLandingParticles();
 
-  const lineClearResult =
+  const linesCleared =
     clearCompletedLines();
 
-  if (
-    lineClearResult.count === 0
-  ) {
+
+  if (linesCleared === 0) {
+
     combo = -1;
 
-    updateComboDisplay();
+    playGeneratedSound(
+      "land"
+    );
 
-    playGeneratedSound("land");
   }
+
 
   spawnNextPiece();
 
   updateDynamicMusic();
 
   updateInterface();
+
 }
 
 
 function clearCompletedLines() {
-  const clearedRowIndexes = [];
+
+  const completedRows = [];
+
 
   for (
     let y = BOARD_ROWS - 1;
     y >= 0;
     y -= 1
   ) {
+
     if (
       arena[y].every(
         (cell) => cell !== 0
       )
     ) {
-      clearedRowIndexes.push(y);
+
+      completedRows.push(y);
+
     }
+
   }
 
-  if (
-    clearedRowIndexes.length === 0
-  ) {
-    return {
-      count: 0
-    };
+
+  if (completedRows.length === 0) {
+
+    return 0;
+
   }
 
-  createLineParticles(
-    clearedRowIndexes
-  );
 
-  clearedRowIndexes
-    .sort((a, b) => b - a)
+  completedRows
+    .sort(
+      (a, b) => b - a
+    )
     .forEach((rowIndex) => {
+
       arena.splice(
         rowIndex,
         1
       );
+
 
       arena.unshift(
         new Array(
           BOARD_COLUMNS
         ).fill(0)
       );
+
     });
 
+
   const numberOfLines =
-    clearedRowIndexes.length;
+    completedRows.length;
+
 
   clearedLines +=
     numberOfLines;
 
+
   combo += 1;
 
-  if (combo > bestCombo) {
-    bestCombo = combo;
-  }
+
+  bestCombo =
+    Math.max(
+      bestCombo,
+      combo
+    );
+
 
   const baseLineScore =
     LINE_SCORE_VALUES[
@@ -2162,10 +3260,12 @@ function clearCompletedLines() {
     ] ||
     numberOfLines * 250;
 
+
   const comboBonus =
     combo > 0
       ? combo * 50 * level
       : 0;
+
 
   addScore(
     baseLineScore *
@@ -2173,14 +3273,17 @@ function clearCompletedLines() {
       comboBonus
   );
 
+
   updateLevel();
 
+
   showLineAnnouncement(
-    numberOfLines,
-    combo
+    numberOfLines
   );
 
+
   triggerScreenFlash();
+
 
   shakeScreen(
     numberOfLines === 4
@@ -2188,115 +3291,149 @@ function clearCompletedLines() {
       : 180
   );
 
+
   vibrateDevice(
     numberOfLines === 4
       ? [45, 30, 65]
       : [22, 24]
   );
 
+
   if (numberOfLines === 4) {
+
     playImportedClip(
       effectPaths.fourLineClear,
       "effects"
     );
 
+
     playFourLineVoice();
+
   } else {
+
     playImportedClip(
       effectPaths.lineClear,
       "effects"
     );
 
+
     maybePlayPositiveVoice(
       numberOfLines
     );
+
   }
 
-  updateComboDisplay();
+
   updateInterface();
 
-  return {
-    count: numberOfLines
-  };
+
+  return numberOfLines;
+
 }
 
 
 /* =========================================================
-   22. SCORING AND LEVELS
+   24. SCORING AND LEVELS
 ========================================================= */
 
 function addScore(points) {
-  score += Math.max(
-    0,
-    Math.floor(points)
-  );
+
+  score +=
+    Math.max(
+      0,
+      Math.floor(points)
+    );
+
 
   if (score > highScore) {
+
     highScore = score;
 
     saveHighScore();
+
   }
 
+
   updateInterface();
+
 }
 
 
 function updateLevel() {
+
   const newLevel =
     Math.floor(
       clearedLines / 10
     ) + 1;
 
+
   if (newLevel > level) {
-    level = newLevel;
+
+    level =
+      newLevel;
+
 
     showTemporaryAnnouncement(
       `Level ${level}!`
     );
+
 
     playImportedClip(
       effectPaths.levelUp,
       "effects"
     );
 
+
     vibrateDevice([
       20,
       30,
       20
     ]);
+
   } else {
-    level = newLevel;
+
+    level =
+      newLevel;
+
   }
+
 }
 
 
 function getDropInterval() {
+
   return Math.max(
     90,
     1000 -
       (level - 1) * 75
   );
+
 }
 
 
 /* =========================================================
-   23. DYNAMIC MUSIC
+   25. DYNAMIC MUSIC
 ========================================================= */
 
 function isBoardInDanger() {
+
   return arena
     .slice(0, 5)
     .some((row) =>
+
       row.some(
         (cell) => cell !== 0
       )
+
     );
+
 }
 
 
 function updateDynamicMusic(
   forceUpdate = false
 ) {
+
   if (
     !gameStarted ||
     gamePaused ||
@@ -2306,8 +3443,10 @@ function updateDynamicMusic(
     return;
   }
 
+
   const nowDangerous =
     isBoardInDanger();
+
 
   if (
     !forceUpdate &&
@@ -2316,35 +3455,52 @@ function updateDynamicMusic(
     return;
   }
 
+
   dangerActive =
     nowDangerous;
 
+
   if (dangerActive) {
-    changeMusic("danger");
+
+    changeMusic(
+      "danger"
+    );
+
 
     if (!dangerVoicePlayed) {
+
       dangerVoicePlayed = true;
+
 
       playVoiceClip(
         voicePaths.dangerous,
         650
       );
+
     }
+
   } else {
+
     dangerVoicePlayed = false;
 
-    changeMusic("gameplay");
+
+    changeMusic(
+      "gameplay"
+    );
+
   }
+
 }
 
 
 /* =========================================================
-   24. VOICE REACTIONS
+   26. VOICE REACTIONS
 ========================================================= */
 
 function maybePlayPositiveVoice(
   numberOfLines
 ) {
+
   if (
     audioSettings.muted ||
     activeVoice
@@ -2352,59 +3508,75 @@ function maybePlayPositiveVoice(
     return;
   }
 
+
   let chance = 0;
+
 
   if (numberOfLines === 1) {
     chance = 0.08;
   }
 
+
   if (numberOfLines === 2) {
     chance = 0.38;
   }
+
 
   if (numberOfLines === 3) {
     chance = 0.68;
   }
 
+
   if (Math.random() > chance) {
     return;
   }
+
 
   let choices = [
     voicePaths.okay,
     voicePaths.nice
   ];
 
+
   if (numberOfLines === 2) {
+
     choices = [
       voicePaths.nice,
       voicePaths.thatllDo
     ];
+
   }
 
+
   if (numberOfLines >= 3) {
+
     choices = [
       voicePaths.beautiful,
       voicePaths.nice
     ];
+
   }
+
 
   const selectedVoice =
     choices[
       Math.floor(
         Math.random() *
-          choices.length
+        choices.length
       )
     ];
+
 
   playVoiceClip(
     selectedVoice,
     600
   );
+
 }
 
 
 function playFourLineVoice() {
+
   if (
     audioSettings.muted ||
     activeVoice
@@ -2412,55 +3584,1298 @@ function playFourLineVoice() {
     return;
   }
 
+
   const selectedVoice =
     Math.random() < 0.7
       ? voicePaths.beautiful
       : voicePaths.thatllDo;
 
+
   playVoiceClip(
     selectedVoice,
     700
   );
+
 }
 
 
 /* =========================================================
-   25. COUNTDOWN
+   PART 2 ENDS HERE
+   PASTE PART 3 DIRECTLY BELOW THIS COMMENT
 ========================================================= */
 
-async function beginGameSequence(
-  audioEnabled
-) {
-  if (countdownRunning) {
+/* =========================================================
+   27. ANNOUNCEMENTS AND VISUAL FEEDBACK
+========================================================= */
+
+function showLineAnnouncement(numberOfLines) {
+
+  const announcement =
+    LINE_ANNOUNCEMENTS[numberOfLines] ||
+    `${numberOfLines} Lines!`;
+
+
+  showTemporaryAnnouncement(
+    announcement
+  );
+
+}
+
+
+function showTemporaryAnnouncement(text) {
+
+  if (!lineAnnouncement) {
     return;
   }
 
-  cancelGesture();
 
-  setMasterMuted(
-    !audioEnabled
+  window.clearTimeout(
+    announcementTimer
   );
 
-  enterMobileGameMode();
 
-  hideAllOverlays();
+  lineAnnouncement.textContent =
+    text;
 
-  countdownRunning = true;
 
-  countdownOverlay.classList.add(
+  lineAnnouncement.classList.remove(
     "is-visible"
   );
 
-  countdownOverlay.setAttribute(
+
+  void lineAnnouncement.offsetWidth;
+
+
+  lineAnnouncement.classList.add(
+    "is-visible"
+  );
+
+
+  announcementTimer =
+    window.setTimeout(() => {
+
+      lineAnnouncement.classList.remove(
+        "is-visible"
+      );
+
+    }, 900);
+
+}
+
+
+function triggerScreenFlash() {
+
+  if (!screenFlash) {
+    return;
+  }
+
+
+  screenFlash.classList.remove(
+    "is-active"
+  );
+
+
+  void screenFlash.offsetWidth;
+
+
+  screenFlash.classList.add(
+    "is-active"
+  );
+
+}
+
+
+function shakeScreen(
+  duration = 180
+) {
+
+  document.body.classList.remove(
+    "is-shaking"
+  );
+
+
+  void document.body.offsetWidth;
+
+
+  document.body.classList.add(
+    "is-shaking"
+  );
+
+
+  window.setTimeout(() => {
+
+    document.body.classList.remove(
+      "is-shaking"
+    );
+
+  }, duration);
+
+}
+
+
+function vibrateDevice(pattern) {
+
+  if (
+    "vibrate" in navigator &&
+    shouldUseMobileGameMode()
+  ) {
+
+    navigator.vibrate(pattern);
+
+  }
+
+}
+
+
+/* =========================================================
+   28. DRAWING UTILITIES
+========================================================= */
+
+function createRoundedRectangle(
+  drawingContext,
+  x,
+  y,
+  width,
+  height,
+  radius
+) {
+
+  drawingContext.beginPath();
+
+
+  if (
+    typeof drawingContext.roundRect ===
+    "function"
+  ) {
+
+    drawingContext.roundRect(
+      x,
+      y,
+      width,
+      height,
+      radius
+    );
+
+  } else {
+
+    drawingContext.rect(
+      x,
+      y,
+      width,
+      height
+    );
+
+  }
+
+}
+
+
+function drawBlock(
+  drawingContext,
+  pixelX,
+  pixelY,
+  blockSize,
+  type,
+  isGhost = false
+) {
+
+  const colours =
+    PIECE_COLOURS[type];
+
+
+  if (!colours) {
+    return;
+  }
+
+
+  const gap =
+    Math.max(
+      2,
+      blockSize * 0.075
+    );
+
+
+  const x =
+    pixelX + gap;
+
+
+  const y =
+    pixelY + gap;
+
+
+  const size =
+    blockSize - gap * 2;
+
+
+  const cornerRadius =
+    Math.max(
+      3,
+      blockSize * 0.14
+    );
+
+
+  drawingContext.save();
+
+
+  if (isGhost) {
+
+    drawingContext.globalAlpha =
+      0.25;
+
+
+    drawingContext.strokeStyle =
+      colours.light;
+
+
+    drawingContext.lineWidth =
+      Math.max(
+        2,
+        blockSize * 0.07
+      );
+
+
+    createRoundedRectangle(
+      drawingContext,
+      x,
+      y,
+      size,
+      size,
+      cornerRadius
+    );
+
+
+    drawingContext.stroke();
+
+    drawingContext.restore();
+
+    return;
+
+  }
+
+
+  drawingContext.shadowColor =
+    colours.main;
+
+
+  drawingContext.shadowBlur =
+    Math.max(
+      7,
+      blockSize * 0.42
+    );
+
+
+  const blockGradient =
+    drawingContext.createLinearGradient(
+      x,
+      y,
+      x + size,
+      y + size
+    );
+
+
+  blockGradient.addColorStop(
+    0,
+    colours.light
+  );
+
+
+  blockGradient.addColorStop(
+    0.35,
+    colours.main
+  );
+
+
+  blockGradient.addColorStop(
+    1,
+    colours.dark
+  );
+
+
+  createRoundedRectangle(
+    drawingContext,
+    x,
+    y,
+    size,
+    size,
+    cornerRadius
+  );
+
+
+  drawingContext.fillStyle =
+    blockGradient;
+
+
+  drawingContext.fill();
+
+
+  drawingContext.shadowBlur = 0;
+
+
+  drawingContext.strokeStyle =
+    "rgba(255,255,255,0.3)";
+
+
+  drawingContext.lineWidth =
+    Math.max(
+      1,
+      blockSize * 0.035
+    );
+
+
+  drawingContext.stroke();
+
+
+  drawingContext.restore();
+
+}
+
+
+function drawPieceMatrix(
+  matrix,
+  position,
+  type,
+  isGhost = false
+) {
+
+  if (!matrix) {
+    return;
+  }
+
+
+  matrix.forEach(
+    (row, y) => {
+
+      row.forEach(
+        (value, x) => {
+
+          if (value === 0) {
+            return;
+          }
+
+
+          drawBlock(
+            context,
+            (
+              x +
+              position.x
+            ) *
+              BOARD_BLOCK_SIZE,
+            (
+              y +
+              position.y
+            ) *
+              BOARD_BLOCK_SIZE,
+            BOARD_BLOCK_SIZE,
+            type,
+            isGhost
+          );
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   29. DRAWING THE GAME BOARD
+========================================================= */
+
+function drawGameBoard() {
+
+  context.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  const boardGradient =
+    context.createLinearGradient(
+      0,
+      0,
+      0,
+      canvas.height
+    );
+
+
+  boardGradient.addColorStop(
+    0,
+    "rgba(18,8,29,0.8)"
+  );
+
+
+  boardGradient.addColorStop(
+    1,
+    "rgba(2,1,5,0.96)"
+  );
+
+
+  context.fillStyle =
+    boardGradient;
+
+
+  context.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  drawBoardGrid();
+
+
+  arena.forEach(
+    (row, y) => {
+
+      row.forEach(
+        (type, x) => {
+
+          if (type === 0) {
+            return;
+          }
+
+
+          drawBlock(
+            context,
+            x * BOARD_BLOCK_SIZE,
+            y * BOARD_BLOCK_SIZE,
+            BOARD_BLOCK_SIZE,
+            type,
+            false
+          );
+
+        }
+      );
+
+    }
+  );
+
+
+  if (
+    player.matrix &&
+    !gameOver
+  ) {
+
+    const ghostPosition =
+      getGhostPosition();
+
+
+    drawPieceMatrix(
+      player.matrix,
+      ghostPosition,
+      player.type,
+      true
+    );
+
+
+    drawPieceMatrix(
+      player.matrix,
+      player.position,
+      player.type,
+      false
+    );
+
+  }
+
+}
+
+
+function drawBoardGrid() {
+
+  context.save();
+
+
+  context.strokeStyle =
+    "rgba(181,98,255,0.08)";
+
+
+  context.lineWidth = 1;
+
+
+  for (
+    let column = 0;
+    column <= BOARD_COLUMNS;
+    column += 1
+  ) {
+
+    context.beginPath();
+
+
+    context.moveTo(
+      column * BOARD_BLOCK_SIZE,
+      0
+    );
+
+
+    context.lineTo(
+      column * BOARD_BLOCK_SIZE,
+      canvas.height
+    );
+
+
+    context.stroke();
+
+  }
+
+
+  for (
+    let row = 0;
+    row <= BOARD_ROWS;
+    row += 1
+  ) {
+
+    context.beginPath();
+
+
+    context.moveTo(
+      0,
+      row * BOARD_BLOCK_SIZE
+    );
+
+
+    context.lineTo(
+      canvas.width,
+      row * BOARD_BLOCK_SIZE
+    );
+
+
+    context.stroke();
+
+  }
+
+
+  context.restore();
+
+}
+
+
+/* =========================================================
+   30. DRAWING PREVIEWS
+========================================================= */
+
+function drawMiniPiece(
+  drawingContext,
+  drawingCanvas,
+  matrix,
+  type,
+  preferredBlockSize
+) {
+
+  if (
+    !drawingContext ||
+    !drawingCanvas ||
+    !matrix
+  ) {
+    return;
+  }
+
+
+  drawingContext.clearRect(
+    0,
+    0,
+    drawingCanvas.width,
+    drawingCanvas.height
+  );
+
+
+  const blockSize =
+    Math.min(
+      preferredBlockSize,
+      (
+        drawingCanvas.width *
+        0.82
+      ) /
+        matrix[0].length,
+      (
+        drawingCanvas.height *
+        0.82
+      ) /
+        matrix.length
+    );
+
+
+  const offsetX =
+    (
+      drawingCanvas.width -
+      matrix[0].length *
+        blockSize
+    ) / 2;
+
+
+  const offsetY =
+    (
+      drawingCanvas.height -
+      matrix.length *
+        blockSize
+    ) / 2;
+
+
+  matrix.forEach(
+    (row, y) => {
+
+      row.forEach(
+        (value, x) => {
+
+          if (value === 0) {
+            return;
+          }
+
+
+          drawBlock(
+            drawingContext,
+            offsetX +
+              x * blockSize,
+            offsetY +
+              y * blockSize,
+            blockSize,
+            type,
+            false
+          );
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+function drawPreviewPiece() {
+
+  previewContext.clearRect(
+    0,
+    0,
+    previewCanvas.width,
+    previewCanvas.height
+  );
+
+
+  mobilePreviewContext?.clearRect(
+    0,
+    0,
+    mobilePreviewCanvas.width,
+    mobilePreviewCanvas.height
+  );
+
+
+  if (!nextPiece) {
+    return;
+  }
+
+
+  drawMiniPiece(
+    previewContext,
+    previewCanvas,
+    nextPiece.matrix,
+    nextPiece.type,
+    28
+  );
+
+
+  if (
+    mobilePreviewContext &&
+    mobilePreviewCanvas
+  ) {
+
+    drawMiniPiece(
+      mobilePreviewContext,
+      mobilePreviewCanvas,
+      nextPiece.matrix,
+      nextPiece.type,
+      15
+    );
+
+  }
+
+}
+
+
+function drawHeldPiece() {
+
+  holdContext.clearRect(
+    0,
+    0,
+    holdCanvas.width,
+    holdCanvas.height
+  );
+
+
+  if (!heldPieceType) {
+
+    if (holdEmptyMessage) {
+
+      holdEmptyMessage.hidden =
+        false;
+
+    }
+
+
+    return;
+
+  }
+
+
+  if (holdEmptyMessage) {
+
+    holdEmptyMessage.hidden =
+      true;
+
+  }
+
+
+  drawMiniPiece(
+    holdContext,
+    holdCanvas,
+    PIECE_SHAPES[
+      heldPieceType
+    ],
+    heldPieceType,
+    24
+  );
+
+}
+
+
+/* =========================================================
+   31. INTERFACE UPDATES
+========================================================= */
+
+function formatScore(value) {
+
+  return String(
+    Math.max(
+      0,
+      Math.floor(value)
+    )
+  ).padStart(
+    6,
+    "0"
+  );
+
+}
+
+
+function updateInterface() {
+
+  const formattedScore =
+    formatScore(score);
+
+
+  if (scoreElement) {
+
+    scoreElement.textContent =
+      formattedScore;
+
+  }
+
+
+  if (highScoreElement) {
+
+    highScoreElement.textContent =
+      formatScore(highScore);
+
+  }
+
+
+  if (levelElement) {
+
+    levelElement.textContent =
+      String(level);
+
+  }
+
+
+  if (linesElement) {
+
+    linesElement.textContent =
+      String(clearedLines);
+
+  }
+
+
+  if (comboElement) {
+
+    comboElement.textContent =
+      `x${Math.max(
+        0,
+        bestCombo
+      )}`;
+
+  }
+
+
+  if (mobileScoreElement) {
+
+    mobileScoreElement.textContent =
+      formattedScore;
+
+  }
+
+
+  if (mobileLevelElement) {
+
+    mobileLevelElement.textContent =
+      String(level);
+
+  }
+
+
+  if (mobileLinesElement) {
+
+    mobileLinesElement.textContent =
+      String(clearedLines);
+
+  }
+
+}
+
+
+function updateGameStatus(
+  text,
+  state
+) {
+
+  if (statusElement) {
+
+    statusElement.textContent =
+      text;
+
+  }
+
+
+  if (statusLight) {
+
+    statusLight.className =
+      `status-light status-light--${state}`;
+
+  }
+
+}
+
+
+function updatePauseButtons() {
+
+  if (pauseButton) {
+
+    pauseButton.innerHTML =
+      gamePaused
+        ? `
+            <span aria-hidden="true">▶</span>
+            Resume
+          `
+        : `
+            <span aria-hidden="true">⏸</span>
+            Pause
+          `;
+
+  }
+
+
+  if (mobilePauseButton) {
+
+    mobilePauseButton.innerHTML =
+      gamePaused
+        ? `
+            <span aria-hidden="true">▶</span>
+            <small>Resume</small>
+          `
+        : `
+            <span aria-hidden="true">⏸</span>
+            <small>Pause</small>
+          `;
+
+  }
+
+
+  document
+    .querySelectorAll(
+      '[data-action="pause"]'
+    )
+    .forEach((button) => {
+
+      button.innerHTML =
+        gamePaused
+          ? `
+              <span aria-hidden="true">▶</span>
+              <strong>Resume</strong>
+            `
+          : `
+              <span aria-hidden="true">Ⅱ</span>
+              <strong>Pause</strong>
+            `;
+
+    });
+
+
+  if (quickMenuPauseButton) {
+
+    quickMenuPauseButton.innerHTML =
+      gamePaused
+        ? `
+            <span aria-hidden="true">▶</span>
+            <strong>Resume</strong>
+          `
+        : `
+            <span aria-hidden="true">⏸</span>
+            <strong>Pause</strong>
+          `;
+
+  }
+
+}
+
+
+function chooseRandomTip() {
+
+  if (!gameTipElement) {
+    return;
+  }
+
+
+  gameTipElement.textContent =
+    GAME_TIPS[
+      Math.floor(
+        Math.random() *
+        GAME_TIPS.length
+      )
+    ];
+
+}
+
+
+/* =========================================================
+   32. OVERLAY UTILITIES
+========================================================= */
+
+function hideOverlay(overlay) {
+
+  if (!overlay) {
+    return;
+  }
+
+
+  overlay.classList.remove(
+    "is-visible"
+  );
+
+
+  overlay.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+}
+
+
+function showOverlay(overlay) {
+
+  if (!overlay) {
+    return;
+  }
+
+
+  overlay.classList.add(
+    "is-visible"
+  );
+
+
+  overlay.setAttribute(
     "aria-hidden",
     "false"
   );
 
-  if (audioEnabled) {
+}
+
+
+function hideAllGameOverlays() {
+
+  [
+    startOverlay,
+    rotateDeviceOverlay,
+    countdownOverlay,
+    pauseOverlay,
+    controlsOverlay,
+    gameOverOverlay
+  ].forEach((overlay) => {
+
+    hideOverlay(overlay);
+
+  });
+
+}
+
+
+function openControlsOverlay(
+  returnTarget = "pause"
+) {
+
+  cancelGesture();
+  closeMobileQuickMenu();
+
+
+  controlsOverlayReturnTarget =
+    returnTarget;
+
+
+  hideOverlay(pauseOverlay);
+  hideOverlay(gameOverOverlay);
+
+
+  showOverlay(
+    controlsOverlay
+  );
+
+
+  applyControlPreferences();
+
+}
+
+
+function closeControlsOverlay() {
+
+  hideOverlay(
+    controlsOverlay
+  );
+
+
+  if (
+    controlsOverlayReturnTarget ===
+      "game-over" &&
+    gameOver
+  ) {
+
+    showOverlay(
+      gameOverOverlay
+    );
+
+    return;
+
+  }
+
+
+  if (
+    gamePaused &&
+    gameStarted
+  ) {
+
+    showOverlay(
+      pauseOverlay
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   33. FIRST-TIME GESTURE TUTORIAL
+========================================================= */
+
+function hasSeenGestureTutorial() {
+
+  try {
+
+    return (
+      localStorage.getItem(
+        GESTURE_TUTORIAL_STORAGE_KEY
+      ) === "true"
+    );
+
+  } catch (error) {
+
+    return false;
+
+  }
+
+}
+
+
+function markGestureTutorialSeen() {
+
+  try {
+
+    localStorage.setItem(
+      GESTURE_TUTORIAL_STORAGE_KEY,
+      "true"
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Block Drop could not remember the gesture tutorial.",
+      error
+    );
+
+  }
+
+}
+
+
+function shouldShowGestureTutorial() {
+
+  return (
+    shouldUseMobileGameMode() &&
+    currentControlMode ===
+      CONTROL_MODE_PORTRAIT_GESTURE &&
+    !hasSeenGestureTutorial()
+  );
+
+}
+
+
+function showGestureTutorial() {
+
+  if (
+    !gestureTutorial ||
+    !shouldShowGestureTutorial()
+  ) {
+    return Promise.resolve();
+  }
+
+
+  gestureTutorial.classList.add(
+    "is-visible"
+  );
+
+
+  gestureTutorial.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+
+  return new Promise((resolve) => {
+
+    window.clearTimeout(
+      tutorialTimer
+    );
+
+
+    tutorialTimer =
+      window.setTimeout(() => {
+
+        gestureTutorial.classList.remove(
+          "is-visible"
+        );
+
+
+        gestureTutorial.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+
+        markGestureTutorialSeen();
+
+        resolve();
+
+      }, 2600);
+
+  });
+
+}
+
+
+/* =========================================================
+   34. GAME START SEQUENCE
+========================================================= */
+
+function wait(milliseconds) {
+
+  return new Promise((resolve) => {
+
+    window.setTimeout(
+      resolve,
+      milliseconds
+    );
+
+  });
+
+}
+
+
+async function beginGameSequence(
+  audioEnabled
+) {
+
+  if (countdownRunning) {
+    return;
+  }
+
+
+  readStartScreenPreferences();
+
+
+  pendingAudioEnabled =
+    Boolean(audioEnabled);
+
+
+  setMasterMuted(
+    !pendingAudioEnabled
+  );
+
+
+  enterMobileGameMode();
+
+
+  if (
+    mobileGameModeActive &&
+    isLandscapeControlMode() &&
+    isPortraitOrientation()
+  ) {
+
+    showRotateDeviceOverlay();
+
+    return;
+
+  }
+
+
+  await continueGameSequence();
+
+}
+
+
+async function continueGameSequence() {
+
+  hideRotateDeviceOverlay();
+
+  hideAllGameOverlays();
+
+  closeMobileQuickMenu();
+  closeAudioSettings();
+
+
+  if (
+    pendingAudioEnabled &&
+    !audioSettings.muted
+  ) {
+
     initialiseAudioContext();
 
-    changeMusic("menu");
+    changeMusic(
+      "menu"
+    );
+
   }
+
+
+  await showGestureTutorial();
+
+
+  countdownRunning = true;
+
+
+  showOverlay(
+    countdownOverlay
+  );
+
 
   const countdownItems = [
     "3",
@@ -2469,108 +4884,107 @@ async function beginGameSequence(
     "DROP!"
   ];
 
+
   for (
     const item
     of countdownItems
   ) {
-    countdownNumber.textContent =
-      item;
 
-    countdownNumber.classList.toggle(
-      "is-drop",
-      item === "DROP!"
-    );
+    if (countdownNumber) {
 
-    restartCountdownAnimation();
+      countdownNumber.textContent =
+        item;
+
+
+      countdownNumber.classList.toggle(
+        "is-drop",
+        item === "DROP!"
+      );
+
+
+      countdownNumber.style.animation =
+        "none";
+
+
+      void countdownNumber.offsetWidth;
+
+
+      countdownNumber.style.animation =
+        "";
+
+    }
+
 
     if (
-      audioEnabled &&
+      !audioSettings.muted &&
       item !== "DROP!"
     ) {
+
       playGeneratedSound(
         "countdown"
       );
+
     }
+
 
     if (
-      audioEnabled &&
+      !audioSettings.muted &&
       item === "DROP!"
     ) {
-      const titleEffect =
-        Math.random() < 0.5
-          ? effectPaths.titleOne
-          : effectPaths.titleTwo;
 
       playImportedClip(
-        titleEffect,
+        Math.random() < 0.5
+          ? effectPaths.titleOne
+          : effectPaths.titleTwo,
         "effects"
       );
+
     }
+
 
     await wait(
       item === "DROP!"
-        ? 700
-        : 650
+        ? 650
+        : 600
     );
+
   }
 
-  countdownOverlay.classList.remove(
-    "is-visible"
+
+  hideOverlay(
+    countdownOverlay
   );
 
-  countdownOverlay.setAttribute(
-    "aria-hidden",
-    "true"
-  );
 
-  countdownNumber.classList.remove(
+  countdownNumber?.classList.remove(
     "is-drop"
   );
 
+
   countdownRunning = false;
 
+
   startNewGame();
-}
 
-
-function restartCountdownAnimation() {
-  countdownNumber.style.animation =
-    "none";
-
-  void countdownNumber.offsetWidth;
-
-  countdownNumber.style.animation = "";
-}
-
-
-function wait(milliseconds) {
-  return new Promise(
-    (resolve) => {
-      window.setTimeout(
-        resolve,
-        milliseconds
-      );
-    }
-  );
 }
 
 
 /* =========================================================
-   26. GAME FLOW
+   35. GAME LIFECYCLE
 ========================================================= */
 
 function startNewGame() {
+
   cancelGesture();
 
   clearArena();
 
-  pieceBag = [];
-  particles = [];
 
+  pieceBag = [];
   nextPiece = null;
   heldPieceType = null;
-
   canHold = true;
+
 
   score = 0;
   level = 1;
@@ -2579,61 +4993,68 @@ function startNewGame() {
   combo = -1;
   bestCombo = 0;
 
-  dropCounter = 0;
 
+  dangerActive = false;
+  dangerVoicePlayed = false;
+
+
+  runStartingHighScore =
+    highScore;
+
+
+  dropCounter = 0;
   lastFrameTime =
     performance.now();
+
 
   gameStarted = true;
   gamePaused = false;
   gameOver = false;
 
-  dangerActive = false;
-  dangerVoicePlayed = false;
-
-  runStartingHighScore =
-    highScore;
 
   document.body.classList.add(
     "game-running"
   );
 
-  hideAllOverlays();
 
-  setGameStatus(
+  hideAllGameOverlays();
+
+
+  if (highScoreMessage) {
+
+    highScoreMessage.hidden =
+      true;
+
+  }
+
+
+  updateGameStatus(
     "Playing",
     "playing"
   );
 
-  highScoreMessage.hidden =
-    true;
 
   chooseRandomTip();
 
   spawnNextPiece();
 
-  updateComboDisplay();
-  updateInterface();
   updatePauseButtons();
+  updateInterface();
+
 
   if (!audioSettings.muted) {
-    changeMusic("gameplay");
+
+    changeMusic(
+      "gameplay"
+    );
+
   }
+
 }
 
 
-function restartGame() {
-  if (countdownRunning) {
-    return;
-  }
+function pauseGame() {
 
-  beginGameSequence(
-    !audioSettings.muted
-  );
-}
-
-
-function togglePause() {
   if (
     !gameStarted ||
     gameOver ||
@@ -2642,63 +5063,53 @@ function togglePause() {
     return;
   }
 
-  if (gamePaused) {
-    resumeGame();
-  } else {
-    pauseGame();
-  }
-}
-
-
-function pauseGame() {
-  if (
-    !gameStarted ||
-    gameOver
-  ) {
-    return;
-  }
 
   cancelGesture();
+  closeMobileQuickMenu();
+
 
   gamePaused = true;
 
-  pauseOverlay.classList.add(
-    "is-visible"
+
+  showOverlay(
+    pauseOverlay
   );
 
-  pauseOverlay.setAttribute(
-    "aria-hidden",
-    "false"
-  );
 
-  setGameStatus(
+  updateGameStatus(
     "Paused",
     "paused"
   );
 
+
   updatePauseButtons();
+
 
   if (
     activeMusic &&
     !audioSettings.muted
   ) {
-    fadeAudio(
-      activeMusic,
+
+    activeMusic.volume =
       Math.min(
         0.1,
-        getMusicTargetVolume(
+        getMusicVolume(
           activeMusicName
         )
-      ),
-      300
-    );
+      );
+
   }
 
-  playGeneratedSound("pause");
+
+  playGeneratedSound(
+    "pause"
+  );
+
 }
 
 
 function resumeGame() {
+
   if (
     !gameStarted ||
     gameOver
@@ -2706,126 +5117,128 @@ function resumeGame() {
     return;
   }
 
+
   cancelGesture();
 
-  gamePaused = false;
-  dropCounter = 0;
 
+  gamePaused = false;
+
+
+  dropCounter = 0;
   lastFrameTime =
     performance.now();
 
-  pauseOverlay.classList.remove(
-    "is-visible"
+
+  hideOverlay(
+    pauseOverlay
   );
 
-  pauseOverlay.setAttribute(
-    "aria-hidden",
-    "true"
-  );
 
-  setGameStatus(
+  updateGameStatus(
     "Playing",
     "playing"
   );
+
 
   updatePauseButtons();
 
   updateDynamicMusic(true);
 
-  playGeneratedSound("resume");
+
+  playGeneratedSound(
+    "resume"
+  );
+
 }
 
 
-function updatePauseButtons() {
-  const pausedMarkup =
-    '<span aria-hidden="true">▶</span> Resume';
+function togglePause() {
 
-  const playingMarkup =
-    '<span aria-hidden="true">⏸</span> Pause';
-
-  if (pauseButton) {
-    pauseButton.innerHTML =
-      gamePaused
-        ? pausedMarkup
-        : playingMarkup;
+  if (
+    !gameStarted ||
+    gameOver ||
+    countdownRunning
+  ) {
+    return;
   }
 
-  if (mobilePauseButton) {
-    mobilePauseButton.innerHTML =
-      gamePaused
-        ? `
-          <span aria-hidden="true">▶</span>
-          <small>Resume</small>
-        `
-        : `
-          <span aria-hidden="true">⏸</span>
-          <small>Pause</small>
-        `;
+
+  if (gamePaused) {
+
+    resumeGame();
+
+  } else {
+
+    pauseGame();
+
   }
 
-  const dockPauseButton =
-    document.querySelector(
-      '[data-action="pause"]'
-    );
+}
 
-  if (dockPauseButton) {
-    dockPauseButton.innerHTML =
-      gamePaused
-        ? `
-          <span aria-hidden="true">▶</span>
-          <strong>Resume</strong>
-        `
-        : `
-          <span aria-hidden="true">Ⅱ</span>
-          <strong>Pause</strong>
-        `;
+
+function restartGame() {
+
+  if (countdownRunning) {
+    return;
   }
+
+
+  beginGameSequence(
+    !audioSettings.muted
+  );
+
 }
 
 
 function endGame() {
+
   cancelGesture();
+
 
   gameOver = true;
   gamePaused = false;
   gameStarted = false;
 
+
   document.body.classList.remove(
     "game-running"
   );
 
-  finalScoreElement.textContent =
-    formatScore(score);
 
-  const achievedNewHighScore =
-    score > 0 &&
-    score > runStartingHighScore;
+  if (finalScoreElement) {
 
-  highScoreMessage.hidden =
-    !achievedNewHighScore;
+    finalScoreElement.textContent =
+      formatScore(score);
 
-  if (score > highScore) {
-    highScore = score;
-
-    saveHighScore();
   }
 
-  gameOverOverlay.classList.add(
-    "is-visible"
+
+  if (highScoreMessage) {
+
+    highScoreMessage.hidden =
+      !(
+        score > 0 &&
+        score >
+          runStartingHighScore
+      );
+
+  }
+
+
+  showOverlay(
+    gameOverOverlay
   );
 
-  gameOverOverlay.setAttribute(
-    "aria-hidden",
-    "false"
-  );
 
-  setGameStatus(
+  updateGameStatus(
     "Game Over",
     "game-over"
   );
 
-  updateInterface();
+
   updatePauseButtons();
+  updateInterface();
+
 
   vibrateDevice([
     70,
@@ -2833,381 +5246,202 @@ function endGame() {
     110
   ]);
 
+
+  shakeScreen(380);
+
+
   if (!audioSettings.muted) {
+
     playImportedClip(
       effectPaths.gameOver,
       "effects"
     );
 
+
     playVoiceClip(
       effectPaths.gameOverWhispered,
-      750
+      700,
+      {
+        interrupt: true
+      }
     );
+
 
     window.setTimeout(() => {
-      if (!audioSettings.muted) {
-        changeMusic("menu");
-      }
-    }, 1350);
-  }
 
-  shakeScreen(380);
-}
-
-
-function canControlPlayer() {
-  return (
-    gameStarted &&
-    !gamePaused &&
-    !gameOver &&
-    !countdownRunning &&
-    !audioSettingsPanel?.classList.contains(
-      "is-open"
-    ) &&
-    Boolean(player.matrix)
-  );
-}
-
-
-/* =========================================================
-   27. OVERLAY UTILITIES
-========================================================= */
-
-function hideAllOverlays() {
-  [
-    startOverlay,
-    countdownOverlay,
-    pauseOverlay,
-    gameOverOverlay
-  ].forEach((overlay) => {
-    if (!overlay) {
-      return;
-    }
-
-    overlay.classList.remove(
-      "is-visible"
-    );
-
-    overlay.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-  });
-}
-
-
-/* =========================================================
-   28. GESTURE CONTROLS
-========================================================= */
-
-function initialiseGestureControls() {
-  if (!gestureSurface) {
-    return;
-  }
-
-  gestureSurface.addEventListener(
-    "pointerdown",
-    handleGestureStart,
-    {
-      passive: false
-    }
-  );
-
-  gestureSurface.addEventListener(
-    "pointermove",
-    handleGestureMove,
-    {
-      passive: false
-    }
-  );
-
-  gestureSurface.addEventListener(
-    "pointerup",
-    handleGestureEnd,
-    {
-      passive: false
-    }
-  );
-
-  gestureSurface.addEventListener(
-    "pointercancel",
-    handleGestureCancel,
-    {
-      passive: false
-    }
-  );
-
-  gestureSurface.addEventListener(
-    "lostpointercapture",
-    handleGestureCancel
-  );
-
-  gestureSurface.addEventListener(
-    "contextmenu",
-    (event) => {
-      event.preventDefault();
-    }
-  );
-}
-
-
-function handleGestureStart(event) {
-  if (!canControlPlayer()) {
-    return;
-  }
-
-  event.preventDefault();
-
-  initialiseAudioContext();
-
-  cancelGesture();
-
-  gestureState.pointerId =
-    event.pointerId;
-
-  gestureState.startX =
-    event.clientX;
-
-  gestureState.startY =
-    event.clientY;
-
-  gestureState.currentX =
-    event.clientX;
-
-  gestureState.currentY =
-    event.clientY;
-
-  gestureState.startTime =
-    performance.now();
-
-  gestureState.moved = false;
-  gestureState.holding = false;
-
-  try {
-    gestureSurface.setPointerCapture(
-      event.pointerId
-    );
-  } catch (error) {
-    // Some browsers do not require pointer capture.
-  }
-
-  gestureState.holdTimeout =
-    window.setTimeout(() => {
-      if (
-        !canControlPlayer() ||
-        gestureState.moved
-      ) {
-        return;
-      }
-
-      gestureState.holding = true;
-
-      softDropPlayer();
-
-      vibrateDevice([8]);
-
-      gestureState.holdInterval =
-        window.setInterval(() => {
-          if (!canControlPlayer()) {
-            cancelGesture();
-            return;
-          }
-
-          softDropPlayer();
-        }, HOLD_DROP_INTERVAL);
-    }, HOLD_DELAY);
-}
-
-
-function handleGestureMove(event) {
-  if (
-    gestureState.pointerId !==
-    event.pointerId
-  ) {
-    return;
-  }
-
-  event.preventDefault();
-
-  gestureState.currentX =
-    event.clientX;
-
-  gestureState.currentY =
-    event.clientY;
-
-  const distanceX =
-    gestureState.currentX -
-    gestureState.startX;
-
-  const distanceY =
-    gestureState.currentY -
-    gestureState.startY;
-
-  const movementDistance =
-    Math.hypot(
-      distanceX,
-      distanceY
-    );
-
-  if (
-    movementDistance >
-    TAP_MOVEMENT_LIMIT
-  ) {
-    gestureState.moved = true;
-
-    clearGestureHoldTimers();
-  }
-}
-
-
-function handleGestureEnd(event) {
-  if (
-    gestureState.pointerId !==
-    event.pointerId
-  ) {
-    return;
-  }
-
-  event.preventDefault();
-
-  gestureState.currentX =
-    event.clientX;
-
-  gestureState.currentY =
-    event.clientY;
-
-  const wasHolding =
-    gestureState.holding;
-
-  const startX =
-    gestureState.startX;
-
-  const startY =
-    gestureState.startY;
-
-  const startedAt =
-    gestureState.startTime;
-
-  clearGestureHoldTimers();
-
-  const deltaX =
-    gestureState.currentX -
-    startX;
-
-  const deltaY =
-    gestureState.currentY -
-    startY;
-
-  const absoluteX =
-    Math.abs(deltaX);
-
-  const absoluteY =
-    Math.abs(deltaY);
-
-  const duration =
-    performance.now() -
-    startedAt;
-
-  resetGestureState();
-
-  if (
-    !canControlPlayer() ||
-    wasHolding
-  ) {
-    return;
-  }
-
-  const isTap =
-    absoluteX <=
-      TAP_MOVEMENT_LIMIT &&
-    absoluteY <=
-      TAP_MOVEMENT_LIMIT &&
-    duration <=
-      TAP_DURATION_LIMIT;
-
-  if (isTap) {
-    rotatePlayer(
-      tapRotationDirection
-    );
-
-    return;
-  }
-
-  const isDownwardSwipe =
-    deltaY > SWIPE_THRESHOLD &&
-    absoluteY > absoluteX * 1.05;
-
-  if (isDownwardSwipe) {
-    hardDropPlayer();
-
-    return;
-  }
-
-  const isHorizontalSwipe =
-    absoluteX > SWIPE_THRESHOLD &&
-    absoluteX > absoluteY;
-
-  if (isHorizontalSwipe) {
-    const direction =
-      deltaX > 0
-        ? 1
-        : -1;
-
-    const steps =
-      Math.min(
-        MAX_SWIPE_STEPS,
-        Math.max(
-          1,
-          Math.round(
-            absoluteX /
-              SWIPE_STEP_DISTANCE
-          )
-        )
+      changeMusic(
+        "menu"
       );
 
-    movePlayerMultiple(
-      direction,
-      steps
-    );
+    }, 1300);
+
   }
+
 }
 
 
-function handleGestureCancel(event) {
+/* =========================================================
+   36. MOBILE QUICK MENU
+========================================================= */
+
+function openMobileQuickMenu() {
+
   if (
-    event?.pointerId !== undefined &&
-    gestureState.pointerId !== null &&
-    gestureState.pointerId !==
-      event.pointerId
+    !mobileQuickMenu ||
+    !mobileQuickMenuBackdrop
   ) {
     return;
   }
 
+
   cancelGesture();
+
+
+  mobileQuickMenu.classList.add(
+    "is-open"
+  );
+
+
+  mobileQuickMenuBackdrop.classList.add(
+    "is-visible"
+  );
+
+
+  mobileQuickMenu.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+
+  mobileQuickMenuBackdrop.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+
+  mobileMenuButton?.setAttribute(
+    "aria-expanded",
+    "true"
+  );
+
+
+  gestureMenuButton?.setAttribute(
+    "aria-expanded",
+    "true"
+  );
+
+
+  document.body.classList.add(
+    "mobile-menu-open"
+  );
+
 }
 
 
-function clearGestureHoldTimers() {
+function closeMobileQuickMenu() {
+
+  if (
+    !mobileQuickMenu ||
+    !mobileQuickMenuBackdrop
+  ) {
+    return;
+  }
+
+
+  mobileQuickMenu.classList.remove(
+    "is-open"
+  );
+
+
+  mobileQuickMenuBackdrop.classList.remove(
+    "is-visible"
+  );
+
+
+  mobileQuickMenu.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+
+  mobileQuickMenuBackdrop.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+
+  mobileMenuButton?.setAttribute(
+    "aria-expanded",
+    "false"
+  );
+
+
+  gestureMenuButton?.setAttribute(
+    "aria-expanded",
+    "false"
+  );
+
+
+  document.body.classList.remove(
+    "mobile-menu-open"
+  );
+
+}
+
+
+function toggleMobileQuickMenu() {
+
+  if (
+    mobileQuickMenu?.classList.contains(
+      "is-open"
+    )
+  ) {
+
+    closeMobileQuickMenu();
+
+  } else {
+
+    openMobileQuickMenu();
+
+  }
+
+}
+
+
+/* =========================================================
+   37. GESTURE CONTROLS
+========================================================= */
+
+function clearGestureTimers() {
+
   if (gestureState.holdTimeout) {
+
     window.clearTimeout(
       gestureState.holdTimeout
     );
 
-    gestureState.holdTimeout = null;
   }
 
+
   if (gestureState.holdInterval) {
+
     window.clearInterval(
       gestureState.holdInterval
     );
 
-    gestureState.holdInterval = null;
   }
+
+
+  gestureState.holdTimeout = null;
+  gestureState.holdInterval = null;
+
 }
 
 
 function resetGestureState() {
+
   gestureState.pointerId = null;
+  gestureState.surface = null;
 
   gestureState.startX = 0;
   gestureState.startY = 0;
@@ -3219,1315 +5453,528 @@ function resetGestureState() {
 
   gestureState.moved = false;
   gestureState.holding = false;
+
 }
 
 
 function cancelGesture() {
-  clearGestureHoldTimers();
+
+  clearGestureTimers();
   resetGestureState();
+
 }
 
 
-/* =========================================================
-   29. GESTURE HELP
-========================================================= */
+function handleGesturePointerDown(
+  event
+) {
 
-function showGestureHelp() {
-  if (
-    !gestureHelp ||
-    !mobileGameModeActive
-  ) {
+  if (!canControlPlayer()) {
     return;
   }
 
-  let alreadySeen = false;
+
+  event.preventDefault();
+
+
+  cancelGesture();
+
+
+  gestureState.pointerId =
+    event.pointerId;
+
+
+  gestureState.surface =
+    event.currentTarget;
+
+
+  gestureState.startX =
+    event.clientX;
+
+
+  gestureState.startY =
+    event.clientY;
+
+
+  gestureState.currentX =
+    event.clientX;
+
+
+  gestureState.currentY =
+    event.clientY;
+
+
+  gestureState.startTime =
+    performance.now();
+
 
   try {
-    alreadySeen =
-      localStorage.getItem(
-        GESTURE_HELP_STORAGE_KEY
-      ) === "true";
+
+    event.currentTarget.setPointerCapture(
+      event.pointerId
+    );
+
   } catch (error) {
-    alreadySeen = false;
-  }
 
-  if (alreadySeen) {
-    return;
-  }
-
-  gestureHelp.classList.add(
-    "is-visible"
-  );
-
-  if (gestureHelpTimer) {
-    window.clearTimeout(
-      gestureHelpTimer
+    console.debug(
+      "Pointer capture was unavailable.",
+      error
     );
+
   }
 
-  gestureHelpTimer =
+
+  gestureState.holdTimeout =
     window.setTimeout(() => {
-      gestureHelp.classList.remove(
-        "is-visible"
-      );
 
-      try {
-        localStorage.setItem(
-          GESTURE_HELP_STORAGE_KEY,
-          "true"
-        );
-      } catch (error) {
-        // The game still works without saving this preference.
-      }
-    }, 5000);
-}
-
-
-/* =========================================================
-   30. DRAWING
-========================================================= */
-
-function drawGame() {
-  clearCanvas(
-    context,
-    canvas
-  );
-
-  drawBoardBackground();
-  drawArena();
-
-  if (
-    player.matrix &&
-    !gameOver
-  ) {
-    drawGhostPiece();
-    drawPlayerPiece();
-  }
-
-  drawParticles();
-}
-
-
-function clearCanvas(
-  drawingContext,
-  drawingCanvas
-) {
-  drawingContext.clearRect(
-    0,
-    0,
-    drawingCanvas.width,
-    drawingCanvas.height
-  );
-}
-
-
-function drawBoardBackground() {
-  const gradient =
-    context.createLinearGradient(
-      0,
-      0,
-      0,
-      canvas.height
-    );
-
-  gradient.addColorStop(
-    0,
-    "rgba(18, 8, 29, 0.8)"
-  );
-
-  gradient.addColorStop(
-    1,
-    "rgba(2, 1, 5, 0.96)"
-  );
-
-  context.fillStyle = gradient;
-
-  context.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-  context.strokeStyle =
-    "rgba(181, 98, 255, 0.08)";
-
-  context.lineWidth = 1;
-
-  for (
-    let x = 0;
-    x <= BOARD_COLUMNS;
-    x += 1
-  ) {
-    context.beginPath();
-
-    context.moveTo(
-      x * BOARD_BLOCK_SIZE,
-      0
-    );
-
-    context.lineTo(
-      x * BOARD_BLOCK_SIZE,
-      canvas.height
-    );
-
-    context.stroke();
-  }
-
-  for (
-    let y = 0;
-    y <= BOARD_ROWS;
-    y += 1
-  ) {
-    context.beginPath();
-
-    context.moveTo(
-      0,
-      y * BOARD_BLOCK_SIZE
-    );
-
-    context.lineTo(
-      canvas.width,
-      y * BOARD_BLOCK_SIZE
-    );
-
-    context.stroke();
-  }
-}
-
-
-function drawArena() {
-  arena.forEach((row, y) => {
-    row.forEach(
-      (pieceType, x) => {
-        if (pieceType === 0) {
-          return;
-        }
-
-        drawBlock(
-          context,
-          x * BOARD_BLOCK_SIZE,
-          y * BOARD_BLOCK_SIZE,
-          BOARD_BLOCK_SIZE,
-          pieceType
-        );
-      }
-    );
-  });
-}
-
-
-function drawPlayerPiece() {
-  drawMatrix(
-    context,
-    player.matrix,
-    player.position,
-    BOARD_BLOCK_SIZE,
-    player.type
-  );
-}
-
-
-function drawGhostPiece() {
-  drawMatrix(
-    context,
-    player.matrix,
-    getGhostPosition(),
-    BOARD_BLOCK_SIZE,
-    player.type,
-    {
-      ghost: true
-    }
-  );
-}
-
-
-function drawMatrix(
-  drawingContext,
-  matrix,
-  position,
-  blockSize,
-  type,
-  options = {}
-) {
-  if (!matrix || !type) {
-    return;
-  }
-
-  matrix.forEach((row, y) => {
-    row.forEach(
-      (value, x) => {
-        if (value === 0) {
-          return;
-        }
-
-        drawBlock(
-          drawingContext,
-          (
-            x +
-            position.x
-          ) *
-            blockSize,
-          (
-            y +
-            position.y
-          ) *
-            blockSize,
-          blockSize,
-          type,
-          options
-        );
-      }
-    );
-  });
-}
-
-
-function drawBlock(
-  drawingContext,
-  pixelX,
-  pixelY,
-  blockSize,
-  type,
-  {
-    ghost = false
-  } = {}
-) {
-  const colours =
-    PIECE_COLOURS[type];
-
-  if (!colours) {
-    return;
-  }
-
-  const gap =
-    Math.max(
-      2,
-      blockSize * 0.075
-    );
-
-  const x = pixelX + gap;
-  const y = pixelY + gap;
-
-  const size =
-    blockSize - gap * 2;
-
-  if (ghost) {
-    drawingContext.save();
-
-    drawingContext.globalAlpha =
-      0.25;
-
-    drawingContext.strokeStyle =
-      colours.light;
-
-    drawingContext.lineWidth =
-      Math.max(
-        2,
-        blockSize * 0.07
-      );
-
-    roundedRectanglePath(
-      drawingContext,
-      x,
-      y,
-      size,
-      size,
-      Math.max(
-        3,
-        blockSize * 0.14
-      )
-    );
-
-    drawingContext.stroke();
-    drawingContext.restore();
-
-    return;
-  }
-
-  drawingContext.save();
-
-  drawingContext.shadowColor =
-    colours.main;
-
-  drawingContext.shadowBlur =
-    Math.max(
-      7,
-      blockSize * 0.42
-    );
-
-  const gradient =
-    drawingContext.createLinearGradient(
-      x,
-      y,
-      x + size,
-      y + size
-    );
-
-  gradient.addColorStop(
-    0,
-    colours.light
-  );
-
-  gradient.addColorStop(
-    0.35,
-    colours.main
-  );
-
-  gradient.addColorStop(
-    1,
-    colours.dark
-  );
-
-  roundedRectanglePath(
-    drawingContext,
-    x,
-    y,
-    size,
-    size,
-    Math.max(
-      3,
-      blockSize * 0.14
-    )
-  );
-
-  drawingContext.fillStyle =
-    gradient;
-
-  drawingContext.fill();
-
-  drawingContext.shadowBlur = 0;
-
-  drawingContext.strokeStyle =
-    "rgba(255, 255, 255, 0.3)";
-
-  drawingContext.lineWidth =
-    Math.max(
-      1,
-      blockSize * 0.035
-    );
-
-  drawingContext.stroke();
-
-  const highlightSize =
-    Math.max(
-      3,
-      size * 0.16
-    );
-
-  const highlightGradient =
-    drawingContext.createLinearGradient(
-      x,
-      y,
-      x + size,
-      y + size
-    );
-
-  highlightGradient.addColorStop(
-    0,
-    "rgba(255, 255, 255, 0.55)"
-  );
-
-  highlightGradient.addColorStop(
-    1,
-    "rgba(255, 255, 255, 0)"
-  );
-
-  drawingContext.fillStyle =
-    highlightGradient;
-
-  roundedRectanglePath(
-    drawingContext,
-    x + highlightSize * 0.4,
-    y + highlightSize * 0.4,
-    size -
-      highlightSize * 0.8,
-    Math.max(
-      3,
-      highlightSize
-    ),
-    Math.max(
-      2,
-      blockSize * 0.08
-    )
-  );
-
-  drawingContext.fill();
-
-  drawingContext.restore();
-}
-
-
-function roundedRectanglePath(
-  drawingContext,
-  x,
-  y,
-  width,
-  height,
-  radius
-) {
-  const safeRadius =
-    Math.min(
-      radius,
-      width / 2,
-      height / 2
-    );
-
-  drawingContext.beginPath();
-
-  if (
-    typeof drawingContext.roundRect ===
-    "function"
-  ) {
-    drawingContext.roundRect(
-      x,
-      y,
-      width,
-      height,
-      safeRadius
-    );
-
-    return;
-  }
-
-  drawingContext.rect(
-    x,
-    y,
-    width,
-    height
-  );
-}
-
-
-/* =========================================================
-   31. PREVIEW AND HOLD DRAWING
-========================================================= */
-
-function drawPreviewPiece() {
-  clearCanvas(
-    previewContext,
-    previewCanvas
-  );
-
-  if (
-    mobilePreviewContext &&
-    mobilePreviewCanvas
-  ) {
-    clearCanvas(
-      mobilePreviewContext,
-      mobilePreviewCanvas
-    );
-  }
-
-  if (!nextPiece) {
-    return;
-  }
-
-  drawCentredMiniPiece(
-    previewContext,
-    previewCanvas,
-    nextPiece.matrix,
-    nextPiece.type,
-    PREVIEW_BLOCK_SIZE
-  );
-
-  if (
-    mobilePreviewContext &&
-    mobilePreviewCanvas
-  ) {
-    drawCentredMiniPiece(
-      mobilePreviewContext,
-      mobilePreviewCanvas,
-      nextPiece.matrix,
-      nextPiece.type,
-      MOBILE_PREVIEW_BLOCK_SIZE
-    );
-  }
-}
-
-
-function drawHeldPiece() {
-  clearCanvas(
-    holdContext,
-    holdCanvas
-  );
-
-  if (!heldPieceType) {
-    holdEmptyMessage.hidden =
-      false;
-
-    return;
-  }
-
-  holdEmptyMessage.hidden =
-    true;
-
-  drawCentredMiniPiece(
-    holdContext,
-    holdCanvas,
-    PIECE_SHAPES[
-      heldPieceType
-    ],
-    heldPieceType,
-    HOLD_BLOCK_SIZE
-  );
-}
-
-
-function drawCentredMiniPiece(
-  drawingContext,
-  drawingCanvas,
-  matrix,
-  type,
-  preferredBlockSize
-) {
-  const maximumWidth =
-    drawingCanvas.width * 0.82;
-
-  const maximumHeight =
-    drawingCanvas.height * 0.82;
-
-  const fittedBlockSize =
-    Math.min(
-      preferredBlockSize,
-      maximumWidth /
-        matrix[0].length,
-      maximumHeight /
-        matrix.length
-    );
-
-  const pieceWidth =
-    matrix[0].length *
-    fittedBlockSize;
-
-  const pieceHeight =
-    matrix.length *
-    fittedBlockSize;
-
-  const offsetX =
-    (
-      drawingCanvas.width -
-      pieceWidth
-    ) / 2;
-
-  const offsetY =
-    (
-      drawingCanvas.height -
-      pieceHeight
-    ) / 2;
-
-  matrix.forEach((row, y) => {
-    row.forEach(
-      (value, x) => {
-        if (value === 0) {
-          return;
-        }
-
-        drawBlock(
-          drawingContext,
-          offsetX +
-            x * fittedBlockSize,
-          offsetY +
-            y * fittedBlockSize,
-          fittedBlockSize,
-          type
-        );
-      }
-    );
-  });
-}
-
-
-/* =========================================================
-   32. PARTICLES
-========================================================= */
-
-function createLandingParticles() {
-  if (
-    !player.matrix ||
-    !player.type
-  ) {
-    return;
-  }
-
-  const colour =
-    PIECE_COLOURS[
-      player.type
-    ].main;
-
-  player.matrix.forEach(
-    (row, y) => {
-      row.forEach(
-        (value, x) => {
-          if (value === 0) {
-            return;
-          }
-
-          for (
-            let index = 0;
-            index < 2;
-            index += 1
-          ) {
-            particles.push({
-              x:
-                (
-                  x +
-                  player.position.x +
-                  0.5
-                ) *
-                BOARD_BLOCK_SIZE,
-
-              y:
-                (
-                  y +
-                  player.position.y +
-                  0.9
-                ) *
-                BOARD_BLOCK_SIZE,
-
-              velocityX:
-                (
-                  Math.random() -
-                  0.5
-                ) * 2.7,
-
-              velocityY:
-                -Math.random() *
-                2.1,
-
-              gravity: 0.08,
-
-              size:
-                2 +
-                Math.random() *
-                  4,
-
-              alpha: 0.7,
-
-              decay:
-                0.025 +
-                Math.random() *
-                  0.02,
-
-              colour
-            });
-          }
-        }
-      );
-    }
-  );
-}
-
-
-function createLineParticles(
-  rowIndexes
-) {
-  rowIndexes.forEach(
-    (rowIndex) => {
-      for (
-        let x = 0;
-        x < BOARD_COLUMNS;
-        x += 1
+      if (
+        !canControlPlayer() ||
+        gestureState.moved
       ) {
-        const pieceType =
-          arena[rowIndex][x];
-
-        const colour =
-          PIECE_COLOURS[
-            pieceType
-          ]?.main ||
-          "#ffffff";
-
-        for (
-          let index = 0;
-          index < 4;
-          index += 1
-        ) {
-          particles.push({
-            x:
-              (
-                x +
-                0.5
-              ) *
-              BOARD_BLOCK_SIZE,
-
-            y:
-              (
-                rowIndex +
-                0.5
-              ) *
-              BOARD_BLOCK_SIZE,
-
-            velocityX:
-              (
-                Math.random() -
-                0.5
-              ) * 7,
-
-            velocityY:
-              -1.5 -
-              Math.random() *
-                5,
-
-            gravity: 0.13,
-
-            size:
-              3 +
-              Math.random() *
-                7,
-
-            alpha: 1,
-
-            decay:
-              0.018 +
-              Math.random() *
-                0.025,
-
-            colour
-          });
-        }
+        return;
       }
-    }
-  );
+
+
+      gestureState.holding =
+        true;
+
+
+      softDropPlayer({
+        reward: true
+      });
+
+
+      vibrateDevice([8]);
+
+
+      gestureState.holdInterval =
+        window.setInterval(() => {
+
+          if (!canControlPlayer()) {
+
+            cancelGesture();
+            return;
+
+          }
+
+
+          softDropPlayer({
+            reward: true
+          });
+
+        }, HOLD_DROP_INTERVAL);
+
+    }, HOLD_DELAY);
+
 }
 
 
-function drawParticles() {
-  for (
-    let index =
-      particles.length - 1;
-    index >= 0;
-    index -= 1
-  ) {
-    const particle =
-      particles[index];
-
-    particle.x +=
-      particle.velocityX;
-
-    particle.y +=
-      particle.velocityY;
-
-    particle.velocityY +=
-      particle.gravity;
-
-    particle.alpha -=
-      particle.decay;
-
-    if (particle.alpha <= 0) {
-      particles.splice(
-        index,
-        1
-      );
-
-      continue;
-    }
-
-    context.save();
-
-    context.globalAlpha =
-      Math.max(
-        0,
-        particle.alpha
-      );
-
-    context.fillStyle =
-      particle.colour;
-
-    context.shadowColor =
-      particle.colour;
-
-    context.shadowBlur = 10;
-
-    context.fillRect(
-      particle.x,
-      particle.y,
-      particle.size,
-      particle.size
-    );
-
-    context.restore();
-  }
-}
-
-
-/* =========================================================
-   33. USER INTERFACE
-========================================================= */
-
-function formatScore(value) {
-  return String(
-    Math.max(
-      0,
-      Math.floor(value)
-    )
-  ).padStart(6, "0");
-}
-
-
-function updateInterface() {
-  const formattedScore =
-    formatScore(score);
-
-  scoreElement.textContent =
-    formattedScore;
-
-  highScoreElement.textContent =
-    formatScore(highScore);
-
-  levelElement.textContent =
-    String(level);
-
-  linesElement.textContent =
-    String(clearedLines);
-
-  if (mobileScoreElement) {
-    mobileScoreElement.textContent =
-      formattedScore;
-  }
-
-  if (mobileLevelElement) {
-    mobileLevelElement.textContent =
-      String(level);
-  }
-
-  if (mobileLinesElement) {
-    mobileLinesElement.textContent =
-      String(clearedLines);
-  }
-}
-
-
-function updateComboDisplay() {
-  comboElement.textContent =
-    `x${Math.max(0, bestCombo)}`;
-}
-
-
-function setGameStatus(
-  text,
-  state
+function handleGesturePointerMove(
+  event
 ) {
-  statusElement.textContent =
-    text;
 
-  statusLight.className =
-    `status-light status-light--${state}`;
-}
-
-
-function showLineAnnouncement(
-  lineCount,
-  currentCombo
-) {
-  const standardText =
-    ANNOUNCEMENT_TEXT[
-      lineCount
-    ] ||
-    `${lineCount} Lines!`;
-
-  const comboText =
-    currentCombo > 0
-      ? ` • Combo x${currentCombo}`
-      : "";
-
-  showTemporaryAnnouncement(
-    standardText + comboText
-  );
-}
-
-
-function showTemporaryAnnouncement(
-  text
-) {
-  if (announcementTimer) {
-    window.clearTimeout(
-      announcementTimer
-    );
-  }
-
-  lineAnnouncement.textContent =
-    text;
-
-  lineAnnouncement.classList.add(
-    "is-visible"
-  );
-
-  announcementTimer =
-    window.setTimeout(() => {
-      lineAnnouncement.classList.remove(
-        "is-visible"
-      );
-    }, 900);
-}
-
-
-function chooseRandomTip() {
-  if (!gameTipElement) {
-    return;
-  }
-
-  const tip =
-    GAME_TIPS[
-      Math.floor(
-        Math.random() *
-          GAME_TIPS.length
-      )
-    ];
-
-  gameTipElement.textContent =
-    tip;
-
-  if (tipTimer) {
-    window.clearTimeout(
-      tipTimer
-    );
-  }
-
-  tipTimer =
-    window.setTimeout(
-      chooseRandomTip,
-      18000
-    );
-}
-
-
-/* =========================================================
-   34. VISUAL AND DEVICE EFFECTS
-========================================================= */
-
-function triggerScreenFlash() {
-  screenFlash.classList.remove(
-    "is-active"
-  );
-
-  void screenFlash.offsetWidth;
-
-  screenFlash.classList.add(
-    "is-active"
-  );
-}
-
-
-function shakeScreen(
-  duration = 180
-) {
-  document.body.classList.remove(
-    "is-shaking"
-  );
-
-  void document.body.offsetWidth;
-
-  document.body.classList.add(
-    "is-shaking"
-  );
-
-  window.setTimeout(() => {
-    document.body.classList.remove(
-      "is-shaking"
-    );
-  }, duration);
-}
-
-
-function vibrateDevice(pattern) {
   if (
-    "vibrate" in navigator &&
-    shouldUseMobileGameMode()
+    gestureState.pointerId !==
+    event.pointerId
   ) {
-    navigator.vibrate(pattern);
-  }
-}
-
-
-/* =========================================================
-   35. LOCAL HIGH SCORE
-========================================================= */
-
-function loadHighScore() {
-  try {
-    const storedValue =
-      localStorage.getItem(
-        "blockDropHighScore"
-      );
-
-    const parsedValue =
-      Number.parseInt(
-        storedValue || "0",
-        10
-      );
-
-    return Number.isFinite(
-      parsedValue
-    )
-      ? Math.max(
-          0,
-          parsedValue
-        )
-      : 0;
-  } catch (error) {
-    console.warn(
-      "Block Drop could not load the high score.",
-      error
-    );
-
-    return 0;
-  }
-}
-
-
-function saveHighScore() {
-  try {
-    localStorage.setItem(
-      "blockDropHighScore",
-      String(highScore)
-    );
-  } catch (error) {
-    console.warn(
-      "Block Drop could not save the high score.",
-      error
-    );
-  }
-}
-
-
-/* =========================================================
-   36. GENERATED MICRO SOUND EFFECTS
-========================================================= */
-
-function initialiseAudioContext() {
-  if (audioSettings.muted) {
     return;
   }
 
-  if (audioContext) {
-    if (
-      audioContext.state ===
-      "suspended"
-    ) {
-      audioContext
-        .resume()
-        .catch(() => {});
-    }
 
-    return;
-  }
-
-  const AudioContextClass =
-    window.AudioContext ||
-    window.webkitAudioContext;
-
-  if (AudioContextClass) {
-    audioContext =
-      new AudioContextClass();
-  }
-}
+  event.preventDefault();
 
 
-function playTone({
-  frequency = 440,
-  duration = 0.08,
-  volume = 0.04,
-  type = "square",
-  slideTo = null,
-  delay = 0
-} = {}) {
+  gestureState.currentX =
+    event.clientX;
+
+
+  gestureState.currentY =
+    event.clientY;
+
+
+  const deltaX =
+    gestureState.currentX -
+    gestureState.startX;
+
+
+  const deltaY =
+    gestureState.currentY -
+    gestureState.startY;
+
+
   if (
-    audioSettings.muted ||
-    audioSettings.effects <= 0 ||
-    !audioContext
+    Math.hypot(
+      deltaX,
+      deltaY
+    ) >
+    TAP_MOVEMENT_LIMIT
+  ) {
+
+    gestureState.moved =
+      true;
+
+
+    clearGestureTimers();
+
+  }
+
+}
+
+
+function handleGesturePointerUp(
+  event
+) {
+
+  if (
+    gestureState.pointerId !==
+    event.pointerId
   ) {
     return;
   }
 
-  const startTime =
-    audioContext.currentTime +
-    delay;
 
-  const oscillator =
-    audioContext.createOscillator();
+  event.preventDefault();
 
-  const gain =
-    audioContext.createGain();
 
-  oscillator.type = type;
+  gestureState.currentX =
+    event.clientX;
 
-  oscillator.frequency.setValueAtTime(
-    frequency,
-    startTime
-  );
 
-  if (slideTo !== null) {
-    oscillator.frequency
-      .exponentialRampToValueAtTime(
+  gestureState.currentY =
+    event.clientY;
+
+
+  const deltaX =
+    gestureState.currentX -
+    gestureState.startX;
+
+
+  const deltaY =
+    gestureState.currentY -
+    gestureState.startY;
+
+
+  const absoluteX =
+    Math.abs(deltaX);
+
+
+  const absoluteY =
+    Math.abs(deltaY);
+
+
+  const gestureDuration =
+    performance.now() -
+    gestureState.startTime;
+
+
+  const wasHolding =
+    gestureState.holding;
+
+
+  clearGestureTimers();
+  resetGestureState();
+
+
+  if (
+    !canControlPlayer() ||
+    wasHolding
+  ) {
+    return;
+  }
+
+
+  const wasTap =
+    absoluteX <=
+      TAP_MOVEMENT_LIMIT &&
+    absoluteY <=
+      TAP_MOVEMENT_LIMIT &&
+    gestureDuration <=
+      TAP_DURATION_LIMIT;
+
+
+  if (wasTap) {
+
+    rotatePlayer(
+      tapRotationDirection
+    );
+
+    return;
+
+  }
+
+
+  const wasDownSwipe =
+    deltaY >
+      SWIPE_THRESHOLD &&
+    absoluteY >
+      absoluteX * 1.05;
+
+
+  if (wasDownSwipe) {
+
+    hardDropPlayer();
+
+    return;
+
+  }
+
+
+  const wasHorizontalSwipe =
+    absoluteX >
+      SWIPE_THRESHOLD &&
+    absoluteX >
+      absoluteY;
+
+
+  if (wasHorizontalSwipe) {
+
+    const direction =
+      deltaX > 0
+        ? 1
+        : -1;
+
+
+    const numberOfSteps =
+      Math.min(
+        MAX_SWIPE_STEPS,
         Math.max(
           1,
-          slideTo
-        ),
-        startTime + duration
+          Math.round(
+            absoluteX /
+              SWIPE_STEP_DISTANCE
+          )
+        )
       );
+
+
+    movePlayerMultiple(
+      direction,
+      numberOfSteps
+    );
+
   }
 
-  const adjustedVolume =
-    volume *
-    audioSettings.effects;
-
-  gain.gain.setValueAtTime(
-    Math.max(
-      0.0001,
-      adjustedVolume
-    ),
-    startTime
-  );
-
-  gain.gain.exponentialRampToValueAtTime(
-    0.0001,
-    startTime + duration
-  );
-
-  oscillator.connect(gain);
-
-  gain.connect(
-    audioContext.destination
-  );
-
-  oscillator.start(startTime);
-
-  oscillator.stop(
-    startTime + duration
-  );
 }
 
 
-function playGeneratedSound(
-  soundName
+function initialiseGestureSurface(
+  surface
 ) {
-  if (
-    audioSettings.muted ||
-    audioSettings.effects <= 0
-  ) {
+
+  if (!surface) {
     return;
   }
 
-  initialiseAudioContext();
 
-  if (!audioContext) {
-    return;
-  }
-
-  const sounds = {
-    move() {
-      playTone({
-        frequency: 180,
-        slideTo: 145,
-        duration: 0.035,
-        volume: 0.018,
-        type: "square"
-      });
-    },
-
-    blocked() {
-      playTone({
-        frequency: 95,
-        duration: 0.045,
-        volume: 0.018,
-        type: "square"
-      });
-    },
-
-    rotate() {
-      playTone({
-        frequency: 290,
-        slideTo: 420,
-        duration: 0.055,
-        volume: 0.022,
-        type: "triangle"
-      });
-    },
-
-    hold() {
-      playTone({
-        frequency: 340,
-        slideTo: 210,
-        duration: 0.1,
-        volume: 0.025,
-        type: "sine"
-      });
-    },
-
-    land() {
-      playTone({
-        frequency: 115,
-        slideTo: 75,
-        duration: 0.085,
-        volume: 0.035,
-        type: "square"
-      });
-    },
-
-    hardDrop() {
-      playTone({
-        frequency: 280,
-        slideTo: 70,
-        duration: 0.13,
-        volume: 0.045,
-        type: "sawtooth"
-      });
-    },
-
-    pause() {
-      playTone({
-        frequency: 330,
-        slideTo: 180,
-        duration: 0.14,
-        volume: 0.028,
-        type: "sine"
-      });
-    },
-
-    resume() {
-      playTone({
-        frequency: 220,
-        slideTo: 440,
-        duration: 0.14,
-        volume: 0.028,
-        type: "sine"
-      });
-    },
-
-    countdown() {
-      playTone({
-        frequency: 520,
-        slideTo: 420,
-        duration: 0.1,
-        volume: 0.04,
-        type: "square"
-      });
+  surface.addEventListener(
+    "pointerdown",
+    handleGesturePointerDown,
+    {
+      passive: false
     }
-  };
+  );
 
-  sounds[soundName]?.();
+
+  surface.addEventListener(
+    "pointermove",
+    handleGesturePointerMove,
+    {
+      passive: false
+    }
+  );
+
+
+  surface.addEventListener(
+    "pointerup",
+    handleGesturePointerUp,
+    {
+      passive: false
+    }
+  );
+
+
+  surface.addEventListener(
+    "pointercancel",
+    cancelGesture
+  );
+
+
+  surface.addEventListener(
+    "lostpointercapture",
+    cancelGesture
+  );
+
+
+  surface.addEventListener(
+    "contextmenu",
+    (event) => {
+
+      event.preventDefault();
+
+    }
+  );
+
 }
 
 
 /* =========================================================
-   37. KEYBOARD CONTROLS
+   38. TOUCH BUTTON CONTROLS
+========================================================= */
+
+function pressVisualButton(button) {
+
+  if (!button) {
+    return;
+  }
+
+
+  button.classList.add(
+    "is-pressed"
+  );
+
+
+  window.setTimeout(() => {
+
+    button.classList.remove(
+      "is-pressed"
+    );
+
+  }, 110);
+
+}
+
+
+function runTouchAction(
+  action,
+  button
+) {
+
+  pressVisualButton(button);
+
+
+  if (action === "left") {
+
+    movePlayer(-1);
+    return;
+
+  }
+
+
+  if (action === "right") {
+
+    movePlayer(1);
+    return;
+
+  }
+
+
+  if (action === "soft-drop") {
+
+    softDropPlayer({
+      reward: true
+    });
+
+    return;
+
+  }
+
+
+  if (action === "hard-drop") {
+
+    hardDropPlayer();
+    return;
+
+  }
+
+
+  if (action === "rotate") {
+
+    rotatePlayer(
+      tapRotationDirection
+    );
+
+    return;
+
+  }
+
+
+  if (action === "hold") {
+
+    holdCurrentPiece();
+    return;
+
+  }
+
+
+  if (action === "pause") {
+
+    togglePause();
+
+  }
+
+}
+
+
+function initialiseTouchButtons() {
+
+  document
+    .querySelectorAll(
+      "[data-action]"
+    )
+    .forEach((button) => {
+
+      const action =
+        button.dataset.action;
+
+
+      if (!action) {
+        return;
+      }
+
+
+      button.addEventListener(
+        "pointerdown",
+        (event) => {
+
+          event.preventDefault();
+
+
+          runTouchAction(
+            action,
+            button
+          );
+
+        },
+        {
+          passive: false
+        }
+      );
+
+    });
+
+}
+
+
+/* =========================================================
+   39. KEYBOARD CONTROLS
 ========================================================= */
 
 function handleKeyboardInput(event) {
-  const controlledKeys = [
+
+  const key =
+    event.key;
+
+
+  const gameKeys = [
     "ArrowLeft",
     "ArrowRight",
     "ArrowDown",
     "ArrowUp",
     " ",
-    "Spacebar",
     "q",
     "Q",
     "e",
     "E",
-    "w",
-    "W",
     "c",
     "C",
     "p",
@@ -4535,169 +5982,627 @@ function handleKeyboardInput(event) {
     "Escape"
   ];
 
-  if (
-    controlledKeys.includes(
-      event.key
-    )
-  ) {
+
+  if (gameKeys.includes(key)) {
+
     event.preventDefault();
+
   }
+
 
   if (
-    event.key === "p" ||
-    event.key === "P"
+    key === "p" ||
+    key === "P"
   ) {
-    togglePause();
 
+    togglePause();
     return;
+
   }
 
-  if (event.key === "Escape") {
+
+  if (key === "Escape") {
+
     if (
-      audioSettingsPanel?.classList.contains(
-        "is-open"
+      document.body.classList.contains(
+        "audio-panel-open"
       )
     ) {
+
       closeAudioSettings();
 
       return;
+
     }
+
+
+    if (
+      document.body.classList.contains(
+        "mobile-menu-open"
+      )
+    ) {
+
+      closeMobileQuickMenu();
+
+      return;
+
+    }
+
+
+    if (
+      controlsOverlay?.classList.contains(
+        "is-visible"
+      )
+    ) {
+
+      closeControlsOverlay();
+
+      return;
+
+    }
+
 
     togglePause();
 
     return;
+
   }
+
 
   if (!canControlPlayer()) {
     return;
   }
 
-  switch (event.key) {
-    case "ArrowLeft":
-      movePlayer(-1);
-      break;
 
-    case "ArrowRight":
-      movePlayer(1);
-      break;
+  if (key === "ArrowLeft") {
 
-    case "ArrowDown":
-      softDropPlayer();
-      break;
+    movePlayer(-1);
 
-    case "ArrowUp":
-    case "e":
-    case "E":
-    case "w":
-    case "W":
-      rotatePlayer(1);
-      break;
+  } else if (
+    key === "ArrowRight"
+  ) {
 
-    case "q":
-    case "Q":
-      rotatePlayer(-1);
-      break;
+    movePlayer(1);
 
-    case " ":
-    case "Spacebar":
-      hardDropPlayer();
-      break;
+  } else if (
+    key === "ArrowDown"
+  ) {
 
-    case "c":
-    case "C":
-      holdCurrentPiece();
-      break;
+    softDropPlayer({
+      reward: true
+    });
 
-    default:
-      break;
+  } else if (
+    key === "ArrowUp" ||
+    key === "e" ||
+    key === "E"
+  ) {
+
+    rotatePlayer(1);
+
+  } else if (
+    key === "q" ||
+    key === "Q"
+  ) {
+
+    rotatePlayer(-1);
+
+  } else if (
+    key === " "
+  ) {
+
+    hardDropPlayer();
+
+  } else if (
+    key === "c" ||
+    key === "C"
+  ) {
+
+    holdCurrentPiece();
+
   }
+
 }
 
 
 /* =========================================================
-   38. DOCK BUTTON CONTROLS
+   40. ORIENTATION CHANGES
 ========================================================= */
 
-function handleTouchAction(action) {
-  switch (action) {
-    case "hold":
-      holdCurrentPiece();
-      break;
+function handleOrientationChange() {
 
-    case "pause":
-      togglePause();
-      break;
+  cancelGesture();
 
-    default:
-      break;
-  }
+
+  window.setTimeout(() => {
+
+    if (
+      !mobileGameModeActive
+    ) {
+      return;
+    }
+
+
+    if (
+      isLandscapeControlMode() &&
+      isPortraitOrientation()
+    ) {
+
+      showRotateDeviceOverlay();
+
+      return;
+
+    }
+
+
+    if (
+      waitingForLandscapeRotation &&
+      !isPortraitOrientation()
+    ) {
+
+      hideRotateDeviceOverlay();
+
+
+      if (!gameStarted) {
+
+        continueGameSequence();
+
+      }
+
+    }
+
+  }, 180);
+
 }
 
 
-function initialiseTouchControls() {
-  const touchButtons =
-    document.querySelectorAll(
-      "[data-action]"
-    );
+/* =========================================================
+   41. EVENT LISTENERS
+========================================================= */
 
-  touchButtons.forEach((button) => {
-    const action =
-      button.dataset.action;
+function initialiseInterfaceEvents() {
 
-    const stopPress = () => {
-      button.classList.remove(
-        "is-pressed"
+  audioOnButton?.addEventListener(
+    "click",
+    () => {
+
+      beginGameSequence(true);
+
+    }
+  );
+
+
+  audioOffButton?.addEventListener(
+    "click",
+    () => {
+
+      beginGameSequence(false);
+
+    }
+  );
+
+
+  continuePortraitButton?.addEventListener(
+    "click",
+    () => {
+
+      continueGameSequence();
+
+    }
+  );
+
+
+  switchToPortraitGestureButton?.addEventListener(
+    "click",
+    () => {
+
+      setControlMode(
+        CONTROL_MODE_PORTRAIT_GESTURE,
+        {
+          closeOverlay: false
+        }
       );
-    };
 
-    button.addEventListener(
-      "pointerdown",
-      (event) => {
-        event.preventDefault();
 
-        initialiseAudioContext();
+      continueGameSequence();
 
-        button.classList.add(
-          "is-pressed"
-        );
+    }
+  );
 
-        handleTouchAction(action);
+
+  resumeButton?.addEventListener(
+    "click",
+    resumeGame
+  );
+
+
+  playAgainButton?.addEventListener(
+    "click",
+    () => {
+
+      beginGameSequence(
+        !audioSettings.muted
+      );
+
+    }
+  );
+
+
+  pauseButton?.addEventListener(
+    "click",
+    togglePause
+  );
+
+
+  restartButton?.addEventListener(
+    "click",
+    restartGame
+  );
+
+
+  soundButton?.addEventListener(
+    "click",
+    () => {
+
+      setMasterMuted(
+        !audioSettings.muted
+      );
+
+    }
+  );
+
+
+  pauseControlsButton?.addEventListener(
+    "click",
+    () => {
+
+      openControlsOverlay(
+        "pause"
+      );
+
+    }
+  );
+
+
+  pauseAudioButton?.addEventListener(
+    "click",
+    openAudioSettings
+  );
+
+
+  pauseExitButton?.addEventListener(
+    "click",
+    () => {
+
+      exitMobileGameMode({
+        pauseFirst: false
+      });
+
+    }
+  );
+
+
+  gameOverControlsButton?.addEventListener(
+    "click",
+    () => {
+
+      openControlsOverlay(
+        "game-over"
+      );
+
+    }
+  );
+
+
+  gameOverExitButton?.addEventListener(
+    "click",
+    () => {
+
+      exitMobileGameMode({
+        pauseFirst: false
+      });
+
+    }
+  );
+
+
+  choosePortraitGestureButton?.addEventListener(
+    "click",
+    () => {
+
+      setControlMode(
+        CONTROL_MODE_PORTRAIT_GESTURE
+      );
+
+    }
+  );
+
+
+  chooseLandscapeTouchpadButton?.addEventListener(
+    "click",
+    () => {
+
+      setControlMode(
+        CONTROL_MODE_LANDSCAPE_TOUCHPAD
+      );
+
+    }
+  );
+
+
+  chooseLandscapeButtonsButton?.addEventListener(
+    "click",
+    () => {
+
+      setControlMode(
+        CONTROL_MODE_LANDSCAPE_BUTTONS
+      );
+
+    }
+  );
+
+
+  closeControlsOverlayButton?.addEventListener(
+    "click",
+    closeControlsOverlay
+  );
+
+
+  mobilePauseButton?.addEventListener(
+    "click",
+    togglePause
+  );
+
+
+  mobileMenuButton?.addEventListener(
+    "click",
+    toggleMobileQuickMenu
+  );
+
+
+  gestureMenuButton?.addEventListener(
+    "click",
+    toggleMobileQuickMenu
+  );
+
+
+  mobileExitButton?.addEventListener(
+    "click",
+    () => {
+
+      exitMobileGameMode();
+
+    }
+  );
+
+
+  closeMobileMenuButton?.addEventListener(
+    "click",
+    closeMobileQuickMenu
+  );
+
+
+  mobileQuickMenuBackdrop?.addEventListener(
+    "click",
+    closeMobileQuickMenu
+  );
+
+
+  quickMenuPauseButton?.addEventListener(
+    "click",
+    () => {
+
+      closeMobileQuickMenu();
+
+      togglePause();
+
+    }
+  );
+
+
+  quickMenuAudioButton?.addEventListener(
+    "click",
+    openAudioSettings
+  );
+
+
+  quickMenuRotationButton?.addEventListener(
+    "click",
+    () => {
+
+      toggleRotationDirection(
+        quickMenuRotationButton
+      );
+
+    }
+  );
+
+
+  quickMenuControlsButton?.addEventListener(
+    "click",
+    () => {
+
+      closeMobileQuickMenu();
+
+      if (
+        gameStarted &&
+        !gamePaused
+      ) {
+
+        pauseGame();
+
       }
-    );
-
-    button.addEventListener(
-      "pointerup",
-      stopPress
-    );
-
-    button.addEventListener(
-      "pointercancel",
-      stopPress
-    );
-
-    button.addEventListener(
-      "pointerleave",
-      stopPress
-    );
-
-    button.addEventListener(
-      "contextmenu",
-      (event) => {
-        event.preventDefault();
-      }
-    );
-  });
-}
 
 
-/* =========================================================
-   39. AUDIO SLIDER EVENTS
-========================================================= */
+      openControlsOverlay(
+        gameOver
+          ? "game-over"
+          : "pause"
+      );
 
-function initialiseAudioSliders() {
+    }
+  );
+
+
+  quickMenuExitButton?.addEventListener(
+    "click",
+    () => {
+
+      closeMobileQuickMenu();
+
+
+      exitMobileGameMode();
+
+    }
+  );
+
+
+  desktopRotationButton?.addEventListener(
+    "click",
+    () => {
+
+      toggleRotationDirection(
+        desktopRotationButton
+      );
+
+    }
+  );
+
+
+  rotationDirectionButton?.addEventListener(
+    "click",
+    () => {
+
+      toggleRotationDirection(
+        rotationDirectionButton
+      );
+
+    }
+  );
+
+
+  touchpadRotationButton?.addEventListener(
+    "click",
+    () => {
+
+      toggleRotationDirection(
+        touchpadRotationButton
+      );
+
+    }
+  );
+
+
+  controlModeInputs.forEach(
+    (input) => {
+
+      input.addEventListener(
+        "change",
+        () => {
+
+          if (input.checked) {
+
+            currentControlMode =
+              input.value;
+
+
+            saveControlMode();
+
+            applyControlPreferences();
+
+          }
+
+        }
+      );
+
+    }
+  );
+
+
+  controlSideInputs.forEach(
+    (input) => {
+
+      input.addEventListener(
+        "change",
+        () => {
+
+          if (input.checked) {
+
+            setControlSide(
+              input.value
+            );
+
+          }
+
+        }
+      );
+
+    }
+  );
+
+
+  settingsControlSideInputs.forEach(
+    (input) => {
+
+      input.addEventListener(
+        "change",
+        () => {
+
+          if (input.checked) {
+
+            setControlSide(
+              input.value
+            );
+
+          }
+
+        }
+      );
+
+    }
+  );
+
+
+  audioSettingsButton?.addEventListener(
+    "click",
+    openAudioSettings
+  );
+
+
+  audioSettingsClose?.addEventListener(
+    "click",
+    closeAudioSettings
+  );
+
+
+  audioSettingsBackdrop?.addEventListener(
+    "click",
+    closeAudioSettings
+  );
+
+
+  muteAllButton?.addEventListener(
+    "click",
+    () => {
+
+      setMasterMuted(
+        !audioSettings.muted
+      );
+
+    }
+  );
+
+
+  resetAudioButton?.addEventListener(
+    "click",
+    resetAudioMix
+  );
+
+
   musicVolumeSlider?.addEventListener(
     "input",
     () => {
+
       audioSettings.music =
         clampVolume(
           Number(
@@ -4705,17 +6610,23 @@ function initialiseAudioSliders() {
           ) / 100
         );
 
+
       musicVolumeOutput.textContent =
         `${musicVolumeSlider.value}%`;
 
+
       saveAudioSettings();
+
       refreshCurrentMusicVolume();
+
     }
   );
+
 
   effectsVolumeSlider?.addEventListener(
     "input",
     () => {
+
       audioSettings.effects =
         clampVolume(
           Number(
@@ -4723,16 +6634,21 @@ function initialiseAudioSliders() {
           ) / 100
         );
 
+
       effectsVolumeOutput.textContent =
         `${effectsVolumeSlider.value}%`;
 
+
       saveAudioSettings();
+
     }
   );
+
 
   voiceVolumeSlider?.addEventListener(
     "input",
     () => {
+
       audioSettings.voice =
         clampVolume(
           Number(
@@ -4740,234 +6656,77 @@ function initialiseAudioSliders() {
           ) / 100
         );
 
+
       voiceVolumeOutput.textContent =
         `${voiceVolumeSlider.value}%`;
 
+
       if (activeVoice) {
+
         activeVoice.volume =
           audioSettings.voice;
+
       }
 
+
       saveAudioSettings();
+
     }
   );
+
+
+  document.addEventListener(
+    "keydown",
+    handleKeyboardInput
+  );
+
+
+  window.addEventListener(
+    "orientationchange",
+    handleOrientationChange
+  );
+
+
+  window.addEventListener(
+    "resize",
+    () => {
+
+      drawPreviewPiece();
+      drawHeldPiece();
+
+    }
+  );
+
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+
+      if (
+        document.hidden &&
+        gameStarted &&
+        !gamePaused &&
+        !gameOver
+      ) {
+
+        pauseGame();
+
+      }
+
+    }
+  );
+
 }
 
 
 /* =========================================================
-   40. BUTTON EVENTS
-========================================================= */
-
-audioOnButton?.addEventListener(
-  "click",
-  () => {
-    initialiseAudioContext();
-
-    beginGameSequence(true);
-  }
-);
-
-
-audioOffButton?.addEventListener(
-  "click",
-  () => {
-    beginGameSequence(false);
-  }
-);
-
-
-resumeButton?.addEventListener(
-  "click",
-  resumeGame
-);
-
-
-playAgainButton?.addEventListener(
-  "click",
-  () => {
-    beginGameSequence(
-      !audioSettings.muted
-    );
-  }
-);
-
-
-pauseButton?.addEventListener(
-  "click",
-  togglePause
-);
-
-
-mobilePauseButton?.addEventListener(
-  "click",
-  togglePause
-);
-
-
-restartButton?.addEventListener(
-  "click",
-  restartGame
-);
-
-
-soundButton?.addEventListener(
-  "click",
-  () => {
-    setMasterMuted(
-      !audioSettings.muted
-    );
-
-    if (!audioSettings.muted) {
-      playGeneratedSound("resume");
-    }
-  }
-);
-
-
-audioSettingsButton?.addEventListener(
-  "click",
-  openAudioSettings
-);
-
-
-mobileAudioButton?.addEventListener(
-  "click",
-  openAudioSettings
-);
-
-
-dockAudioButton?.addEventListener(
-  "click",
-  openAudioSettings
-);
-
-
-audioSettingsClose?.addEventListener(
-  "click",
-  closeAudioSettings
-);
-
-
-audioSettingsBackdrop?.addEventListener(
-  "click",
-  closeAudioSettings
-);
-
-
-muteAllButton?.addEventListener(
-  "click",
-  () => {
-    setMasterMuted(
-      !audioSettings.muted
-    );
-  }
-);
-
-
-resetAudioButton?.addEventListener(
-  "click",
-  resetAudioMix
-);
-
-
-rotationDirectionButton?.addEventListener(
-  "click",
-  toggleRotationDirection
-);
-
-
-mobileExitButton?.addEventListener(
-  "click",
-  () => {
-    exitMobileGameMode();
-  }
-);
-
-
-pauseExitButton?.addEventListener(
-  "click",
-  () => {
-    exitMobileGameMode({
-      pauseFirst: false
-    });
-  }
-);
-
-
-gameOverExitButton?.addEventListener(
-  "click",
-  () => {
-    exitMobileGameMode({
-      pauseFirst: false
-    });
-  }
-);
-
-
-document.addEventListener(
-  "keydown",
-  handleKeyboardInput
-);
-
-
-/* =========================================================
-   41. PAGE AND VIEWPORT EVENTS
-========================================================= */
-
-document.addEventListener(
-  "visibilitychange",
-  () => {
-    if (
-      document.hidden &&
-      gameStarted &&
-      !gamePaused &&
-      !gameOver
-    ) {
-      pauseGame();
-    }
-  }
-);
-
-
-window.addEventListener(
-  "resize",
-  debounce(
-    handleViewportChange,
-    120
-  )
-);
-
-
-window.addEventListener(
-  "orientationchange",
-  () => {
-    cancelGesture();
-
-    window.setTimeout(
-      handleViewportChange,
-      250
-    );
-  }
-);
-
-
-window.addEventListener(
-  "beforeunload",
-  () => {
-    stopAllMusic();
-    stopAllImportedClips();
-    cancelGesture();
-  }
-);
-
-
-/* =========================================================
-   42. ANIMATION LOOP
+   42. GAME LOOP
 ========================================================= */
 
 function updateGame(
   currentTime = 0
 ) {
+
   const deltaTime =
     Math.min(
       currentTime -
@@ -4975,103 +6734,101 @@ function updateGame(
       100
     );
 
+
   lastFrameTime =
     currentTime;
+
 
   if (
     gameStarted &&
     !gamePaused &&
-    !gameOver
+    !gameOver &&
+    !countdownRunning
   ) {
+
     dropCounter +=
       deltaTime;
+
 
     if (
       dropCounter >=
       getDropInterval()
     ) {
+
       softDropPlayer({
         reward: false
       });
 
+
       dropCounter = 0;
+
     }
+
   }
 
-  drawGame();
+
+  drawGameBoard();
+
 
   window.requestAnimationFrame(
     updateGame
   );
+
 }
 
 
 /* =========================================================
-   43. GENERAL UTILITIES
+   43. INITIALISATION
 ========================================================= */
 
-function debounce(
-  callback,
-  delay
-) {
-  let timeoutId = null;
+function initialiseBlockDrop() {
 
-  return (...args) => {
-    if (timeoutId) {
-      window.clearTimeout(
-        timeoutId
-      );
-    }
+  applyControlPreferences();
 
-    timeoutId =
-      window.setTimeout(
-        () => {
-          callback(...args);
-        },
-        delay
-      );
-  };
-}
+  applyAudioSettingsToInterface();
 
+  updateRotationDirectionInterface();
 
-/* =========================================================
-   44. INITIALISATION
-========================================================= */
-
-function initialiseGame() {
   updateInterface();
-  updateComboDisplay();
 
-  drawPreviewPiece();
-  drawHeldPiece();
-  drawGame();
+  updatePauseButtons();
 
-  setGameStatus(
+  updateGameStatus(
     "Ready",
     "ready"
   );
 
-  initialiseTouchControls();
-  initialiseGestureControls();
-  initialiseAudioSliders();
-
-  applyAudioSettingsToInterface();
-  updateRotationDirectionInterface();
 
   chooseRandomTip();
 
-  Object.values(
-    musicTracks
-  ).forEach((track) => {
-    track.volume = 0;
-  });
 
-  updatePauseButtons();
+  drawGameBoard();
+
+  drawPreviewPiece();
+
+  drawHeldPiece();
+
+
+  initialiseGestureSurface(
+    gestureSurface
+  );
+
+
+  initialiseGestureSurface(
+    landscapeTouchpadSurface
+  );
+
+
+  initialiseTouchButtons();
+
+  initialiseInterfaceEvents();
+
 
   window.requestAnimationFrame(
     updateGame
   );
+
 }
 
 
-initialiseGame();
+initialiseBlockDrop();
