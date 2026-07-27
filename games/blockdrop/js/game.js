@@ -1,7 +1,9 @@
 "use strict";
 
 /* =========================================================
-   BLOCK DROP REMASTERED — AUDIO EDITION
+   BLOCK DROP REMASTERED
+   MOBILE + TABLET GAME MODE
+   AUDIO MIXER EDITION
    Pointless Productions
 ========================================================= */
 
@@ -16,6 +18,9 @@ const context = canvas?.getContext("2d");
 const previewCanvas = document.querySelector("#preview");
 const previewContext = previewCanvas?.getContext("2d");
 
+const mobilePreviewCanvas = document.querySelector("#mobile-preview");
+const mobilePreviewContext = mobilePreviewCanvas?.getContext("2d");
+
 const holdCanvas = document.querySelector("#hold-canvas");
 const holdContext = holdCanvas?.getContext("2d");
 
@@ -24,6 +29,10 @@ const highScoreElement = document.querySelector("#high-score");
 const levelElement = document.querySelector("#level");
 const linesElement = document.querySelector("#lines");
 const comboElement = document.querySelector("#combo");
+
+const mobileScoreElement = document.querySelector("#mobile-score");
+const mobileLevelElement = document.querySelector("#mobile-level");
+const mobileLinesElement = document.querySelector("#mobile-lines");
 
 const finalScoreElement = document.querySelector("#final-score");
 
@@ -50,13 +59,8 @@ const gameOverOverlay = document.querySelector(
   "#game-over-overlay"
 );
 
-const audioOnButton = document.querySelector(
-  "#audio-on-button"
-);
-
-const audioOffButton = document.querySelector(
-  "#audio-off-button"
-);
+const audioOnButton = document.querySelector("#audio-on-button");
+const audioOffButton = document.querySelector("#audio-off-button");
 
 const resumeButton = document.querySelector("#resume-button");
 
@@ -66,7 +70,32 @@ const playAgainButton = document.querySelector(
 
 const pauseButton = document.querySelector("#pause-button");
 const restartButton = document.querySelector("#restart-button");
+
 const soundButton = document.querySelector("#sound-button");
+
+const audioSettingsButton = document.querySelector(
+  "#audio-settings-button"
+);
+
+const mobilePauseButton = document.querySelector(
+  "#mobile-pause-button"
+);
+
+const mobileAudioButton = document.querySelector(
+  "#mobile-audio-button"
+);
+
+const mobileExitButton = document.querySelector(
+  "#mobile-exit-button"
+);
+
+const pauseExitButton = document.querySelector(
+  "#pause-exit-button"
+);
+
+const gameOverExitButton = document.querySelector(
+  "#game-over-exit-button"
+);
 
 const holdEmptyMessage = document.querySelector(
   "#hold-empty-message"
@@ -78,6 +107,48 @@ const lineAnnouncement = document.querySelector(
 
 const screenFlash = document.querySelector("#screen-flash");
 const gameTipElement = document.querySelector("#game-tip");
+
+const audioSettingsPanel = document.querySelector(
+  "#audio-settings-panel"
+);
+
+const audioSettingsBackdrop = document.querySelector(
+  "#audio-settings-backdrop"
+);
+
+const audioSettingsClose = document.querySelector(
+  "#audio-settings-close"
+);
+
+const musicVolumeSlider = document.querySelector(
+  "#music-volume"
+);
+
+const effectsVolumeSlider = document.querySelector(
+  "#effects-volume"
+);
+
+const voiceVolumeSlider = document.querySelector(
+  "#voice-volume"
+);
+
+const musicVolumeOutput = document.querySelector(
+  "#music-volume-output"
+);
+
+const effectsVolumeOutput = document.querySelector(
+  "#effects-volume-output"
+);
+
+const voiceVolumeOutput = document.querySelector(
+  "#voice-volume-output"
+);
+
+const muteAllButton = document.querySelector("#mute-all-button");
+
+const resetAudioButton = document.querySelector(
+  "#reset-audio-button"
+);
 
 if (
   !canvas ||
@@ -105,6 +176,9 @@ const BOARD_BLOCK_SIZE =
 
 const PREVIEW_BLOCK_SIZE = 28;
 const HOLD_BLOCK_SIZE = 24;
+const MOBILE_PREVIEW_BLOCK_SIZE = 15;
+
+const MOBILE_GAME_BREAKPOINT = 1024;
 
 const PIECE_TYPES = [
   "T",
@@ -194,16 +268,26 @@ const GAME_TIPS = [
 
 
 /* =========================================================
-   3. AUDIO SETTINGS AND FILE PATHS
+   3. AUDIO DEFAULTS AND STORAGE
 ========================================================= */
 
-const MUSIC_VOLUME = 0.34;
-const DANGER_MUSIC_VOLUME = 0.42;
+const AUDIO_STORAGE_KEY = "blockDropAudioSettings";
 
-const EFFECT_VOLUME = 0.78;
-const VOICE_VOLUME = 0.82;
+const DEFAULT_AUDIO_SETTINGS = {
+  music: 0.3,
+  effects: 0.55,
+  voice: 0.85,
+  muted: false
+};
 
 const MUSIC_FADE_DURATION = 850;
+
+let audioSettings = loadAudioSettings();
+
+
+/* =========================================================
+   4. AUDIO FILES
+========================================================= */
 
 const musicTracks = {
   menu: createAudio(
@@ -264,7 +348,7 @@ const voicePaths = {
 
 
 /* =========================================================
-   4. PIECE SHAPES
+   5. PIECE SHAPES
 ========================================================= */
 
 const PIECE_SHAPES = {
@@ -305,7 +389,7 @@ const PIECE_SHAPES = {
 
 
 /* =========================================================
-   5. GAME STATE
+   6. GAME STATE
 ========================================================= */
 
 const arena = createMatrix(
@@ -347,12 +431,12 @@ let gamePaused = false;
 let gameOver = false;
 let countdownRunning = false;
 
+let mobileGameModeActive = false;
+
 let particles = [];
 
 let announcementTimer = null;
 let tipTimer = null;
-
-let masterMuted = false;
 
 let dangerActive = false;
 let dangerVoicePlayed = false;
@@ -362,11 +446,105 @@ let activeMusicName = null;
 
 let audioContext = null;
 
+let activeVoice = null;
+
+const activeImportedClips = new Set();
 const audioFadeFrames = new WeakMap();
 
 
 /* =========================================================
-   6. BASIC AUDIO UTILITIES
+   7. RESPONSIVE GAME MODE
+========================================================= */
+
+function shouldUseMobileGameMode() {
+  return (
+    window.matchMedia(
+      `(max-width: ${MOBILE_GAME_BREAKPOINT}px)`
+    ).matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
+
+function enterMobileGameMode() {
+  if (!shouldUseMobileGameMode()) {
+    return;
+  }
+
+  mobileGameModeActive = true;
+
+  document.body.classList.add(
+    "mobile-game-mode"
+  );
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "instant"
+  });
+
+  preventGameplayScrolling();
+}
+
+
+function exitMobileGameMode({
+  pauseFirst = true
+} = {}) {
+  if (
+    pauseFirst &&
+    gameStarted &&
+    !gamePaused &&
+    !gameOver
+  ) {
+    pauseGame();
+  }
+
+  mobileGameModeActive = false;
+
+  document.body.classList.remove(
+    "mobile-game-mode"
+  );
+
+  closeAudioSettings();
+
+  restoreGameplayScrolling();
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "smooth"
+  });
+}
+
+
+function handleViewportChange() {
+  if (
+    mobileGameModeActive &&
+    !shouldUseMobileGameMode()
+  ) {
+    exitMobileGameMode({
+      pauseFirst: false
+    });
+  }
+
+  drawPreviewPiece();
+}
+
+
+function preventGameplayScrolling() {
+  document.documentElement.style.overscrollBehavior =
+    "none";
+}
+
+
+function restoreGameplayScrolling() {
+  document.documentElement.style.overscrollBehavior =
+    "";
+}
+
+
+/* =========================================================
+   8. BASIC AUDIO UTILITIES
 ========================================================= */
 
 function createAudio(
@@ -383,8 +561,33 @@ function createAudio(
 }
 
 
+function clampVolume(value) {
+  return Math.min(
+    1,
+    Math.max(0, Number(value) || 0)
+  );
+}
+
+
+function getMusicTargetVolume(trackName) {
+  const baseVolume =
+    audioSettings.music;
+
+  if (trackName === "danger") {
+    return clampVolume(
+      baseVolume * 1.12
+    );
+  }
+
+  return clampVolume(baseVolume);
+}
+
+
 function safelyPlay(audio) {
-  if (!audio || masterMuted) {
+  if (
+    !audio ||
+    audioSettings.muted
+  ) {
     return;
   }
 
@@ -410,6 +613,7 @@ function stopAudioFade(audio) {
 
   if (frameId) {
     cancelAnimationFrame(frameId);
+
     audioFadeFrames.delete(audio);
   }
 }
@@ -427,28 +631,35 @@ function fadeAudio(
 
   stopAudioFade(audio);
 
-  const startingVolume = audio.volume;
-  const startedAt = performance.now();
+  const startingVolume =
+    audio.volume;
+
+  const startedAt =
+    performance.now();
 
   function fadeStep(currentTime) {
     const progress = Math.min(
-      (currentTime - startedAt) / duration,
+      (currentTime - startedAt) /
+        duration,
       1
     );
 
     audio.volume =
       startingVolume +
-      (targetVolume - startingVolume) *
+      (
+        targetVolume -
+        startingVolume
+      ) *
         progress;
 
-    audio.volume = Math.max(
-      0,
-      Math.min(1, audio.volume)
-    );
+    audio.volume =
+      clampVolume(audio.volume);
 
     if (progress < 1) {
       const frameId =
-        requestAnimationFrame(fadeStep);
+        requestAnimationFrame(
+          fadeStep
+        );
 
       audioFadeFrames.set(
         audio,
@@ -460,29 +671,101 @@ function fadeAudio(
 
     audioFadeFrames.delete(audio);
 
-    if (typeof onComplete === "function") {
+    if (
+      typeof onComplete ===
+      "function"
+    ) {
       onComplete();
     }
   }
 
   const frameId =
-    requestAnimationFrame(fadeStep);
+    requestAnimationFrame(
+      fadeStep
+    );
 
-  audioFadeFrames.set(audio, frameId);
+  audioFadeFrames.set(
+    audio,
+    frameId
+  );
 }
 
 
 function playImportedClip(
   path,
-  volume = EFFECT_VOLUME,
+  channel = "effects",
   delay = 0
 ) {
-  if (masterMuted || !path) {
+  if (
+    audioSettings.muted ||
+    !path
+  ) {
+    return null;
+  }
+
+  const channelVolume =
+    channel === "voice"
+      ? audioSettings.voice
+      : audioSettings.effects;
+
+  if (channelVolume <= 0) {
+    return null;
+  }
+
+  const timeoutId =
+    window.setTimeout(() => {
+      if (audioSettings.muted) {
+        return;
+      }
+
+      const clip = createAudio(
+        path,
+        false
+      );
+
+      clip.volume =
+        clampVolume(
+          channelVolume
+        );
+
+      activeImportedClips.add(clip);
+
+      clip.addEventListener(
+        "ended",
+        () => {
+          activeImportedClips.delete(
+            clip
+          );
+        },
+        {
+          once: true
+        }
+      );
+
+      safelyPlay(clip);
+    }, delay);
+
+  return timeoutId;
+}
+
+
+function playVoiceClip(
+  path,
+  delay = 0
+) {
+  if (
+    audioSettings.muted ||
+    audioSettings.voice <= 0 ||
+    !path
+  ) {
     return;
   }
 
   window.setTimeout(() => {
-    if (masterMuted) {
+    if (
+      audioSettings.muted ||
+      activeVoice
+    ) {
       return;
     }
 
@@ -491,10 +774,55 @@ function playImportedClip(
       false
     );
 
-    clip.volume = volume;
+    clip.volume =
+      clampVolume(
+        audioSettings.voice
+      );
+
+    activeVoice = clip;
+
+    const releaseVoice = () => {
+      if (activeVoice === clip) {
+        activeVoice = null;
+      }
+    };
+
+    clip.addEventListener(
+      "ended",
+      releaseVoice,
+      {
+        once: true
+      }
+    );
+
+    clip.addEventListener(
+      "error",
+      releaseVoice,
+      {
+        once: true
+      }
+    );
 
     safelyPlay(clip);
   }, delay);
+}
+
+
+function stopAllImportedClips() {
+  activeImportedClips.forEach(
+    (clip) => {
+      clip.pause();
+      clip.currentTime = 0;
+    }
+  );
+
+  activeImportedClips.clear();
+
+  if (activeVoice) {
+    activeVoice.pause();
+    activeVoice.currentTime = 0;
+    activeVoice = null;
+  }
 }
 
 
@@ -521,32 +849,35 @@ function synchroniseTrackPosition(
   if (
     !previousTrack ||
     !nextTrack ||
-    !Number.isFinite(previousTrack.currentTime)
+    !Number.isFinite(
+      previousTrack.currentTime
+    )
   ) {
     nextTrack.currentTime = 0;
     return;
   }
 
-  const duration =
+  const nextDuration =
     nextTrack.duration;
 
   if (
-    Number.isFinite(duration) &&
-    duration > 0
+    Number.isFinite(nextDuration) &&
+    nextDuration > 0
   ) {
     nextTrack.currentTime =
-      previousTrack.currentTime % duration;
+      previousTrack.currentTime %
+      nextDuration;
   } else {
     nextTrack.currentTime = 0;
   }
 }
 
 
-function changeMusic(
-  trackName,
-  targetVolume = MUSIC_VOLUME
-) {
-  if (masterMuted) {
+function changeMusic(trackName) {
+  if (
+    audioSettings.muted ||
+    audioSettings.music <= 0
+  ) {
     return;
   }
 
@@ -557,7 +888,14 @@ function changeMusic(
     return;
   }
 
-  if (activeMusicName === trackName) {
+  const targetVolume =
+    getMusicTargetVolume(
+      trackName
+    );
+
+  if (
+    activeMusicName === trackName
+  ) {
     if (nextTrack.paused) {
       safelyPlay(nextTrack);
     }
@@ -571,7 +909,8 @@ function changeMusic(
     return;
   }
 
-  const previousTrack = activeMusic;
+  const previousTrack =
+    activeMusic;
 
   synchroniseTrackPosition(
     previousTrack,
@@ -608,28 +947,203 @@ function changeMusic(
 }
 
 
-function setMasterMuted(isMuted) {
-  masterMuted = Boolean(isMuted);
+function refreshCurrentMusicVolume() {
+  if (
+    !activeMusic ||
+    !activeMusicName ||
+    audioSettings.muted
+  ) {
+    return;
+  }
+
+  fadeAudio(
+    activeMusic,
+    getMusicTargetVolume(
+      activeMusicName
+    ),
+    250
+  );
+}
+
+
+/* =========================================================
+   9. AUDIO SETTINGS
+========================================================= */
+
+function loadAudioSettings() {
+  try {
+    const saved =
+      localStorage.getItem(
+        AUDIO_STORAGE_KEY
+      );
+
+    if (!saved) {
+      return {
+        ...DEFAULT_AUDIO_SETTINGS
+      };
+    }
+
+    const parsed =
+      JSON.parse(saved);
+
+    return {
+      music:
+        clampVolume(
+          parsed.music ??
+            DEFAULT_AUDIO_SETTINGS.music
+        ),
+
+      effects:
+        clampVolume(
+          parsed.effects ??
+            DEFAULT_AUDIO_SETTINGS.effects
+        ),
+
+      voice:
+        clampVolume(
+          parsed.voice ??
+            DEFAULT_AUDIO_SETTINGS.voice
+        ),
+
+      muted:
+        Boolean(
+          parsed.muted ??
+            DEFAULT_AUDIO_SETTINGS.muted
+        )
+    };
+  } catch (error) {
+    console.warn(
+      "Block Drop could not load audio settings.",
+      error
+    );
+
+    return {
+      ...DEFAULT_AUDIO_SETTINGS
+    };
+  }
+}
+
+
+function saveAudioSettings() {
+  try {
+    localStorage.setItem(
+      AUDIO_STORAGE_KEY,
+      JSON.stringify(
+        audioSettings
+      )
+    );
+  } catch (error) {
+    console.warn(
+      "Block Drop could not save audio settings.",
+      error
+    );
+  }
+}
+
+
+function applyAudioSettingsToInterface() {
+  const musicPercent =
+    Math.round(
+      audioSettings.music * 100
+    );
+
+  const effectsPercent =
+    Math.round(
+      audioSettings.effects * 100
+    );
+
+  const voicePercent =
+    Math.round(
+      audioSettings.voice * 100
+    );
+
+  if (musicVolumeSlider) {
+    musicVolumeSlider.value =
+      String(musicPercent);
+  }
+
+  if (effectsVolumeSlider) {
+    effectsVolumeSlider.value =
+      String(effectsPercent);
+  }
+
+  if (voiceVolumeSlider) {
+    voiceVolumeSlider.value =
+      String(voicePercent);
+  }
+
+  if (musicVolumeOutput) {
+    musicVolumeOutput.textContent =
+      `${musicPercent}%`;
+  }
+
+  if (effectsVolumeOutput) {
+    effectsVolumeOutput.textContent =
+      `${effectsPercent}%`;
+  }
+
+  if (voiceVolumeOutput) {
+    voiceVolumeOutput.textContent =
+      `${voicePercent}%`;
+  }
+
+  updateMuteButtons();
+}
+
+
+function updateMuteButtons() {
+  const isMuted =
+    audioSettings.muted;
 
   soundButton?.setAttribute(
     "aria-pressed",
-    String(masterMuted)
+    String(isMuted)
   );
 
   soundButton?.setAttribute(
     "aria-label",
-    masterMuted
+    isMuted
       ? "Enable all audio"
       : "Mute all audio"
   );
 
-  if (masterMuted) {
-    Object.values(musicTracks).forEach(
-      (track) => {
-        stopAudioFade(track);
-        track.pause();
-      }
-    );
+  muteAllButton?.setAttribute(
+    "aria-pressed",
+    String(isMuted)
+  );
+
+  if (muteAllButton) {
+    muteAllButton.innerHTML =
+      isMuted
+        ? `
+          <span aria-hidden="true">🔊</span>
+          Unmute All
+        `
+        : `
+          <span aria-hidden="true">🔇</span>
+          Mute All
+        `;
+  }
+}
+
+
+function setMasterMuted(isMuted) {
+  audioSettings.muted =
+    Boolean(isMuted);
+
+  saveAudioSettings();
+  updateMuteButtons();
+
+  if (audioSettings.muted) {
+    Object.values(
+      musicTracks
+    ).forEach((track) => {
+      stopAudioFade(track);
+
+      track.pause();
+    });
+
+    stopAllImportedClips();
 
     return;
   }
@@ -642,16 +1156,114 @@ function setMasterMuted(isMuted) {
   ) {
     updateDynamicMusic(true);
   } else {
-    changeMusic(
-      "menu",
-      MUSIC_VOLUME
-    );
+    changeMusic("menu");
   }
 }
 
 
+function resetAudioMix() {
+  audioSettings = {
+    ...DEFAULT_AUDIO_SETTINGS
+  };
+
+  saveAudioSettings();
+
+  applyAudioSettingsToInterface();
+
+  if (!audioSettings.muted) {
+    refreshCurrentMusicVolume();
+
+    playGeneratedSound("resume");
+  }
+}
+
+
+function openAudioSettings() {
+  if (
+    !audioSettingsPanel ||
+    !audioSettingsBackdrop
+  ) {
+    return;
+  }
+
+  audioSettingsPanel.classList.add(
+    "is-open"
+  );
+
+  audioSettingsBackdrop.classList.add(
+    "is-visible"
+  );
+
+  audioSettingsPanel.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  audioSettingsBackdrop.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  audioSettingsButton?.setAttribute(
+    "aria-expanded",
+    "true"
+  );
+
+  mobileAudioButton?.setAttribute(
+    "aria-expanded",
+    "true"
+  );
+
+  document.body.classList.add(
+    "audio-panel-open"
+  );
+}
+
+
+function closeAudioSettings() {
+  if (
+    !audioSettingsPanel ||
+    !audioSettingsBackdrop
+  ) {
+    return;
+  }
+
+  audioSettingsPanel.classList.remove(
+    "is-open"
+  );
+
+  audioSettingsBackdrop.classList.remove(
+    "is-visible"
+  );
+
+  audioSettingsPanel.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  audioSettingsBackdrop.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  audioSettingsButton?.setAttribute(
+    "aria-expanded",
+    "false"
+  );
+
+  mobileAudioButton?.setAttribute(
+    "aria-expanded",
+    "false"
+  );
+
+  document.body.classList.remove(
+    "audio-panel-open"
+  );
+}
+
+
 /* =========================================================
-   7. MATRIX UTILITIES
+   10. MATRIX UTILITIES
 ========================================================= */
 
 function createMatrix(
@@ -699,7 +1311,7 @@ function createPiece(type) {
 
 
 /* =========================================================
-   8. SEVEN-BAG RANDOM PIECES
+   11. SEVEN-BAG RANDOM PIECES
 ========================================================= */
 
 function shuffleArray(array) {
@@ -740,7 +1352,7 @@ function getNextPieceType() {
 
 
 /* =========================================================
-   9. COLLISION AND MERGING
+   12. COLLISION AND MERGING
 ========================================================= */
 
 function collides(
@@ -831,7 +1443,7 @@ function mergePlayerIntoArena() {
 
 
 /* =========================================================
-   10. PIECE SPAWNING
+   13. PIECE SPAWNING
 ========================================================= */
 
 function getTopEmptyRows(matrix) {
@@ -902,7 +1514,7 @@ function spawnNextPiece() {
 
 
 /* =========================================================
-   11. MOVEMENT
+   14. MOVEMENT
 ========================================================= */
 
 function movePlayer(direction) {
@@ -978,6 +1590,8 @@ function hardDropPlayer() {
     "hardDrop"
   );
 
+  vibrateDevice([18]);
+
   shakeScreen();
 
   lockCurrentPiece();
@@ -985,7 +1599,7 @@ function hardDropPlayer() {
 
 
 /* =========================================================
-   12. ROTATION
+   15. ROTATION
 ========================================================= */
 
 function rotateMatrix(
@@ -1084,7 +1698,7 @@ function rotatePlayer(direction) {
 
 
 /* =========================================================
-   13. HOLD PIECE
+   16. HOLD PIECE
 ========================================================= */
 
 function holdCurrentPiece() {
@@ -1134,7 +1748,7 @@ function holdCurrentPiece() {
 
 
 /* =========================================================
-   14. GHOST PIECE
+   17. GHOST PIECE
 ========================================================= */
 
 function getGhostPosition() {
@@ -1166,7 +1780,7 @@ function getGhostPosition() {
 
 
 /* =========================================================
-   15. PIECE LOCKING AND LINE CLEARING
+   18. PIECE LOCKING AND LINE CLEARING
 ========================================================= */
 
 function lockCurrentPiece() {
@@ -1290,17 +1904,23 @@ function clearCompletedLines() {
       : 180
   );
 
+  vibrateDevice(
+    numberOfLines === 4
+      ? [35, 30, 55]
+      : [22]
+  );
+
   if (numberOfLines === 4) {
     playImportedClip(
       effectPaths.fourLineClear,
-      EFFECT_VOLUME
+      "effects"
     );
 
     playFourLineVoice();
   } else {
     playImportedClip(
       effectPaths.lineClear,
-      EFFECT_VOLUME
+      "effects"
     );
 
     maybePlayPositiveVoice(
@@ -1318,7 +1938,7 @@ function clearCompletedLines() {
 
 
 /* =========================================================
-   16. SCORING AND LEVELS
+   19. SCORING AND LEVELS
 ========================================================= */
 
 function addScore(points) {
@@ -1352,7 +1972,7 @@ function updateLevel() {
 
     playImportedClip(
       effectPaths.levelUp,
-      EFFECT_VOLUME
+      "effects"
     );
   } else {
     level = newLevel;
@@ -1370,7 +1990,7 @@ function getDropInterval() {
 
 
 /* =========================================================
-   17. DYNAMIC MUSIC
+   20. DYNAMIC MUSIC
 ========================================================= */
 
 function isBoardInDanger() {
@@ -1391,7 +2011,7 @@ function updateDynamicMusic(
     !gameStarted ||
     gamePaused ||
     gameOver ||
-    masterMuted
+    audioSettings.muted
   ) {
     return;
   }
@@ -1411,61 +2031,73 @@ function updateDynamicMusic(
     nowDangerous;
 
   if (dangerActive) {
-    changeMusic(
-      "danger",
-      DANGER_MUSIC_VOLUME
-    );
+    changeMusic("danger");
 
     if (!dangerVoicePlayed) {
       dangerVoicePlayed = true;
 
-      playImportedClip(
+      playVoiceClip(
         voicePaths.dangerous,
-        VOICE_VOLUME,
-        500
+        650
       );
     }
   } else {
     dangerVoicePlayed = false;
 
-    changeMusic(
-      "gameplay",
-      MUSIC_VOLUME
-    );
+    changeMusic("gameplay");
   }
 }
 
 
 /* =========================================================
-   18. VOICE REACTIONS
+   21. VOICE REACTIONS
 ========================================================= */
 
 function maybePlayPositiveVoice(
   numberOfLines
 ) {
-  if (masterMuted) {
+  if (
+    audioSettings.muted ||
+    activeVoice
+  ) {
     return;
   }
 
-  const chance =
-    numberOfLines >= 2
-      ? 0.34
-      : 0.13;
+  let chance = 0;
+
+  if (numberOfLines === 1) {
+    chance = 0.08;
+  }
+
+  if (numberOfLines === 2) {
+    chance = 0.35;
+  }
+
+  if (numberOfLines === 3) {
+    chance = 0.62;
+  }
 
   if (Math.random() > chance) {
     return;
   }
 
-  const choices = [
-    voicePaths.nice,
+  let choices = [
     voicePaths.okay,
-    voicePaths.thatllDo
+    voicePaths.nice
   ];
 
+  if (numberOfLines >= 2) {
+    choices = [
+      voicePaths.nice,
+      voicePaths.thatllDo
+    ];
+  }
+
   if (numberOfLines >= 3) {
-    choices.push(
-      voicePaths.beautiful
-    );
+    choices = [
+      voicePaths.beautiful,
+      voicePaths.nice
+    ];
   }
 
   const selectedVoice =
@@ -1476,34 +2108,35 @@ function maybePlayPositiveVoice(
       )
     ];
 
-  playImportedClip(
+  playVoiceClip(
     selectedVoice,
-    VOICE_VOLUME,
-    180
+    550
   );
 }
 
 
 function playFourLineVoice() {
-  if (masterMuted) {
+  if (
+    audioSettings.muted ||
+    activeVoice
+  ) {
     return;
   }
 
   const selectedVoice =
-    Math.random() < 0.55
+    Math.random() < 0.65
       ? voicePaths.beautiful
       : voicePaths.thatllDo;
 
-  playImportedClip(
+  playVoiceClip(
     selectedVoice,
-    VOICE_VOLUME,
-    300
+    650
   );
 }
 
 
 /* =========================================================
-   19. COUNTDOWN
+   22. COUNTDOWN
 ========================================================= */
 
 async function beginGameSequence(
@@ -1516,6 +2149,8 @@ async function beginGameSequence(
   setMasterMuted(
     !audioEnabled
   );
+
+  enterMobileGameMode();
 
   hideAllOverlays();
 
@@ -1531,10 +2166,9 @@ async function beginGameSequence(
   );
 
   if (audioEnabled) {
-    changeMusic(
-      "menu",
-      MUSIC_VOLUME
-    );
+    initialiseAudioContext();
+
+    changeMusic("menu");
   }
 
   const countdownItems = [
@@ -1578,7 +2212,7 @@ async function beginGameSequence(
 
       playImportedClip(
         titleEffect,
-        EFFECT_VOLUME
+        "effects"
       );
     }
 
@@ -1631,7 +2265,7 @@ function wait(milliseconds) {
 
 
 /* =========================================================
-   20. GAME FLOW
+   23. GAME FLOW
 ========================================================= */
 
 function startNewGame() {
@@ -1653,6 +2287,7 @@ function startNewGame() {
   bestCombo = 0;
 
   dropCounter = 0;
+
   lastFrameTime =
     performance.now();
 
@@ -1687,11 +2322,10 @@ function startNewGame() {
   updateComboDisplay();
   updateInterface();
 
-  if (!masterMuted) {
-    changeMusic(
-      "gameplay",
-      MUSIC_VOLUME
-    );
+  updatePauseButtons();
+
+  if (!audioSettings.muted) {
+    changeMusic("gameplay");
   }
 }
 
@@ -1702,7 +2336,7 @@ function restartGame() {
   }
 
   beginGameSequence(
-    !masterMuted
+    !audioSettings.muted
   );
 }
 
@@ -1748,18 +2382,20 @@ function pauseGame() {
     "paused"
   );
 
-  if (pauseButton) {
-    pauseButton.innerHTML =
-      '<span aria-hidden="true">▶</span> Resume';
-  }
+  updatePauseButtons();
 
   if (
     activeMusic &&
-    !masterMuted
+    !audioSettings.muted
   ) {
     fadeAudio(
       activeMusic,
-      0.12,
+      Math.min(
+        0.1,
+        getMusicTargetVolume(
+          activeMusicName
+        )
+      ),
       300
     );
   }
@@ -1796,14 +2432,40 @@ function resumeGame() {
     "playing"
   );
 
-  if (pauseButton) {
-    pauseButton.innerHTML =
-      '<span aria-hidden="true">⏸</span> Pause';
-  }
+  updatePauseButtons();
 
   updateDynamicMusic(true);
 
   playGeneratedSound("resume");
+}
+
+
+function updatePauseButtons() {
+  const pausedMarkup =
+    '<span aria-hidden="true">▶</span> Resume';
+
+  const playingMarkup =
+    '<span aria-hidden="true">⏸</span> Pause';
+
+  if (pauseButton) {
+    pauseButton.innerHTML =
+      gamePaused
+        ? pausedMarkup
+        : playingMarkup;
+  }
+
+  if (mobilePauseButton) {
+    mobilePauseButton.innerHTML =
+      gamePaused
+        ? `
+          <span aria-hidden="true">▶</span>
+          <small>Resume</small>
+        `
+        : `
+          <span aria-hidden="true">⏸</span>
+          <small>Pause</small>
+        `;
+  }
 }
 
 
@@ -1847,27 +2509,27 @@ function endGame() {
   );
 
   updateInterface();
+  updatePauseButtons();
 
-  if (!masterMuted) {
+  vibrateDevice([60, 70, 90]);
+
+  if (!audioSettings.muted) {
     playImportedClip(
       effectPaths.gameOver,
-      EFFECT_VOLUME
+      "effects"
     );
 
     playImportedClip(
       effectPaths.gameOverWhispered,
-      VOICE_VOLUME,
-      650
+      "voice",
+      700
     );
 
     window.setTimeout(() => {
-      if (!masterMuted) {
-        changeMusic(
-          "menu",
-          MUSIC_VOLUME
-        );
+      if (!audioSettings.muted) {
+        changeMusic("menu");
       }
-    }, 1250);
+    }, 1300);
   }
 
   shakeScreen(380);
@@ -1886,7 +2548,7 @@ function canControlPlayer() {
 
 
 /* =========================================================
-   21. OVERLAY UTILITIES
+   24. OVERLAY UTILITIES
 ========================================================= */
 
 function hideAllOverlays() {
@@ -1913,7 +2575,7 @@ function hideAllOverlays() {
 
 
 /* =========================================================
-   22. DRAWING
+   25. DRAWING
 ========================================================= */
 
 function drawGame() {
@@ -2298,18 +2960,32 @@ function roundedRectanglePath(
 
   drawingContext.beginPath();
 
-  drawingContext.roundRect(
+  if (
+    typeof drawingContext.roundRect ===
+    "function"
+  ) {
+    drawingContext.roundRect(
+      x,
+      y,
+      width,
+      height,
+      safeRadius
+    );
+
+    return;
+  }
+
+  drawingContext.rect(
     x,
     y,
     width,
-    height,
-    safeRadius
+    height
   );
 }
 
 
 /* =========================================================
-   23. PREVIEW AND HOLD DRAWING
+   26. PREVIEW AND HOLD DRAWING
 ========================================================= */
 
 function drawPreviewPiece() {
@@ -2317,6 +2993,16 @@ function drawPreviewPiece() {
     previewContext,
     previewCanvas
   );
+
+  if (
+    mobilePreviewContext &&
+    mobilePreviewCanvas
+  ) {
+    clearCanvas(
+      mobilePreviewContext,
+      mobilePreviewCanvas
+    );
+  }
 
   if (!nextPiece) {
     return;
@@ -2329,6 +3015,19 @@ function drawPreviewPiece() {
     nextPiece.type,
     PREVIEW_BLOCK_SIZE
   );
+
+  if (
+    mobilePreviewContext &&
+    mobilePreviewCanvas
+  ) {
+    drawCentredMiniPiece(
+      mobilePreviewContext,
+      mobilePreviewCanvas,
+      nextPiece.matrix,
+      nextPiece.type,
+      MOBILE_PREVIEW_BLOCK_SIZE
+    );
+  }
 }
 
 
@@ -2424,7 +3123,7 @@ function drawCentredMiniPiece(
 
 
 /* =========================================================
-   24. PARTICLES
+   27. PARTICLES
 ========================================================= */
 
 function createLandingParticles() {
@@ -2634,7 +3333,7 @@ function drawParticles() {
 
 
 /* =========================================================
-   25. USER INTERFACE
+   28. USER INTERFACE
 ========================================================= */
 
 function formatScore(value) {
@@ -2648,8 +3347,11 @@ function formatScore(value) {
 
 
 function updateInterface() {
-  scoreElement.textContent =
+  const formattedScore =
     formatScore(score);
+
+  scoreElement.textContent =
+    formattedScore;
 
   highScoreElement.textContent =
     formatScore(highScore);
@@ -2659,6 +3361,21 @@ function updateInterface() {
 
   linesElement.textContent =
     String(clearedLines);
+
+  if (mobileScoreElement) {
+    mobileScoreElement.textContent =
+      formattedScore;
+  }
+
+  if (mobileLevelElement) {
+    mobileLevelElement.textContent =
+      String(level);
+  }
+
+  if (mobileLinesElement) {
+    mobileLinesElement.textContent =
+      String(clearedLines);
+  }
 }
 
 
@@ -2757,7 +3474,7 @@ function chooseRandomTip() {
 
 
 /* =========================================================
-   26. VISUAL EFFECTS
+   29. VISUAL AND DEVICE EFFECTS
 ========================================================= */
 
 function triggerScreenFlash() {
@@ -2794,8 +3511,18 @@ function shakeScreen(
 }
 
 
+function vibrateDevice(pattern) {
+  if (
+    "vibrate" in navigator &&
+    shouldUseMobileGameMode()
+  ) {
+    navigator.vibrate(pattern);
+  }
+}
+
+
 /* =========================================================
-   27. LOCAL HIGH SCORE
+   30. LOCAL HIGH SCORE
 ========================================================= */
 
 function loadHighScore() {
@@ -2846,11 +3573,11 @@ function saveHighScore() {
 
 
 /* =========================================================
-   28. GENERATED MICRO SOUND EFFECTS
+   31. GENERATED MICRO SOUND EFFECTS
 ========================================================= */
 
 function initialiseAudioContext() {
-  if (masterMuted) {
+  if (audioSettings.muted) {
     return;
   }
 
@@ -2887,7 +3614,8 @@ function playTone({
   delay = 0
 } = {}) {
   if (
-    masterMuted ||
+    audioSettings.muted ||
+    audioSettings.effects <= 0 ||
     !audioContext
   ) {
     return;
@@ -2921,10 +3649,14 @@ function playTone({
       );
   }
 
+  const adjustedVolume =
+    volume *
+    audioSettings.effects;
+
   gain.gain.setValueAtTime(
     Math.max(
       0.0001,
-      volume
+      adjustedVolume
     ),
     startTime
   );
@@ -2950,7 +3682,10 @@ function playTone({
 function playGeneratedSound(
   soundName
 ) {
-  if (masterMuted) {
+  if (
+    audioSettings.muted ||
+    audioSettings.effects <= 0
+  ) {
     return;
   }
 
@@ -3056,7 +3791,7 @@ function playGeneratedSound(
 
 
 /* =========================================================
-   29. KEYBOARD CONTROLS
+   32. KEYBOARD CONTROLS
 ========================================================= */
 
 function handleKeyboardInput(
@@ -3092,9 +3827,22 @@ function handleKeyboardInput(
 
   if (
     event.key === "p" ||
-    event.key === "P" ||
-    event.key === "Escape"
+    event.key === "P"
   ) {
+    togglePause();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    if (
+      audioSettingsPanel?.classList.contains(
+        "is-open"
+      )
+    ) {
+      closeAudioSettings();
+      return;
+    }
+
     togglePause();
     return;
   }
@@ -3146,7 +3894,7 @@ function handleKeyboardInput(
 
 
 /* =========================================================
-   30. TOUCH CONTROLS
+   33. TOUCH CONTROLS
 ========================================================= */
 
 function handleTouchAction(
@@ -3262,9 +4010,9 @@ function initialiseTouchControls() {
                         action
                       );
                     },
-                    75
+                    72
                   );
-              }, 240);
+              }, 220);
           }
         }
       );
@@ -3296,7 +4044,71 @@ function initialiseTouchControls() {
 
 
 /* =========================================================
-   31. BUTTON EVENTS
+   34. AUDIO SLIDER EVENTS
+========================================================= */
+
+function initialiseAudioSliders() {
+  musicVolumeSlider?.addEventListener(
+    "input",
+    () => {
+      audioSettings.music =
+        clampVolume(
+          Number(
+            musicVolumeSlider.value
+          ) / 100
+        );
+
+      musicVolumeOutput.textContent =
+        `${musicVolumeSlider.value}%`;
+
+      saveAudioSettings();
+      refreshCurrentMusicVolume();
+    }
+  );
+
+  effectsVolumeSlider?.addEventListener(
+    "input",
+    () => {
+      audioSettings.effects =
+        clampVolume(
+          Number(
+            effectsVolumeSlider.value
+          ) / 100
+        );
+
+      effectsVolumeOutput.textContent =
+        `${effectsVolumeSlider.value}%`;
+
+      saveAudioSettings();
+    }
+  );
+
+  voiceVolumeSlider?.addEventListener(
+    "input",
+    () => {
+      audioSettings.voice =
+        clampVolume(
+          Number(
+            voiceVolumeSlider.value
+          ) / 100
+        );
+
+      voiceVolumeOutput.textContent =
+        `${voiceVolumeSlider.value}%`;
+
+      if (activeVoice) {
+        activeVoice.volume =
+          audioSettings.voice;
+      }
+
+      saveAudioSettings();
+    }
+  );
+}
+
+
+/* =========================================================
+   35. BUTTON EVENTS
 ========================================================= */
 
 audioOnButton?.addEventListener(
@@ -3327,13 +4139,19 @@ playAgainButton?.addEventListener(
   "click",
   () => {
     beginGameSequence(
-      !masterMuted
+      !audioSettings.muted
     );
   }
 );
 
 
 pauseButton?.addEventListener(
+  "click",
+  togglePause
+);
+
+
+mobilePauseButton?.addEventListener(
   "click",
   togglePause
 );
@@ -3349,16 +4167,82 @@ soundButton?.addEventListener(
   "click",
   () => {
     setMasterMuted(
-      !masterMuted
+      !audioSettings.muted
     );
 
-    if (!masterMuted) {
-      initialiseAudioContext();
-
+    if (!audioSettings.muted) {
       playGeneratedSound(
         "resume"
       );
     }
+  }
+);
+
+
+audioSettingsButton?.addEventListener(
+  "click",
+  openAudioSettings
+);
+
+
+mobileAudioButton?.addEventListener(
+  "click",
+  openAudioSettings
+);
+
+
+audioSettingsClose?.addEventListener(
+  "click",
+  closeAudioSettings
+);
+
+
+audioSettingsBackdrop?.addEventListener(
+  "click",
+  closeAudioSettings
+);
+
+
+muteAllButton?.addEventListener(
+  "click",
+  () => {
+    setMasterMuted(
+      !audioSettings.muted
+    );
+  }
+);
+
+
+resetAudioButton?.addEventListener(
+  "click",
+  resetAudioMix
+);
+
+
+mobileExitButton?.addEventListener(
+  "click",
+  () => {
+    exitMobileGameMode();
+  }
+);
+
+
+pauseExitButton?.addEventListener(
+  "click",
+  () => {
+    exitMobileGameMode({
+      pauseFirst: false
+    });
+  }
+);
+
+
+gameOverExitButton?.addEventListener(
+  "click",
+  () => {
+    exitMobileGameMode({
+      pauseFirst: false
+    });
   }
 );
 
@@ -3370,7 +4254,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   32. AUTOMATIC PAUSE
+   36. PAGE AND VIEWPORT EVENTS
 ========================================================= */
 
 document.addEventListener(
@@ -3388,8 +4272,37 @@ document.addEventListener(
 );
 
 
+window.addEventListener(
+  "resize",
+  debounce(
+    handleViewportChange,
+    120
+  )
+);
+
+
+window.addEventListener(
+  "orientationchange",
+  () => {
+    window.setTimeout(
+      handleViewportChange,
+      250
+    );
+  }
+);
+
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+    stopAllMusic();
+    stopAllImportedClips();
+  }
+);
+
+
 /* =========================================================
-   33. ANIMATION LOOP
+   37. ANIMATION LOOP
 ========================================================= */
 
 function updateGame(
@@ -3434,7 +4347,35 @@ function updateGame(
 
 
 /* =========================================================
-   34. INITIALISATION
+   38. GENERAL UTILITIES
+========================================================= */
+
+function debounce(
+  callback,
+  delay
+) {
+  let timeoutId = null;
+
+  return (...args) => {
+    if (timeoutId) {
+      window.clearTimeout(
+        timeoutId
+      );
+    }
+
+    timeoutId =
+      window.setTimeout(
+        () => {
+          callback(...args);
+        },
+        delay
+      );
+  };
+}
+
+
+/* =========================================================
+   39. INITIALISATION
 ========================================================= */
 
 function initialiseGame() {
@@ -3451,6 +4392,10 @@ function initialiseGame() {
   );
 
   initialiseTouchControls();
+  initialiseAudioSliders();
+
+  applyAudioSettingsToInterface();
+
   chooseRandomTip();
 
   Object.values(
@@ -3458,6 +4403,8 @@ function initialiseGame() {
   ).forEach((track) => {
     track.volume = 0;
   });
+
+  updatePauseButtons();
 
   window.requestAnimationFrame(
     updateGame
