@@ -2,8 +2,7 @@
 
 /* =========================================================
    BLOCK DROP REMASTERED
-   MOBILE + TABLET GAME MODE
-   AUDIO MIXER EDITION
+   GESTURE + CENTRED MOBILE EDITION
    Pointless Productions
 ========================================================= */
 
@@ -18,11 +17,21 @@ const context = canvas?.getContext("2d");
 const previewCanvas = document.querySelector("#preview");
 const previewContext = previewCanvas?.getContext("2d");
 
-const mobilePreviewCanvas = document.querySelector("#mobile-preview");
-const mobilePreviewContext = mobilePreviewCanvas?.getContext("2d");
+const mobilePreviewCanvas = document.querySelector(
+  "#mobile-preview"
+);
+
+const mobilePreviewContext =
+  mobilePreviewCanvas?.getContext("2d");
 
 const holdCanvas = document.querySelector("#hold-canvas");
 const holdContext = holdCanvas?.getContext("2d");
+
+const gestureSurface = document.querySelector(
+  "#gesture-surface"
+);
+
+const gestureHelp = document.querySelector("#gesture-help");
 
 const scoreElement = document.querySelector("#score");
 const highScoreElement = document.querySelector("#high-score");
@@ -30,11 +39,21 @@ const levelElement = document.querySelector("#level");
 const linesElement = document.querySelector("#lines");
 const comboElement = document.querySelector("#combo");
 
-const mobileScoreElement = document.querySelector("#mobile-score");
-const mobileLevelElement = document.querySelector("#mobile-level");
-const mobileLinesElement = document.querySelector("#mobile-lines");
+const mobileScoreElement = document.querySelector(
+  "#mobile-score"
+);
 
-const finalScoreElement = document.querySelector("#final-score");
+const mobileLevelElement = document.querySelector(
+  "#mobile-level"
+);
+
+const mobileLinesElement = document.querySelector(
+  "#mobile-lines"
+);
+
+const finalScoreElement = document.querySelector(
+  "#final-score"
+);
 
 const highScoreMessage = document.querySelector(
   "#new-high-score-message"
@@ -59,8 +78,13 @@ const gameOverOverlay = document.querySelector(
   "#game-over-overlay"
 );
 
-const audioOnButton = document.querySelector("#audio-on-button");
-const audioOffButton = document.querySelector("#audio-off-button");
+const audioOnButton = document.querySelector(
+  "#audio-on-button"
+);
+
+const audioOffButton = document.querySelector(
+  "#audio-off-button"
+);
 
 const resumeButton = document.querySelector("#resume-button");
 
@@ -70,7 +94,6 @@ const playAgainButton = document.querySelector(
 
 const pauseButton = document.querySelector("#pause-button");
 const restartButton = document.querySelector("#restart-button");
-
 const soundButton = document.querySelector("#sound-button");
 
 const audioSettingsButton = document.querySelector(
@@ -85,6 +108,10 @@ const mobileAudioButton = document.querySelector(
   "#mobile-audio-button"
 );
 
+const dockAudioButton = document.querySelector(
+  "#dock-audio-button"
+);
+
 const mobileExitButton = document.querySelector(
   "#mobile-exit-button"
 );
@@ -95,6 +122,18 @@ const pauseExitButton = document.querySelector(
 
 const gameOverExitButton = document.querySelector(
   "#game-over-exit-button"
+);
+
+const rotationDirectionButton = document.querySelector(
+  "#rotation-direction-button"
+);
+
+const rotationDirectionIcon = document.querySelector(
+  "#rotation-direction-icon"
+);
+
+const rotationDirectionLabel = document.querySelector(
+  "#rotation-direction-label"
 );
 
 const holdEmptyMessage = document.querySelector(
@@ -144,7 +183,9 @@ const voiceVolumeOutput = document.querySelector(
   "#voice-volume-output"
 );
 
-const muteAllButton = document.querySelector("#mute-all-button");
+const muteAllButton = document.querySelector(
+  "#mute-all-button"
+);
 
 const resetAudioButton = document.querySelector(
   "#reset-audio-button"
@@ -268,10 +309,32 @@ const GAME_TIPS = [
 
 
 /* =========================================================
-   3. AUDIO DEFAULTS AND STORAGE
+   3. GESTURE CONSTANTS
 ========================================================= */
 
-const AUDIO_STORAGE_KEY = "blockDropAudioSettings";
+const TAP_MOVEMENT_LIMIT = 14;
+const TAP_DURATION_LIMIT = 360;
+
+const SWIPE_THRESHOLD = 34;
+const SWIPE_STEP_DISTANCE = 52;
+const MAX_SWIPE_STEPS = 5;
+
+const HOLD_DELAY = 300;
+const HOLD_DROP_INTERVAL = 85;
+
+const ROTATION_STORAGE_KEY =
+  "blockDropRotationDirection";
+
+const GESTURE_HELP_STORAGE_KEY =
+  "blockDropGestureHelpSeen";
+
+
+/* =========================================================
+   4. AUDIO DEFAULTS AND STORAGE
+========================================================= */
+
+const AUDIO_STORAGE_KEY =
+  "blockDropAudioSettings";
 
 const DEFAULT_AUDIO_SETTINGS = {
   music: 0.3,
@@ -286,7 +349,7 @@ let audioSettings = loadAudioSettings();
 
 
 /* =========================================================
-   4. AUDIO FILES
+   5. AUDIO FILES
 ========================================================= */
 
 const musicTracks = {
@@ -343,12 +406,18 @@ const voicePaths = {
     "assets/sounds/voices/okay.mp3",
 
   thatllDo:
-    "assets/sounds/voices/thatll-do.mp3"
+    "assets/sounds/voices/thatll-do.mp3",
+
+  clockwise:
+    "assets/sounds/voices/clockwise.mp3",
+
+  anticlockwise:
+    "assets/sounds/voices/anticlockwise.mp3"
 };
 
 
 /* =========================================================
-   5. PIECE SHAPES
+   6. PIECE SHAPES
 ========================================================= */
 
 const PIECE_SHAPES = {
@@ -389,7 +458,7 @@ const PIECE_SHAPES = {
 
 
 /* =========================================================
-   6. GAME STATE
+   7. GAME STATE
 ========================================================= */
 
 const arena = createMatrix(
@@ -433,10 +502,14 @@ let countdownRunning = false;
 
 let mobileGameModeActive = false;
 
+let tapRotationDirection =
+  loadRotationDirection();
+
 let particles = [];
 
 let announcementTimer = null;
 let tipTimer = null;
+let gestureHelpTimer = null;
 
 let dangerActive = false;
 let dangerVoicePlayed = false;
@@ -445,7 +518,6 @@ let activeMusic = null;
 let activeMusicName = null;
 
 let audioContext = null;
-
 let activeVoice = null;
 
 const activeImportedClips = new Set();
@@ -453,7 +525,30 @@ const audioFadeFrames = new WeakMap();
 
 
 /* =========================================================
-   7. RESPONSIVE GAME MODE
+   8. GESTURE STATE
+========================================================= */
+
+const gestureState = {
+  pointerId: null,
+
+  startX: 0,
+  startY: 0,
+
+  currentX: 0,
+  currentY: 0,
+
+  startTime: 0,
+
+  moved: false,
+  holding: false,
+
+  holdTimeout: null,
+  holdInterval: null
+};
+
+
+/* =========================================================
+   9. RESPONSIVE GAME MODE
 ========================================================= */
 
 function shouldUseMobileGameMode() {
@@ -461,7 +556,9 @@ function shouldUseMobileGameMode() {
     window.matchMedia(
       `(max-width: ${MOBILE_GAME_BREAKPOINT}px)`
     ).matches ||
-    window.matchMedia("(pointer: coarse)").matches
+    window.matchMedia(
+      "(pointer: coarse)"
+    ).matches
   );
 }
 
@@ -484,6 +581,10 @@ function enterMobileGameMode() {
   });
 
   preventGameplayScrolling();
+
+  window.setTimeout(() => {
+    showGestureHelp();
+  }, 650);
 }
 
 
@@ -498,6 +599,8 @@ function exitMobileGameMode({
   ) {
     pauseGame();
   }
+
+  cancelGesture();
 
   mobileGameModeActive = false;
 
@@ -544,7 +647,7 @@ function restoreGameplayScrolling() {
 
 
 /* =========================================================
-   8. BASIC AUDIO UTILITIES
+   10. BASIC AUDIO UTILITIES
 ========================================================= */
 
 function createAudio(
@@ -564,7 +667,10 @@ function createAudio(
 function clampVolume(value) {
   return Math.min(
     1,
-    Math.max(0, Number(value) || 0)
+    Math.max(
+      0,
+      Number(value) || 0
+    )
   );
 }
 
@@ -639,8 +745,10 @@ function fadeAudio(
 
   function fadeStep(currentTime) {
     const progress = Math.min(
-      (currentTime - startedAt) /
-        duration,
+      (
+        currentTime -
+        startedAt
+      ) / duration,
       1
     );
 
@@ -672,8 +780,7 @@ function fadeAudio(
     audioFadeFrames.delete(audio);
 
     if (
-      typeof onComplete ===
-      "function"
+      typeof onComplete === "function"
     ) {
       onComplete();
     }
@@ -712,46 +819,54 @@ function playImportedClip(
     return null;
   }
 
-  const timeoutId =
-    window.setTimeout(() => {
-      if (audioSettings.muted) {
-        return;
+  return window.setTimeout(() => {
+    if (audioSettings.muted) {
+      return;
+    }
+
+    const clip = createAudio(
+      path,
+      false
+    );
+
+    clip.volume =
+      clampVolume(channelVolume);
+
+    activeImportedClips.add(clip);
+
+    const removeClip = () => {
+      activeImportedClips.delete(
+        clip
+      );
+    };
+
+    clip.addEventListener(
+      "ended",
+      removeClip,
+      {
+        once: true
       }
+    );
 
-      const clip = createAudio(
-        path,
-        false
-      );
+    clip.addEventListener(
+      "error",
+      removeClip,
+      {
+        once: true
+      }
+    );
 
-      clip.volume =
-        clampVolume(
-          channelVolume
-        );
-
-      activeImportedClips.add(clip);
-
-      clip.addEventListener(
-        "ended",
-        () => {
-          activeImportedClips.delete(
-            clip
-          );
-        },
-        {
-          once: true
-        }
-      );
-
-      safelyPlay(clip);
-    }, delay);
-
-  return timeoutId;
+    safelyPlay(clip);
+  }, delay);
 }
 
 
 function playVoiceClip(
   path,
-  delay = 0
+  delay = 0,
+  {
+    interrupt = false
+  } = {}
 ) {
   if (
     audioSettings.muted ||
@@ -764,9 +879,19 @@ function playVoiceClip(
   window.setTimeout(() => {
     if (
       audioSettings.muted ||
-      activeVoice
+      audioSettings.voice <= 0
     ) {
       return;
+    }
+
+    if (activeVoice && !interrupt) {
+      return;
+    }
+
+    if (activeVoice && interrupt) {
+      activeVoice.pause();
+      activeVoice.currentTime = 0;
+      activeVoice = null;
     }
 
     const clip = createAudio(
@@ -956,6 +1081,23 @@ function refreshCurrentMusicVolume() {
     return;
   }
 
+  if (audioSettings.music <= 0) {
+    fadeAudio(
+      activeMusic,
+      0,
+      250,
+      () => {
+        activeMusic?.pause();
+      }
+    );
+
+    return;
+  }
+
+  if (activeMusic.paused) {
+    safelyPlay(activeMusic);
+  }
+
   fadeAudio(
     activeMusic,
     getMusicTargetVolume(
@@ -967,7 +1109,7 @@ function refreshCurrentMusicVolume() {
 
 
 /* =========================================================
-   9. AUDIO SETTINGS
+   11. AUDIO SETTINGS
 ========================================================= */
 
 function loadAudioSettings() {
@@ -1139,7 +1281,6 @@ function setMasterMuted(isMuted) {
       musicTracks
     ).forEach((track) => {
       stopAudioFade(track);
-
       track.pause();
     });
 
@@ -1170,9 +1311,9 @@ function resetAudioMix() {
 
   applyAudioSettingsToInterface();
 
-  if (!audioSettings.muted) {
-    refreshCurrentMusicVolume();
+  refreshCurrentMusicVolume();
 
+  if (!audioSettings.muted) {
     playGeneratedSound("resume");
   }
 }
@@ -1185,6 +1326,8 @@ function openAudioSettings() {
   ) {
     return;
   }
+
+  cancelGesture();
 
   audioSettingsPanel.classList.add(
     "is-open"
@@ -1210,6 +1353,11 @@ function openAudioSettings() {
   );
 
   mobileAudioButton?.setAttribute(
+    "aria-expanded",
+    "true"
+  );
+
+  dockAudioButton?.setAttribute(
     "aria-expanded",
     "true"
   );
@@ -1256,6 +1404,11 @@ function closeAudioSettings() {
     "false"
   );
 
+  dockAudioButton?.setAttribute(
+    "aria-expanded",
+    "false"
+  );
+
   document.body.classList.remove(
     "audio-panel-open"
   );
@@ -1263,7 +1416,114 @@ function closeAudioSettings() {
 
 
 /* =========================================================
-   10. MATRIX UTILITIES
+   12. ROTATION DIRECTION
+========================================================= */
+
+function loadRotationDirection() {
+  try {
+    const stored =
+      localStorage.getItem(
+        ROTATION_STORAGE_KEY
+      );
+
+    return stored === "anticlockwise"
+      ? -1
+      : 1;
+  } catch (error) {
+    return 1;
+  }
+}
+
+
+function saveRotationDirection() {
+  try {
+    localStorage.setItem(
+      ROTATION_STORAGE_KEY,
+      tapRotationDirection === 1
+        ? "clockwise"
+        : "anticlockwise"
+    );
+  } catch (error) {
+    console.warn(
+      "Block Drop could not save rotation direction.",
+      error
+    );
+  }
+}
+
+
+function updateRotationDirectionInterface() {
+  const clockwise =
+    tapRotationDirection === 1;
+
+  if (rotationDirectionIcon) {
+    rotationDirectionIcon.textContent =
+      clockwise
+        ? "↻"
+        : "↺";
+  }
+
+  if (rotationDirectionLabel) {
+    rotationDirectionLabel.textContent =
+      clockwise
+        ? "Clockwise"
+        : "Anticlockwise";
+  }
+
+  rotationDirectionButton?.setAttribute(
+    "aria-pressed",
+    String(!clockwise)
+  );
+
+  rotationDirectionButton?.setAttribute(
+    "aria-label",
+    clockwise
+      ? "Tap rotation is clockwise. Press to change to anticlockwise."
+      : "Tap rotation is anticlockwise. Press to change to clockwise."
+  );
+}
+
+
+function toggleRotationDirection() {
+  tapRotationDirection *= -1;
+
+  saveRotationDirection();
+  updateRotationDirectionInterface();
+
+  if (rotationDirectionButton) {
+    rotationDirectionButton.classList.remove(
+      "is-switching"
+    );
+
+    void rotationDirectionButton.offsetWidth;
+
+    rotationDirectionButton.classList.add(
+      "is-switching"
+    );
+
+    window.setTimeout(() => {
+      rotationDirectionButton.classList.remove(
+        "is-switching"
+      );
+    }, 340);
+  }
+
+  vibrateDevice([15]);
+
+  playVoiceClip(
+    tapRotationDirection === 1
+      ? voicePaths.clockwise
+      : voicePaths.anticlockwise,
+    0,
+    {
+      interrupt: true
+    }
+  );
+}
+
+
+/* =========================================================
+   13. MATRIX UTILITIES
 ========================================================= */
 
 function createMatrix(
@@ -1311,7 +1571,7 @@ function createPiece(type) {
 
 
 /* =========================================================
-   11. SEVEN-BAG RANDOM PIECES
+   14. SEVEN-BAG RANDOM PIECES
 ========================================================= */
 
 function shuffleArray(array) {
@@ -1352,7 +1612,7 @@ function getNextPieceType() {
 
 
 /* =========================================================
-   12. COLLISION AND MERGING
+   15. COLLISION AND MERGING
 ========================================================= */
 
 function collides(
@@ -1443,7 +1703,7 @@ function mergePlayerIntoArena() {
 
 
 /* =========================================================
-   13. PIECE SPAWNING
+   16. PIECE SPAWNING
 ========================================================= */
 
 function getTopEmptyRows(matrix) {
@@ -1514,12 +1774,12 @@ function spawnNextPiece() {
 
 
 /* =========================================================
-   14. MOVEMENT
+   17. MOVEMENT
 ========================================================= */
 
 function movePlayer(direction) {
   if (!canControlPlayer()) {
-    return;
+    return false;
   }
 
   player.position.x += direction;
@@ -1527,14 +1787,38 @@ function movePlayer(direction) {
   if (collides()) {
     player.position.x -= direction;
 
-    playGeneratedSound(
-      "blocked"
-    );
+    playGeneratedSound("blocked");
 
-    return;
+    return false;
   }
 
   playGeneratedSound("move");
+
+  return true;
+}
+
+
+function movePlayerMultiple(
+  direction,
+  numberOfSteps
+) {
+  let moved = false;
+
+  for (
+    let index = 0;
+    index < numberOfSteps;
+    index += 1
+  ) {
+    if (!movePlayer(direction)) {
+      break;
+    }
+
+    moved = true;
+  }
+
+  if (moved) {
+    vibrateDevice([7]);
+  }
 }
 
 
@@ -1586,11 +1870,9 @@ function hardDropPlayer() {
     );
   }
 
-  playGeneratedSound(
-    "hardDrop"
-  );
+  playGeneratedSound("hardDrop");
 
-  vibrateDevice([18]);
+  vibrateDevice([28]);
 
   shakeScreen();
 
@@ -1599,7 +1881,7 @@ function hardDropPlayer() {
 
 
 /* =========================================================
-   15. ROTATION
+   18. ROTATION
 ========================================================= */
 
 function rotateMatrix(
@@ -1631,7 +1913,9 @@ function rotateMatrix(
         rotated[x][rows - 1 - y] =
           matrix[y][x];
       } else {
-        rotated[columns - 1 - x][y] =
+        rotated[
+          columns - 1 - x
+        ][y] =
           matrix[y][x];
       }
     }
@@ -1646,7 +1930,7 @@ function rotatePlayer(direction) {
     !canControlPlayer() ||
     player.type === "O"
   ) {
-    return;
+    return false;
   }
 
   const originalMatrix =
@@ -1677,11 +1961,10 @@ function rotatePlayer(direction) {
       originalX + offset;
 
     if (!collides()) {
-      playGeneratedSound(
-        "rotate"
-      );
+      playGeneratedSound("rotate");
+      vibrateDevice([9]);
 
-      return;
+      return true;
     }
   }
 
@@ -1691,14 +1974,14 @@ function rotatePlayer(direction) {
   player.position.x =
     originalX;
 
-  playGeneratedSound(
-    "blocked"
-  );
+  playGeneratedSound("blocked");
+
+  return false;
 }
 
 
 /* =========================================================
-   16. HOLD PIECE
+   19. HOLD PIECE
 ========================================================= */
 
 function holdCurrentPiece() {
@@ -1744,11 +2027,12 @@ function holdCurrentPiece() {
   drawHeldPiece();
 
   playGeneratedSound("hold");
+  vibrateDevice([12]);
 }
 
 
 /* =========================================================
-   17. GHOST PIECE
+   20. GHOST PIECE
 ========================================================= */
 
 function getGhostPosition() {
@@ -1780,7 +2064,7 @@ function getGhostPosition() {
 
 
 /* =========================================================
-   18. PIECE LOCKING AND LINE CLEARING
+   21. PIECE LOCKING AND LINE CLEARING
 ========================================================= */
 
 function lockCurrentPiece() {
@@ -1906,8 +2190,8 @@ function clearCompletedLines() {
 
   vibrateDevice(
     numberOfLines === 4
-      ? [35, 30, 55]
-      : [22]
+      ? [45, 30, 65]
+      : [22, 24]
   );
 
   if (numberOfLines === 4) {
@@ -1938,7 +2222,7 @@ function clearCompletedLines() {
 
 
 /* =========================================================
-   19. SCORING AND LEVELS
+   22. SCORING AND LEVELS
 ========================================================= */
 
 function addScore(points) {
@@ -1974,6 +2258,12 @@ function updateLevel() {
       effectPaths.levelUp,
       "effects"
     );
+
+    vibrateDevice([
+      20,
+      30,
+      20
+    ]);
   } else {
     level = newLevel;
   }
@@ -1990,7 +2280,7 @@ function getDropInterval() {
 
 
 /* =========================================================
-   20. DYNAMIC MUSIC
+   23. DYNAMIC MUSIC
 ========================================================= */
 
 function isBoardInDanger() {
@@ -2021,8 +2311,7 @@ function updateDynamicMusic(
 
   if (
     !forceUpdate &&
-    nowDangerous ===
-      dangerActive
+    nowDangerous === dangerActive
   ) {
     return;
   }
@@ -2050,7 +2339,7 @@ function updateDynamicMusic(
 
 
 /* =========================================================
-   21. VOICE REACTIONS
+   24. VOICE REACTIONS
 ========================================================= */
 
 function maybePlayPositiveVoice(
@@ -2070,11 +2359,11 @@ function maybePlayPositiveVoice(
   }
 
   if (numberOfLines === 2) {
-    chance = 0.35;
+    chance = 0.38;
   }
 
   if (numberOfLines === 3) {
-    chance = 0.62;
+    chance = 0.68;
   }
 
   if (Math.random() > chance) {
@@ -2086,7 +2375,7 @@ function maybePlayPositiveVoice(
     voicePaths.nice
   ];
 
-  if (numberOfLines >= 2) {
+  if (numberOfLines === 2) {
     choices = [
       voicePaths.nice,
       voicePaths.thatllDo
@@ -2110,7 +2399,7 @@ function maybePlayPositiveVoice(
 
   playVoiceClip(
     selectedVoice,
-    550
+    600
   );
 }
 
@@ -2124,19 +2413,19 @@ function playFourLineVoice() {
   }
 
   const selectedVoice =
-    Math.random() < 0.65
+    Math.random() < 0.7
       ? voicePaths.beautiful
       : voicePaths.thatllDo;
 
   playVoiceClip(
     selectedVoice,
-    650
+    700
   );
 }
 
 
 /* =========================================================
-   22. COUNTDOWN
+   25. COUNTDOWN
 ========================================================= */
 
 async function beginGameSequence(
@@ -2145,6 +2434,8 @@ async function beginGameSequence(
   if (countdownRunning) {
     return;
   }
+
+  cancelGesture();
 
   setMasterMuted(
     !audioEnabled
@@ -2265,10 +2556,12 @@ function wait(milliseconds) {
 
 
 /* =========================================================
-   23. GAME FLOW
+   26. GAME FLOW
 ========================================================= */
 
 function startNewGame() {
+  cancelGesture();
+
   clearArena();
 
   pieceBag = [];
@@ -2321,7 +2614,6 @@ function startNewGame() {
 
   updateComboDisplay();
   updateInterface();
-
   updatePauseButtons();
 
   if (!audioSettings.muted) {
@@ -2365,6 +2657,8 @@ function pauseGame() {
   ) {
     return;
   }
+
+  cancelGesture();
 
   gamePaused = true;
 
@@ -2411,6 +2705,8 @@ function resumeGame() {
   ) {
     return;
   }
+
+  cancelGesture();
 
   gamePaused = false;
   dropCounter = 0;
@@ -2466,10 +2762,30 @@ function updatePauseButtons() {
           <small>Pause</small>
         `;
   }
+
+  const dockPauseButton =
+    document.querySelector(
+      '[data-action="pause"]'
+    );
+
+  if (dockPauseButton) {
+    dockPauseButton.innerHTML =
+      gamePaused
+        ? `
+          <span aria-hidden="true">▶</span>
+          <strong>Resume</strong>
+        `
+        : `
+          <span aria-hidden="true">Ⅱ</span>
+          <strong>Pause</strong>
+        `;
+  }
 }
 
 
 function endGame() {
+  cancelGesture();
+
   gameOver = true;
   gamePaused = false;
   gameStarted = false;
@@ -2511,7 +2827,11 @@ function endGame() {
   updateInterface();
   updatePauseButtons();
 
-  vibrateDevice([60, 70, 90]);
+  vibrateDevice([
+    70,
+    70,
+    110
+  ]);
 
   if (!audioSettings.muted) {
     playImportedClip(
@@ -2519,17 +2839,16 @@ function endGame() {
       "effects"
     );
 
-    playImportedClip(
+    playVoiceClip(
       effectPaths.gameOverWhispered,
-      "voice",
-      700
+      750
     );
 
     window.setTimeout(() => {
       if (!audioSettings.muted) {
         changeMusic("menu");
       }
-    }, 1300);
+    }, 1350);
   }
 
   shakeScreen(380);
@@ -2542,13 +2861,16 @@ function canControlPlayer() {
     !gamePaused &&
     !gameOver &&
     !countdownRunning &&
+    !audioSettingsPanel?.classList.contains(
+      "is-open"
+    ) &&
     Boolean(player.matrix)
   );
 }
 
 
 /* =========================================================
-   24. OVERLAY UTILITIES
+   27. OVERLAY UTILITIES
 ========================================================= */
 
 function hideAllOverlays() {
@@ -2575,7 +2897,394 @@ function hideAllOverlays() {
 
 
 /* =========================================================
-   25. DRAWING
+   28. GESTURE CONTROLS
+========================================================= */
+
+function initialiseGestureControls() {
+  if (!gestureSurface) {
+    return;
+  }
+
+  gestureSurface.addEventListener(
+    "pointerdown",
+    handleGestureStart,
+    {
+      passive: false
+    }
+  );
+
+  gestureSurface.addEventListener(
+    "pointermove",
+    handleGestureMove,
+    {
+      passive: false
+    }
+  );
+
+  gestureSurface.addEventListener(
+    "pointerup",
+    handleGestureEnd,
+    {
+      passive: false
+    }
+  );
+
+  gestureSurface.addEventListener(
+    "pointercancel",
+    handleGestureCancel,
+    {
+      passive: false
+    }
+  );
+
+  gestureSurface.addEventListener(
+    "lostpointercapture",
+    handleGestureCancel
+  );
+
+  gestureSurface.addEventListener(
+    "contextmenu",
+    (event) => {
+      event.preventDefault();
+    }
+  );
+}
+
+
+function handleGestureStart(event) {
+  if (!canControlPlayer()) {
+    return;
+  }
+
+  event.preventDefault();
+
+  initialiseAudioContext();
+
+  cancelGesture();
+
+  gestureState.pointerId =
+    event.pointerId;
+
+  gestureState.startX =
+    event.clientX;
+
+  gestureState.startY =
+    event.clientY;
+
+  gestureState.currentX =
+    event.clientX;
+
+  gestureState.currentY =
+    event.clientY;
+
+  gestureState.startTime =
+    performance.now();
+
+  gestureState.moved = false;
+  gestureState.holding = false;
+
+  try {
+    gestureSurface.setPointerCapture(
+      event.pointerId
+    );
+  } catch (error) {
+    // Some browsers do not require pointer capture.
+  }
+
+  gestureState.holdTimeout =
+    window.setTimeout(() => {
+      if (
+        !canControlPlayer() ||
+        gestureState.moved
+      ) {
+        return;
+      }
+
+      gestureState.holding = true;
+
+      softDropPlayer();
+
+      vibrateDevice([8]);
+
+      gestureState.holdInterval =
+        window.setInterval(() => {
+          if (!canControlPlayer()) {
+            cancelGesture();
+            return;
+          }
+
+          softDropPlayer();
+        }, HOLD_DROP_INTERVAL);
+    }, HOLD_DELAY);
+}
+
+
+function handleGestureMove(event) {
+  if (
+    gestureState.pointerId !==
+    event.pointerId
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  gestureState.currentX =
+    event.clientX;
+
+  gestureState.currentY =
+    event.clientY;
+
+  const distanceX =
+    gestureState.currentX -
+    gestureState.startX;
+
+  const distanceY =
+    gestureState.currentY -
+    gestureState.startY;
+
+  const movementDistance =
+    Math.hypot(
+      distanceX,
+      distanceY
+    );
+
+  if (
+    movementDistance >
+    TAP_MOVEMENT_LIMIT
+  ) {
+    gestureState.moved = true;
+
+    clearGestureHoldTimers();
+  }
+}
+
+
+function handleGestureEnd(event) {
+  if (
+    gestureState.pointerId !==
+    event.pointerId
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  gestureState.currentX =
+    event.clientX;
+
+  gestureState.currentY =
+    event.clientY;
+
+  const wasHolding =
+    gestureState.holding;
+
+  const startX =
+    gestureState.startX;
+
+  const startY =
+    gestureState.startY;
+
+  const startedAt =
+    gestureState.startTime;
+
+  clearGestureHoldTimers();
+
+  const deltaX =
+    gestureState.currentX -
+    startX;
+
+  const deltaY =
+    gestureState.currentY -
+    startY;
+
+  const absoluteX =
+    Math.abs(deltaX);
+
+  const absoluteY =
+    Math.abs(deltaY);
+
+  const duration =
+    performance.now() -
+    startedAt;
+
+  resetGestureState();
+
+  if (
+    !canControlPlayer() ||
+    wasHolding
+  ) {
+    return;
+  }
+
+  const isTap =
+    absoluteX <=
+      TAP_MOVEMENT_LIMIT &&
+    absoluteY <=
+      TAP_MOVEMENT_LIMIT &&
+    duration <=
+      TAP_DURATION_LIMIT;
+
+  if (isTap) {
+    rotatePlayer(
+      tapRotationDirection
+    );
+
+    return;
+  }
+
+  const isDownwardSwipe =
+    deltaY > SWIPE_THRESHOLD &&
+    absoluteY > absoluteX * 1.05;
+
+  if (isDownwardSwipe) {
+    hardDropPlayer();
+
+    return;
+  }
+
+  const isHorizontalSwipe =
+    absoluteX > SWIPE_THRESHOLD &&
+    absoluteX > absoluteY;
+
+  if (isHorizontalSwipe) {
+    const direction =
+      deltaX > 0
+        ? 1
+        : -1;
+
+    const steps =
+      Math.min(
+        MAX_SWIPE_STEPS,
+        Math.max(
+          1,
+          Math.round(
+            absoluteX /
+              SWIPE_STEP_DISTANCE
+          )
+        )
+      );
+
+    movePlayerMultiple(
+      direction,
+      steps
+    );
+  }
+}
+
+
+function handleGestureCancel(event) {
+  if (
+    event?.pointerId !== undefined &&
+    gestureState.pointerId !== null &&
+    gestureState.pointerId !==
+      event.pointerId
+  ) {
+    return;
+  }
+
+  cancelGesture();
+}
+
+
+function clearGestureHoldTimers() {
+  if (gestureState.holdTimeout) {
+    window.clearTimeout(
+      gestureState.holdTimeout
+    );
+
+    gestureState.holdTimeout = null;
+  }
+
+  if (gestureState.holdInterval) {
+    window.clearInterval(
+      gestureState.holdInterval
+    );
+
+    gestureState.holdInterval = null;
+  }
+}
+
+
+function resetGestureState() {
+  gestureState.pointerId = null;
+
+  gestureState.startX = 0;
+  gestureState.startY = 0;
+
+  gestureState.currentX = 0;
+  gestureState.currentY = 0;
+
+  gestureState.startTime = 0;
+
+  gestureState.moved = false;
+  gestureState.holding = false;
+}
+
+
+function cancelGesture() {
+  clearGestureHoldTimers();
+  resetGestureState();
+}
+
+
+/* =========================================================
+   29. GESTURE HELP
+========================================================= */
+
+function showGestureHelp() {
+  if (
+    !gestureHelp ||
+    !mobileGameModeActive
+  ) {
+    return;
+  }
+
+  let alreadySeen = false;
+
+  try {
+    alreadySeen =
+      localStorage.getItem(
+        GESTURE_HELP_STORAGE_KEY
+      ) === "true";
+  } catch (error) {
+    alreadySeen = false;
+  }
+
+  if (alreadySeen) {
+    return;
+  }
+
+  gestureHelp.classList.add(
+    "is-visible"
+  );
+
+  if (gestureHelpTimer) {
+    window.clearTimeout(
+      gestureHelpTimer
+    );
+  }
+
+  gestureHelpTimer =
+    window.setTimeout(() => {
+      gestureHelp.classList.remove(
+        "is-visible"
+      );
+
+      try {
+        localStorage.setItem(
+          GESTURE_HELP_STORAGE_KEY,
+          "true"
+        );
+      } catch (error) {
+        // The game still works without saving this preference.
+      }
+    }, 5000);
+}
+
+
+/* =========================================================
+   30. DRAWING
 ========================================================= */
 
 function drawGame() {
@@ -2754,9 +3463,15 @@ function drawMatrix(
 
         drawBlock(
           drawingContext,
-          (x + position.x) *
+          (
+            x +
+            position.x
+          ) *
             blockSize,
-          (y + position.y) *
+          (
+            y +
+            position.y
+          ) *
             blockSize,
           blockSize,
           type,
@@ -2985,7 +3700,7 @@ function roundedRectanglePath(
 
 
 /* =========================================================
-   26. PREVIEW AND HOLD DRAWING
+   31. PREVIEW AND HOLD DRAWING
 ========================================================= */
 
 function drawPreviewPiece() {
@@ -3044,7 +3759,8 @@ function drawHeldPiece() {
     return;
   }
 
-  holdEmptyMessage.hidden = true;
+  holdEmptyMessage.hidden =
+    true;
 
   drawCentredMiniPiece(
     holdContext,
@@ -3123,7 +3839,7 @@ function drawCentredMiniPiece(
 
 
 /* =========================================================
-   27. PARTICLES
+   32. PARTICLES
 ========================================================= */
 
 function createLandingParticles() {
@@ -3229,7 +3945,10 @@ function createLineParticles(
         ) {
           particles.push({
             x:
-              (x + 0.5) *
+              (
+                x +
+                0.5
+              ) *
               BOARD_BLOCK_SIZE,
 
             y:
@@ -3333,7 +4052,7 @@ function drawParticles() {
 
 
 /* =========================================================
-   28. USER INTERFACE
+   33. USER INTERFACE
 ========================================================= */
 
 function formatScore(value) {
@@ -3474,7 +4193,7 @@ function chooseRandomTip() {
 
 
 /* =========================================================
-   29. VISUAL AND DEVICE EFFECTS
+   34. VISUAL AND DEVICE EFFECTS
 ========================================================= */
 
 function triggerScreenFlash() {
@@ -3522,7 +4241,7 @@ function vibrateDevice(pattern) {
 
 
 /* =========================================================
-   30. LOCAL HIGH SCORE
+   35. LOCAL HIGH SCORE
 ========================================================= */
 
 function loadHighScore() {
@@ -3573,7 +4292,7 @@ function saveHighScore() {
 
 
 /* =========================================================
-   31. GENERATED MICRO SOUND EFFECTS
+   36. GENERATED MICRO SOUND EFFECTS
 ========================================================= */
 
 function initialiseAudioContext() {
@@ -3667,6 +4386,7 @@ function playTone({
   );
 
   oscillator.connect(gain);
+
   gain.connect(
     audioContext.destination
   );
@@ -3791,12 +4511,10 @@ function playGeneratedSound(
 
 
 /* =========================================================
-   32. KEYBOARD CONTROLS
+   37. KEYBOARD CONTROLS
 ========================================================= */
 
-function handleKeyboardInput(
-  event
-) {
+function handleKeyboardInput(event) {
   const controlledKeys = [
     "ArrowLeft",
     "ArrowRight",
@@ -3830,6 +4548,7 @@ function handleKeyboardInput(
     event.key === "P"
   ) {
     togglePause();
+
     return;
   }
 
@@ -3840,10 +4559,12 @@ function handleKeyboardInput(
       )
     ) {
       closeAudioSettings();
+
       return;
     }
 
     togglePause();
+
     return;
   }
 
@@ -3894,37 +4615,11 @@ function handleKeyboardInput(
 
 
 /* =========================================================
-   33. TOUCH CONTROLS
+   38. DOCK BUTTON CONTROLS
 ========================================================= */
 
-function handleTouchAction(
-  action
-) {
+function handleTouchAction(action) {
   switch (action) {
-    case "left":
-      movePlayer(-1);
-      break;
-
-    case "right":
-      movePlayer(1);
-      break;
-
-    case "soft-drop":
-      softDropPlayer();
-      break;
-
-    case "hard-drop":
-      hardDropPlayer();
-      break;
-
-    case "rotate-left":
-      rotatePlayer(-1);
-      break;
-
-    case "rotate-right":
-      rotatePlayer(1);
-      break;
-
     case "hold":
       holdCurrentPiece();
       break;
@@ -3945,106 +4640,58 @@ function initialiseTouchControls() {
       "[data-action]"
     );
 
-  touchButtons.forEach(
-    (button) => {
-      const action =
-        button.dataset.action;
+  touchButtons.forEach((button) => {
+    const action =
+      button.dataset.action;
 
-      let repeatTimer = null;
-      let repeatInterval = null;
+    const stopPress = () => {
+      button.classList.remove(
+        "is-pressed"
+      );
+    };
 
-      const repeatableActions = [
-        "left",
-        "right",
-        "soft-drop"
-      ];
+    button.addEventListener(
+      "pointerdown",
+      (event) => {
+        event.preventDefault();
 
-      const stopRepeating = () => {
-        if (repeatTimer) {
-          window.clearTimeout(
-            repeatTimer
-          );
+        initialiseAudioContext();
 
-          repeatTimer = null;
-        }
-
-        if (repeatInterval) {
-          window.clearInterval(
-            repeatInterval
-          );
-
-          repeatInterval = null;
-        }
-
-        button.classList.remove(
+        button.classList.add(
           "is-pressed"
         );
-      };
 
-      button.addEventListener(
-        "pointerdown",
-        (event) => {
-          event.preventDefault();
+        handleTouchAction(action);
+      }
+    );
 
-          initialiseAudioContext();
+    button.addEventListener(
+      "pointerup",
+      stopPress
+    );
 
-          button.classList.add(
-            "is-pressed"
-          );
+    button.addEventListener(
+      "pointercancel",
+      stopPress
+    );
 
-          handleTouchAction(
-            action
-          );
+    button.addEventListener(
+      "pointerleave",
+      stopPress
+    );
 
-          if (
-            repeatableActions.includes(
-              action
-            )
-          ) {
-            repeatTimer =
-              window.setTimeout(() => {
-                repeatInterval =
-                  window.setInterval(
-                    () => {
-                      handleTouchAction(
-                        action
-                      );
-                    },
-                    72
-                  );
-              }, 220);
-          }
-        }
-      );
-
-      button.addEventListener(
-        "pointerup",
-        stopRepeating
-      );
-
-      button.addEventListener(
-        "pointercancel",
-        stopRepeating
-      );
-
-      button.addEventListener(
-        "pointerleave",
-        stopRepeating
-      );
-
-      button.addEventListener(
-        "contextmenu",
-        (event) => {
-          event.preventDefault();
-        }
-      );
-    }
-  );
+    button.addEventListener(
+      "contextmenu",
+      (event) => {
+        event.preventDefault();
+      }
+    );
+  });
 }
 
 
 /* =========================================================
-   34. AUDIO SLIDER EVENTS
+   39. AUDIO SLIDER EVENTS
 ========================================================= */
 
 function initialiseAudioSliders() {
@@ -4108,7 +4755,7 @@ function initialiseAudioSliders() {
 
 
 /* =========================================================
-   35. BUTTON EVENTS
+   40. BUTTON EVENTS
 ========================================================= */
 
 audioOnButton?.addEventListener(
@@ -4171,9 +4818,7 @@ soundButton?.addEventListener(
     );
 
     if (!audioSettings.muted) {
-      playGeneratedSound(
-        "resume"
-      );
+      playGeneratedSound("resume");
     }
   }
 );
@@ -4186,6 +4831,12 @@ audioSettingsButton?.addEventListener(
 
 
 mobileAudioButton?.addEventListener(
+  "click",
+  openAudioSettings
+);
+
+
+dockAudioButton?.addEventListener(
   "click",
   openAudioSettings
 );
@@ -4216,6 +4867,12 @@ muteAllButton?.addEventListener(
 resetAudioButton?.addEventListener(
   "click",
   resetAudioMix
+);
+
+
+rotationDirectionButton?.addEventListener(
+  "click",
+  toggleRotationDirection
 );
 
 
@@ -4254,7 +4911,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   36. PAGE AND VIEWPORT EVENTS
+   41. PAGE AND VIEWPORT EVENTS
 ========================================================= */
 
 document.addEventListener(
@@ -4284,6 +4941,8 @@ window.addEventListener(
 window.addEventListener(
   "orientationchange",
   () => {
+    cancelGesture();
+
     window.setTimeout(
       handleViewportChange,
       250
@@ -4297,12 +4956,13 @@ window.addEventListener(
   () => {
     stopAllMusic();
     stopAllImportedClips();
+    cancelGesture();
   }
 );
 
 
 /* =========================================================
-   37. ANIMATION LOOP
+   42. ANIMATION LOOP
 ========================================================= */
 
 function updateGame(
@@ -4347,7 +5007,7 @@ function updateGame(
 
 
 /* =========================================================
-   38. GENERAL UTILITIES
+   43. GENERAL UTILITIES
 ========================================================= */
 
 function debounce(
@@ -4375,7 +5035,7 @@ function debounce(
 
 
 /* =========================================================
-   39. INITIALISATION
+   44. INITIALISATION
 ========================================================= */
 
 function initialiseGame() {
@@ -4392,9 +5052,11 @@ function initialiseGame() {
   );
 
   initialiseTouchControls();
+  initialiseGestureControls();
   initialiseAudioSliders();
 
   applyAudioSettingsToInterface();
+  updateRotationDirectionInterface();
 
   chooseRandomTip();
 
