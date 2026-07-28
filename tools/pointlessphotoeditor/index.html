@@ -1,737 +1,1266 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PointlessPhotoEditor</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #121212;
-      color: #fff;
-      overflow: hidden;
-    }
 
-    header {
-      padding: 1rem;
-      font-size: 1.8rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-      color: #00ffd0;
-      text-align: center;
-      background: #1f1f1f;
-      border-bottom: 1px solid #333;
-    }
+  <meta charset="UTF-8">
 
-    #editorContainer {
-      display: flex;
-      width: 100%;
-      height: calc(100vh - 70px);
-    }
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
 
-    #leftToolbar {
-      width: 80px;
-      background: #1f1f1f;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem 0;
-      gap: 1rem;
-      border-right: 1px solid #333;
-    }
+  <title>Paintless | Pointless Productions</title>
 
-    #leftToolbar .tool-icon {
-      font-size: 24px;
-      color: #aaa;
-      cursor: pointer;
-      transition: color 0.2s, transform 0.2s;
-    }
+  <meta
+    name="description"
+    content="Paintless is a fast, friendly browser image editor from Pointless Productions."
+  >
 
-    #leftToolbar .tool-icon:hover {
-      color: #fff;
-      transform: scale(1.2);
-    }
+  <meta name="theme-color" content="#090611">
 
-    #leftToolbar .tool-icon.active {
-      color: #00ffd0;
-      transform: scale(1.3);
-    }
-    
+  <link
+    rel="icon"
+    href="../../assets/images/logos/logo-round.webp"
+  >
 
-    #mainEditor {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #121212;
-      padding: 1rem;
-      position: relative;
-    }
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
 
-    canvas {
-      border: 1px solid #444;
-      background: #fff;
-    }
-
-    #textInput {
-      position: absolute;
-      display: none;
-      background: transparent;
-      border: none;
-      color: #000;
-      font-size: 20px;
-      font-family: inherit;
-      outline: none;
-      z-index: 10;
-    }
-
-    #cropBox {
-      position: absolute;
-      border: 2px dashed #00ffd0;
-      pointer-events: none;
-      display: none;
-      z-index: 9;
-    }
-
-    #paletteDisplay {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .swatch {
-      width: 30px;
-      height: 30px;
-      border: 1px solid #444;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .swatch:hover {
-      transform: scale(1.1);
-    }
-
-    #leftToolbar input[type="file"],
-    #leftToolbar button {
-      width: 60px;
-      font-size: 12px;
-      background: #333;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      padding: 0.3rem;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    #leftToolbar button:hover {
-      background: #444;
-    }
-      #leftToolbar button:hover {
-    background: #444;
-  }
-
-  /* ⬇️ Paste this directly below ⬇️ */
-
-  #layerPanel {
-    width: 200px;
-    background: #1f1f1f;
-    color: #fff;
-    padding: 1rem;
-    border-right: 1px solid #333;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  #layerPanel h3 {
-    margin: 0;
-    font-size: 1rem;
-    color: #00ffd0;
-  }
-
-  #layerList {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .layerItem {
-    background: #2a2a2a;
-    padding: 0.5rem;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .layerItem select,
-  .layerItem input[type="checkbox"],
-  .layerItem button {
-    font-size: 12px;
-    background: #333;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 0.3rem;
-    cursor: pointer;
-  }
-  </style>
-  <script src="https://unpkg.com/psd.js"></script>
 </head>
+
+
 <body>
-  <header>🎨 PointlessPhotoEditor</header>
 
-  <div id="editorContainer">
-  <div id="leftToolbar">
-  <!-- your toolbar icons and buttons -->
-  <input type="file" id="upload" accept="image/*" title="Upload Image" />
-  <button onclick="saveImage()">💾</button>
-  <button onclick="clearCanvas()">🧹</button>
-  <button onclick="removeBackground()">🧙 Remove BG</button>
-  <button onclick="undo()">↩️ Undo</button>
-  <button onclick="redo()">↪️ Redo</button>
-</div>
+  <!-- =====================================================
+       ACCESSIBILITY
+  ====================================================== -->
 
-  <div id="layerPanel">
-    <h3>Layers</h3>
-    <div id="layerList"></div>
-    <button onclick="addLayer()">➕ Add Layer</button>
+  <a class="skip-link" href="#editor-canvas">
+    Skip to canvas
+  </a>
+
+
+  <!-- =====================================================
+       APPLICATION
+  ====================================================== -->
+
+  <div class="paintless-app" id="paintless-app">
+
+
+    <!-- ===================================================
+         TOP BAR
+    ==================================================== -->
+
+    <header class="top-bar">
+
+      <div class="brand-area">
+
+        <a
+          class="paintless-brand"
+          href="../../index.html"
+          aria-label="Return to Pointless Productions"
+        >
+
+          <img
+            src="../../assets/images/logos/logo-round.webp"
+            alt=""
+            width="42"
+            height="42"
+          >
+
+          <span class="paintless-brand__text">
+
+            <strong>
+              Paintless
+            </strong>
+
+            <small>
+              Less pain. More creating.
+            </small>
+
+          </span>
+
+        </a>
+
+      </div>
+
+
+      <nav
+        class="main-menu"
+        aria-label="Paintless menu"
+      >
+
+        <button
+          class="menu-button"
+          id="file-menu-button"
+          type="button"
+        >
+          File
+        </button>
+
+        <button
+          class="menu-button"
+          id="edit-menu-button"
+          type="button"
+        >
+          Edit
+        </button>
+
+        <button
+          class="menu-button"
+          id="image-menu-button"
+          type="button"
+        >
+          Image
+        </button>
+
+        <button
+          class="menu-button"
+          id="layer-menu-button"
+          type="button"
+        >
+          Layer
+        </button>
+
+        <button
+          class="menu-button"
+          id="help-menu-button"
+          type="button"
+        >
+          Help
+        </button>
+
+      </nav>
+
+
+      <div class="top-actions">
+
+        <button
+          class="top-action-button"
+          id="undo-button"
+          type="button"
+          title="Undo"
+          aria-label="Undo"
+          disabled
+        >
+          ↶
+        </button>
+
+        <button
+          class="top-action-button"
+          id="redo-button"
+          type="button"
+          title="Redo"
+          aria-label="Redo"
+          disabled
+        >
+          ↷
+        </button>
+
+        <span
+          class="top-divider"
+          aria-hidden="true"
+        ></span>
+
+        <button
+          class="top-action-button"
+          id="zoom-out-button"
+          type="button"
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+
+        <output
+          class="zoom-display"
+          id="zoom-display"
+          aria-live="polite"
+        >
+          100%
+        </output>
+
+        <button
+          class="top-action-button"
+          id="zoom-in-button"
+          type="button"
+          title="Zoom in"
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+
+        <button
+          class="export-button"
+          id="export-button"
+          type="button"
+        >
+          Export
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         TOOL OPTIONS BAR
+    ==================================================== -->
+
+    <section
+      class="tool-options-bar"
+      id="tool-options-bar"
+      aria-label="Tool settings"
+    >
+
+      <div class="active-tool-name">
+
+        <span>
+          Tool
+        </span>
+
+        <strong id="active-tool-name">
+          Brush
+        </strong>
+
+      </div>
+
+
+      <div
+        class="tool-option-group"
+        id="brush-options"
+      >
+
+        <label for="brush-size">
+          Size
+        </label>
+
+        <input
+          id="brush-size"
+          type="range"
+          min="1"
+          max="200"
+          value="20"
+        >
+
+        <output
+          id="brush-size-output"
+          for="brush-size"
+        >
+          20 px
+        </output>
+
+      </div>
+
+
+      <div class="tool-option-group">
+
+        <label for="tool-opacity">
+          Opacity
+        </label>
+
+        <input
+          id="tool-opacity"
+          type="range"
+          min="1"
+          max="100"
+          value="100"
+        >
+
+        <output
+          id="tool-opacity-output"
+          for="tool-opacity"
+        >
+          100%
+        </output>
+
+      </div>
+
+
+      <div class="tool-option-group">
+
+        <label for="brush-hardness">
+          Hardness
+        </label>
+
+        <input
+          id="brush-hardness"
+          type="range"
+          min="0"
+          max="100"
+          value="80"
+        >
+
+        <output
+          id="brush-hardness-output"
+          for="brush-hardness"
+        >
+          80%
+        </output>
+
+      </div>
+
+
+      <label class="colour-control">
+
+        <span>
+          Colour
+        </span>
+
+        <input
+          id="primary-colour"
+          type="color"
+          value="#a84cff"
+          aria-label="Primary colour"
+        >
+
+      </label>
+
+    </section>
+
+
+    <!-- ===================================================
+         EDITOR BODY
+    ==================================================== -->
+
+    <main class="editor-layout">
+
+
+      <!-- =================================================
+           LEFT TOOLBAR
+      ================================================== -->
+
+      <aside
+        class="toolbox"
+        aria-label="Paintless tools"
+      >
+
+        <button
+          class="tool-button is-active"
+          type="button"
+          data-tool="brush"
+          title="Brush (B)"
+          aria-label="Brush"
+          aria-pressed="true"
+        >
+          <span aria-hidden="true">🖌️</span>
+          <small>Brush</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="eraser"
+          title="Eraser (E)"
+          aria-label="Eraser"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◩</span>
+          <small>Eraser</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="move"
+          title="Move (V)"
+          aria-label="Move"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">✥</span>
+          <small>Move</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="select"
+          title="Select (M)"
+          aria-label="Select"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">▧</span>
+          <small>Select</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="crop"
+          title="Crop (C)"
+          aria-label="Crop"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">⌗</span>
+          <small>Crop</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="fill"
+          title="Fill (G)"
+          aria-label="Fill"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◒</span>
+          <small>Fill</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="gradient"
+          title="Gradient"
+          aria-label="Gradient"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◐</span>
+          <small>Gradient</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="eyedropper"
+          title="Colour picker (I)"
+          aria-label="Colour picker"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">⌁</span>
+          <small>Picker</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="text"
+          title="Text (T)"
+          aria-label="Text"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">T</span>
+          <small>Text</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="shape"
+          title="Shapes (U)"
+          aria-label="Shapes"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">○</span>
+          <small>Shape</small>
+        </button>
+
+
+        <span
+          class="toolbox-divider"
+          aria-hidden="true"
+        ></span>
+
+
+        <div
+          class="colour-stack"
+          aria-label="Current colours"
+        >
+
+          <button
+            class="colour-chip colour-chip--primary"
+            id="primary-colour-chip"
+            type="button"
+            aria-label="Choose primary colour"
+            title="Primary colour"
+          ></button>
+
+          <button
+            class="colour-chip colour-chip--secondary"
+            id="secondary-colour-chip"
+            type="button"
+            aria-label="Choose secondary colour"
+            title="Secondary colour"
+          ></button>
+
+          <button
+            class="swap-colours-button"
+            id="swap-colours-button"
+            type="button"
+            aria-label="Swap colours"
+            title="Swap colours"
+          >
+            ⇄
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      <!-- =================================================
+           WORKSPACE
+      ================================================== -->
+
+      <section
+        class="workspace"
+        id="workspace"
+        aria-label="Image editing workspace"
+      >
+
+        <div
+          class="workspace-ruler workspace-ruler--horizontal"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="workspace-ruler workspace-ruler--vertical"
+          aria-hidden="true"
+        ></div>
+
+
+        <div
+          class="canvas-viewport"
+          id="canvas-viewport"
+        >
+
+          <div
+            class="canvas-stage"
+            id="canvas-stage"
+          >
+
+            <canvas
+              id="editor-canvas"
+              width="1280"
+              height="720"
+              tabindex="0"
+              aria-label="Paintless editing canvas"
+            ></canvas>
+
+            <canvas
+              id="overlay-canvas"
+              width="1280"
+              height="720"
+              aria-hidden="true"
+            ></canvas>
+
+            <textarea
+              id="canvas-text-editor"
+              aria-label="Canvas text editor"
+              hidden
+            ></textarea>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="workspace-empty-state"
+          id="workspace-empty-state"
+        >
+
+          <div class="empty-state-logo">
+            P
+          </div>
+
+          <h1>
+            Start creating
+          </h1>
+
+          <p>
+            Open an image or make a beautifully empty canvas.
+          </p>
+
+          <div class="empty-state-actions">
+
+            <button
+              class="primary-button"
+              id="new-canvas-button"
+              type="button"
+            >
+              New Canvas
+            </button>
+
+            <button
+              class="secondary-button"
+              id="open-image-button"
+              type="button"
+            >
+              Open Image
+            </button>
+
+          </div>
+
+          <small>
+            No account. No cloud. No unnecessary nonsense.
+          </small>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           RIGHT SIDEBAR
+      ================================================== -->
+
+      <aside
+        class="right-sidebar"
+        aria-label="Paintless panels"
+      >
+
+
+        <!-- COLOUR PANEL -->
+
+        <section class="editor-panel colour-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Colour
+            </h2>
+
+            <button
+              class="panel-menu-button"
+              type="button"
+              aria-label="Colour panel options"
+            >
+              •••
+            </button>
+
+          </header>
+
+
+          <div class="colour-preview">
+
+            <input
+              id="panel-colour-picker"
+              type="color"
+              value="#a84cff"
+              aria-label="Choose colour"
+            >
+
+            <label for="hex-colour-input">
+              Hex
+            </label>
+
+            <input
+              id="hex-colour-input"
+              type="text"
+              value="#A84CFF"
+              maxlength="7"
+              spellcheck="false"
+            >
+
+          </div>
+
+
+          <div
+            class="recent-colours"
+            id="recent-colours"
+            aria-label="Recent colours"
+          ></div>
+
+        </section>
+
+
+        <!-- ADJUSTMENTS PANEL -->
+
+        <section class="editor-panel adjustments-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Adjustments
+            </h2>
+
+            <button
+              class="reset-panel-button"
+              id="reset-adjustments-button"
+              type="button"
+            >
+              Reset
+            </button>
+
+          </header>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Brightness
+            </span>
+
+            <output id="brightness-output">
+              0
+            </output>
+
+            <input
+              id="brightness-control"
+              type="range"
+              min="-100"
+              max="100"
+              value="0"
+            >
+
+          </label>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Contrast
+            </span>
+
+            <output id="contrast-output">
+              0
+            </output>
+
+            <input
+              id="contrast-control"
+              type="range"
+              min="-100"
+              max="100"
+              value="0"
+            >
+
+          </label>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Saturation
+            </span>
+
+            <output id="saturation-output">
+              0
+            </output>
+
+            <input
+              id="saturation-control"
+              type="range"
+              min="-100"
+              max="100"
+              value="0"
+            >
+
+          </label>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Hue
+            </span>
+
+            <output id="hue-output">
+              0°
+            </output>
+
+            <input
+              id="hue-control"
+              type="range"
+              min="-180"
+              max="180"
+              value="0"
+            >
+
+          </label>
+
+        </section>
+
+
+        <!-- LAYERS PANEL -->
+
+        <section class="editor-panel layers-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Layers
+            </h2>
+
+            <div class="panel-header-actions">
+
+              <button
+                id="add-layer-button"
+                type="button"
+                title="Add layer"
+                aria-label="Add layer"
+              >
+                +
+              </button>
+
+              <button
+                id="delete-layer-button"
+                type="button"
+                title="Delete layer"
+                aria-label="Delete layer"
+              >
+                🗑
+              </button>
+
+            </div>
+
+          </header>
+
+
+          <div
+            class="layer-list"
+            id="layer-list"
+            role="list"
+            aria-label="Image layers"
+          ></div>
+
+
+          <div class="layer-properties">
+
+            <label for="layer-blend-mode">
+              Blend
+            </label>
+
+            <select id="layer-blend-mode">
+
+              <option value="source-over">
+                Normal
+              </option>
+
+              <option value="multiply">
+                Multiply
+              </option>
+
+              <option value="screen">
+                Screen
+              </option>
+
+              <option value="overlay">
+                Overlay
+              </option>
+
+              <option value="darken">
+                Darken
+              </option>
+
+              <option value="lighten">
+                Lighten
+              </option>
+
+            </select>
+
+
+            <label for="layer-opacity">
+              Opacity
+            </label>
+
+            <input
+              id="layer-opacity"
+              type="range"
+              min="0"
+              max="100"
+              value="100"
+            >
+
+          </div>
+
+        </section>
+
+      </aside>
+
+    </main>
+
+
+    <!-- ===================================================
+         STATUS BAR
+    ==================================================== -->
+
+    <footer class="status-bar">
+
+      <div class="status-bar__left">
+
+        <span id="document-status">
+          No document open
+        </span>
+
+        <span
+          class="status-divider"
+          aria-hidden="true"
+        ></span>
+
+        <span id="canvas-size-status">
+          1280 × 720 px
+        </span>
+
+      </div>
+
+
+      <div class="status-bar__centre">
+
+        <span id="save-status">
+          Your masterpiece is currently imaginary.
+        </span>
+
+      </div>
+
+
+      <div class="status-bar__right">
+
+        <button
+          id="fit-screen-button"
+          type="button"
+        >
+          Fit Screen
+        </button>
+
+        <span id="cursor-position">
+          X: 0&nbsp;&nbsp;Y: 0
+        </span>
+
+      </div>
+
+    </footer>
+
   </div>
 
-  <div id="adjustmentPanel">
-    <h3>Adjustments</h3>
-    <label>Brightness <input type="range" min="-100" max="100" value="0" oninput="adjustLayer('brightness', this.value)"></label>
-    <label>Contrast <input type="range" min="-100" max="100" value="0" oninput="adjustLayer('contrast', this.value)"></label>
-    <label>Hue <input type="range" min="0" max="360" value="0" oninput="adjustLayer('hue', this.value)"></label>
-    <label>Saturation <input type="range" min="0" max="200" value="100" oninput="adjustLayer('saturation', this.value)"></label>
+
+  <!-- =====================================================
+       HIDDEN FILE INPUT
+  ====================================================== -->
+
+  <input
+    id="image-file-input"
+    type="file"
+    accept="image/png,image/jpeg,image/webp,image/gif"
+    hidden
+  >
+
+
+  <!-- =====================================================
+       NEW CANVAS DIALOG
+  ====================================================== -->
+
+  <dialog
+    class="paintless-dialog"
+    id="new-canvas-dialog"
+  >
+
+    <form method="dialog">
+
+      <header class="dialog-header">
+
+        <div>
+
+          <p>
+            Paintless
+          </p>
+
+          <h2>
+            New Canvas
+          </h2>
+
+        </div>
+
+        <button
+          class="dialog-close-button"
+          value="cancel"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="dialog-body">
+
+        <label>
+
+          <span>
+            Name
+          </span>
+
+          <input
+            id="new-document-name"
+            type="text"
+            value="Untitled Masterpiece"
+          >
+
+        </label>
+
+
+        <div class="dialog-row">
+
+          <label>
+
+            <span>
+              Width
+            </span>
+
+            <input
+              id="new-canvas-width"
+              type="number"
+              min="1"
+              max="10000"
+              value="1280"
+            >
+
+          </label>
+
+
+          <label>
+
+            <span>
+              Height
+            </span>
+
+            <input
+              id="new-canvas-height"
+              type="number"
+              min="1"
+              max="10000"
+              value="720"
+            >
+
+          </label>
+
+        </div>
+
+
+        <label>
+
+          <span>
+            Background
+          </span>
+
+          <select id="new-canvas-background">
+
+            <option value="transparent">
+              Transparent
+            </option>
+
+            <option value="white" selected>
+              White
+            </option>
+
+            <option value="black">
+              Black
+            </option>
+
+            <option value="custom">
+              Custom colour
+            </option>
+
+          </select>
+
+        </label>
+
+      </div>
+
+
+      <footer class="dialog-actions">
+
+        <button
+          class="secondary-button"
+          value="cancel"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primary-button"
+          id="create-canvas-button"
+          value="default"
+        >
+          Create Canvas
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       EXPORT DIALOG
+  ====================================================== -->
+
+  <dialog
+    class="paintless-dialog"
+    id="export-dialog"
+  >
+
+    <form method="dialog">
+
+      <header class="dialog-header">
+
+        <div>
+
+          <p>
+            Almost done
+          </p>
+
+          <h2>
+            Export Image
+          </h2>
+
+        </div>
+
+        <button
+          class="dialog-close-button"
+          value="cancel"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="dialog-body">
+
+        <label>
+
+          <span>
+            File name
+          </span>
+
+          <input
+            id="export-file-name"
+            type="text"
+            value="paintless-masterpiece"
+          >
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Format
+          </span>
+
+          <select id="export-format">
+
+            <option value="image/png">
+              PNG
+            </option>
+
+            <option value="image/jpeg">
+              JPEG
+            </option>
+
+            <option value="image/webp">
+              WebP
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Quality
+          </span>
+
+          <input
+            id="export-quality"
+            type="range"
+            min="10"
+            max="100"
+            value="92"
+          >
+
+        </label>
+
+      </div>
+
+
+      <footer class="dialog-actions">
+
+        <button
+          class="secondary-button"
+          value="cancel"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primary-button"
+          id="confirm-export-button"
+          value="default"
+        >
+          Export
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       LOADING SCREEN
+  ====================================================== -->
+
+  <div
+    class="loading-screen"
+    id="loading-screen"
+    aria-hidden="true"
+  >
+
+    <div class="loading-card">
+
+      <strong>
+        PAINTLESS
+      </strong>
+
+      <p id="loading-message">
+        Loading creativity...
+      </p>
+
+      <div class="loading-track">
+
+        <span id="loading-progress"></span>
+
+      </div>
+
+      <output id="loading-percentage">
+        0%
+      </output>
+
+    </div>
+
   </div>
 
-  <div id="mainEditor">
-    <canvas id="editorCanvas" width="900" height="600"></canvas>
-    <input type="text" id="textInput" />
-    <div id="cropBox"></div>
-    <div id="paletteDisplay"></div>
-  </div>
-</div>
 
-//SECTION 1 OVER//
-<script>
-const canvas = document.getElementById('editorCanvas');
-const ctx = canvas.getContext('2d');
-const textInput = document.getElementById('textInput');
-const cropBox = document.getElementById('cropBox');
-let drawing = false;
-let color = '#000000';
-let brushSize = 4;
-let toolMode = 'brush';
-let textX = 0, textY = 0;
-let lastX = 0, lastY = 0;
-let cropStart = null;
+  <!-- =====================================================
+       APPLICATION SCRIPTS
+  ====================================================== -->
 
-// Tool switching
-document.querySelectorAll('.tool-icon').forEach(icon => {
-  icon.addEventListener('click', () => {
-    document.querySelectorAll('.tool-icon').forEach(i => i.classList.remove('active'));
-    icon.classList.add('active');
-    toolMode = icon.getAttribute('data-tool');
-  });
-});
+  <script src="js/history.js"></script>
+  <script src="js/layers.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/app.js"></script>
 
-// Drawing logic
-canvas.addEventListener('mousedown', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+</body>
 
-  if (toolMode === 'text') {
-    textX = x;
-    textY = y;
-    textInput.style.left = `${x}px`;
-    textInput.style.top = `${y}px`;
-    textInput.style.display = 'block';
-    textInput.value = '';
-    textInput.focus();
-  } else if (toolMode === 'bucket') {
-    floodFill(x, y, color);
-  } else if (toolMode === 'crop') {
-    cropStart = { x, y };
-    cropBox.style.left = `${x}px`;
-    cropBox.style.top = `${y}px`;
-    cropBox.style.width = '0px';
-    cropBox.style.height = '0px';
-    cropBox.style.display = 'block';
-  } else {
-    drawing = true;
-    [lastX, lastY] = [x, y];
-  }
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  if (!drawing || toolMode === 'text' || toolMode === 'bucket') return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  if (toolMode === 'crop' && cropStart) {
-    cropBox.style.width = `${Math.abs(x - cropStart.x)}px`;
-    cropBox.style.height = `${Math.abs(y - cropStart.y)}px`;
-  } else {
-    ctx.strokeStyle = toolMode === 'eraser' ? '#ffffff' : color;
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    [lastX, lastY] = [x, y];
-  }
-});
-
-canvas.addEventListener('mouseup', () => drawing = false);
-canvas.addEventListener('mouseleave', () => drawing = false);
-
-// Upload image
-document.getElementById('upload').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const img = new Image();
-  img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  img.src = URL.createObjectURL(file);
-});
-
-// Clear canvas
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// Save image
-function saveImage() {
-  const link = document.createElement('a');
-  link.download = 'pointless-edit.png';
-  link.href = canvas.toDataURL();
-  link.click();
-}
-  // TEXT TOOL 2.0
-textInput.addEventListener('blur', () => {
-  const text = textInput.value.trim();
-  if (text) {
-    ctx.fillStyle = color;
-    ctx.font = '20px Segoe UI';
-    ctx.textBaseline = 'top';
-    ctx.fillText(text, textX, textY);
-  }
-  textInput.style.display = 'none';
-});
-
-textInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    textInput.blur();
-  }
-});
-  // CROP TOOL 2.0
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && toolMode === 'crop' && cropStart) {
-    const rect = cropBox.getBoundingClientRect();
-    const canvasRect = canvas.getBoundingClientRect();
-    const x = rect.left - canvasRect.left;
-    const y = rect.top - canvasRect.top;
-    const w = rect.width;
-    const h = rect.height;
-
-    const imageData = ctx.getImageData(x, y, w, h);
-
-    // Resize canvas and redraw cropped area
-    canvas.width = w;
-    canvas.height = h;
-    ctx.putImageData(imageData, 0, 0);
-    saveHistory();
-
-    cropBox.style.display = 'none';
-    cropStart = null;
-  }
-});
-  // BUCKET TOOL 2.0
-function floodFill(x, y, fillColor) {
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = imageData.data;
-  const width = canvas.width;
-  const height = canvas.height;
-
-  const stack = [[x, y]];
-  const targetColor = getPixelColor(pixels, x, y, width);
-  const fill = hexToRgb(fillColor);
-
-  if (colorsMatch(targetColor, fill)) return;
-
-  while (stack.length) {
-    const [px, py] = stack.pop();
-    const currentColor = getPixelColor(pixels, px, py, width);
-    if (!colorsMatch(currentColor, targetColor)) continue;
-
-    setPixelColor(pixels, px, py, width, fill);
-
-    stack.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-}
-
-function getPixelColor(pixels, x, y, width) {
-  const i = (y * width + x) * 4;
-  return [pixels[i], pixels[i + 1], pixels[i + 2]];
-}
-
-function setPixelColor(pixels, x, y, width, color) {
-  const i = (y * width + x) * 4;
-  pixels[i] = color[0];
-  pixels[i + 1] = color[1];
-  pixels[i + 2] = color[2];
-  pixels[i + 3] = 255;
-}
-
-function colorsMatch(a, b) {
-  return Math.abs(a[0] - b[0]) < 32 &&
-         Math.abs(a[1] - b[1]) < 32 &&
-         Math.abs(a[2] - b[2]) < 32;
-}
-
-function hexToRgb(hex) {
-  return [
-    parseInt(hex.slice(1, 3), 16),
-    parseInt(hex.slice(3, 5), 16),
-    parseInt(hex.slice(5, 7), 16)
-  ];
-}
-  // PALETTE GENERATOR + COLOR PICKER
-function generatePalette() {
-  const baseHex = '#ff6600'; // You can make this dynamic later
-  const palette = getPalette(baseHex);
-  const display = document.getElementById('paletteDisplay');
-  display.innerHTML = '';
-  palette.forEach(hex => {
-    const swatch = document.createElement('div');
-    swatch.className = 'swatch';
-    swatch.style.background = hex;
-    swatch.title = hex;
-    swatch.onclick = () => {
-      color = hex;
-    };
-    display.appendChild(swatch);
-  });
-}
-
-function getPalette(baseHex) {
-  const r = parseInt(baseHex.slice(1, 3), 16);
-  const g = parseInt(baseHex.slice(3, 5), 16);
-  const b = parseInt(baseHex.slice(5, 7), 16);
-  const comp = rgbToHex(255 - r, 255 - g, 255 - b);
-  const triad1 = shiftHue(baseHex, 120);
-  const triad2 = shiftHue(baseHex, 240);
-  return [baseHex, comp, triad1, triad2];
-}
-
-function rgbToHex(r, g, b) {
-  return "#" + [r, g, b].map(x => {
-    const hex = x.toString(16);
-    return hex.length === 1 ? "0" + hex : hex;
-  }).join('');
-}
-
-function shiftHue(hex, degree) {
-  let r = parseInt(hex.slice(1, 3), 16) / 255;
-  let g = parseInt(hex.slice(3, 5), 16) / 255;
-  let b = parseInt(hex.slice(5, 7), 16) / 255;
-  let max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0;
-  } else {
-    let d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  h = (h * 360 + degree) % 360;
-  if (h < 0) h += 360;
-  return hslToHex(h, s, l);
-}
-
-function hslToHex(h, s, l) {
-  h /= 360;
-  let r, g, b;
-
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p, q, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-
-  return rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
-}
-  // LAYER SYSTEM 2.0
-class Layer {
-  constructor(name, width, height) {
-    this.name = name;
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.ctx = this.canvas.getContext('2d');
-    this.visible = true;
-    this.opacity = 1;
-    this.blendMode = 'source-over';
-  }
-
-  renderTo(baseCtx) {
-    if (this.visible) {
-      baseCtx.globalAlpha = this.opacity;
-      baseCtx.globalCompositeOperation = this.blendMode;
-      baseCtx.drawImage(this.canvas, 0, 0);
-    }
-  }
-}
-
-const layers = [new Layer('Background', canvas.width, canvas.height)];
-let activeLayer = layers[0];
-
-function renderAllLayers() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  layers.forEach(layer => layer.renderTo(ctx));
-}
-
-// Override drawing to use activeLayer
-canvas.addEventListener('mousedown', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  if (toolMode === 'text') {
-    textX = x;
-    textY = y;
-    textInput.style.left = `${e.clientX}px`;
-    textInput.style.top = `${e.clientY}px`;
-    textInput.style.display = 'block';
-    textInput.value = '';
-    textInput.focus();
-  } else if (toolMode === 'bucket') {
-    floodFill(x, y, color);
-    renderAllLayers();
-    saveHistory();
-
-    
-  } else if (toolMode === 'crop') {
-    cropStart = { x, y };
-    cropBox.style.left = `${e.clientX}px`;
-    cropBox.style.top = `${e.clientY}px`;
-    cropBox.style.width = '0px';
-    cropBox.style.height = '0px';
-    cropBox.style.display = 'block';
-  } else {
-    drawing = true;
-    [lastX, lastY] = [x, y];
-  }
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  if (!drawing || toolMode === 'text' || toolMode === 'bucket') return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  if (toolMode === 'crop' && cropStart) {
-    cropBox.style.width = `${Math.abs(x - cropStart.x)}px`;
-    cropBox.style.height = `${Math.abs(y - cropStart.y)}px`;
-  } else {
-    const ctxLayer = activeLayer.ctx;
-    ctxLayer.strokeStyle = toolMode === 'eraser' ? '#ffffff' : color;
-    ctxLayer.lineWidth = brushSize;
-    ctxLayer.lineCap = 'round';
-    ctxLayer.beginPath();
-    ctxLayer.moveTo(lastX, lastY);
-    ctxLayer.lineTo(x, y);
-    ctxLayer.stroke();
-    [lastX, lastY] = [x, y];
-    renderAllLayers();
-    saveHistory();
-
-  }
-});
-
-canvas.addEventListener('mouseup', () => drawing = false);
-canvas.addEventListener('mouseleave', () => drawing = false);
-  // FILTER ENGINE 2.0
-const filters = {
-  grayscale: ([r, g, b]) => {
-    const avg = (r + g + b) / 3;
-    return [avg, avg, avg];
-  },
-  invert: ([r, g, b]) => [255 - r, 255 - g, 255 - b],
-  sepia: ([r, g, b]) => [
-    r * 0.393 + g * 0.769 + b * 0.189,
-    r * 0.349 + g * 0.686 + b * 0.168,
-    r * 0.272 + g * 0.534 + b * 0.131
-  ]
-};
-
-function applyFilter(filterName) {
-  const imageData = activeLayer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const fn = filters[filterName];
-
-  for (let i = 0; i < data.length; i += 4) {
-    const [r, g, b] = fn([data[i], data[i + 1], data[i + 2]]);
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-  }
-
-  activeLayer.ctx.putImageData(imageData, 0, 0);
-  renderAllLayers();
-  saveHistory();
-}
-  // FINAL POLISH 2.0
-
-// Keyboard shortcuts
-window.addEventListener('keydown', (e) => {
-  if (e.ctrlKey || e.metaKey) return; // skip system shortcuts
-
-  switch (e.key.toLowerCase()) {
-    case 'b': toolMode = 'brush'; break;
-    case 'e': toolMode = 'eraser'; break;
-    case 't': toolMode = 'text'; break;
-    case 'c': toolMode = 'crop'; break;
-    case 'm': toolMode = 'move'; break;
-    case 's': toolMode = 'select'; break;
-    case 'f': applyFilter('sepia'); break;
-    case 'g': applyFilter('grayscale'); break;
-    case 'i': applyFilter('invert'); break;
-  }
-
-  document.querySelectorAll('.tool-icon').forEach(i => {
-    i.classList.toggle('active', i.getAttribute('data-tool') === toolMode);
-  });
-});
-
-// Brush size control (optional slider)
-const brushSlider = document.createElement('input');
-brushSlider.type = 'range';
-brushSlider.min = 1;
-brushSlider.max = 20;
-brushSlider.value = 4;
-brushSlider.style.width = '60px';
-brushSlider.title = 'Brush Size';
-brushSlider.oninput = () => {
-  brushSize = parseInt(brushSlider.value);
-};
-document.getElementById('leftToolbar').appendChild(brushSlider);
-
-// Initial palette
-generatePalette();
-
-  // AI BACKGROUND REMOVER 2.0
-function removeBackground() {
-  const imageData = activeLayer.ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-
-  // Sample corner pixel as background reference
-  const bgColor = [
-    data[0],     // top-left R
-    data[1],     // top-left G
-    data[2]      // top-left B
-  ];
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const match = Math.abs(r - bgColor[0]) < 30 &&
-                  Math.abs(g - bgColor[1]) < 30 &&
-                  Math.abs(b - bgColor[2]) < 30;
-
-    if (match) {
-      data[i + 3] = 0; // make pixel transparent
-    }
-  }
-
-  activeLayer.ctx.putImageData(imageData, 0, 0);
-  renderAllLayers();
-  saveHistory();
-}
-
-// Welcome log
-console.log('%cPointlessPhotoEditor loaded. Go make something ridiculous.', 'color:#00ffd0;font-weight:bold;font-size:14px');
-  // UNDO/REDO STACK 2.0
-const historyStack = [];
-let historyIndex = -1;
-
-function saveHistory() {
-  const snapshot = layers.map(layer => {
-    const copy = new Layer(layer.name, canvas.width, canvas.height);
-    copy.ctx.putImageData(layer.ctx.getImageData(0, 0, canvas.width, canvas.height), 0, 0);
-    copy.visible = layer.visible;
-    copy.opacity = layer.opacity;
-    copy.blendMode = layer.blendMode;
-    return copy;
-  });
-
-  historyStack.splice(historyIndex + 1); // discard future
-  historyStack.push(snapshot);
-  historyIndex++;
-}
-
-function undo() {
-  if (historyIndex <= 0) return;
-  historyIndex--;
-  restoreHistory(historyStack[historyIndex]);
-}
-
-function redo() {
-  if (historyIndex >= historyStack.length - 1) return;
-  historyIndex++;
-  restoreHistory(historyStack[historyIndex]);
-}
-
-function restoreHistory(snapshot) {
-  layers.length = 0;
-  snapshot.forEach(layer => {
-    const restored = new Layer(layer.name, canvas.width, canvas.height);
-    restored.ctx.drawImage(layer.canvas, 0, 0);
-    restored.visible = layer.visible;
-    restored.opacity = layer.opacity;
-    restored.blendMode = layer.blendMode;
-    layers.push(restored);
-  });
-  activeLayer = layers[layers.length - 1];
-  renderAllLayers();
-}
-</script>
- 
-
-  
-  
-
-  
+</html>
