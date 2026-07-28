@@ -2629,7 +2629,12 @@ body.mobile-game-mode .overlay-content p {
 
     font-size: 0.62rem;
   }
-
+   
+body.mobile-game-mode.control-mode-portrait-gesture
+#start-overlay .control-side-choice {
+  display: none;
+}
+   
 }
 
 
