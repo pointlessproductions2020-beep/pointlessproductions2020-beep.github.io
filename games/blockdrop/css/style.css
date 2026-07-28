@@ -2598,13 +2598,17 @@ kbd {
     width: min(560px, 100%);
   }
 
-  body.mobile-game-mode .overlay-icon {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 11px;
+body.mobile-game-mode #start-overlay .overlay-icon {
+  display: none;
+}
 
-    font-size: 1.5rem;
-  }
+body.mobile-game-mode .overlay-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 11px;
+
+  font-size: 1.5rem;
+}
 
   body.mobile-game-mode .overlay-content h2 {
     margin-bottom: 9px;
