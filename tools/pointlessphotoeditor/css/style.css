@@ -1,0 +1,2049 @@
+/* =========================================================
+   PAINTLESS
+   Pointless Productions Browser Image Editor
+========================================================= */
+
+
+/* =========================================================
+   1. ROOT VARIABLES
+========================================================= */
+
+:root {
+  --background: #06040a;
+  --background-soft: #0b0711;
+  --surface: #110c19;
+  --surface-light: #191122;
+  --surface-lighter: #21172d;
+  --surface-hover: #281b36;
+
+  --workspace: #17131d;
+  --workspace-grid: rgba(255, 255, 255, 0.025);
+
+  --text: #f7f3fb;
+  --text-soft: #c9bfce;
+  --text-muted: #8f8498;
+
+  --purple: #a84cff;
+  --purple-light: #d49aff;
+  --purple-dark: #6520aa;
+  --cyan: #35e7ff;
+  --pink: #ff5fb7;
+  --yellow: #ffd75a;
+  --red: #ff596d;
+  --green: #69f59c;
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(204, 145, 255, 0.34);
+
+  --top-bar-height: 62px;
+  --options-bar-height: 52px;
+  --status-bar-height: 31px;
+  --toolbox-width: 76px;
+  --sidebar-width: 300px;
+
+  --radius-small: 8px;
+  --radius-medium: 13px;
+  --radius-large: 20px;
+  --radius-pill: 999px;
+
+  --shadow:
+    0 24px 70px rgba(0, 0, 0, 0.46);
+
+  --purple-glow:
+    0 0 22px rgba(168, 76, 255, 0.22);
+}
+
+
+/* =========================================================
+   2. RESET
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+
+  background: var(--background);
+  color: var(--text);
+
+  font-family:
+    Inter,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  font-size: 14px;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+button,
+select,
+input[type="range"],
+input[type="color"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+canvas:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+img,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--purple);
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   3. ACCESSIBILITY
+========================================================= */
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 10000;
+
+  padding: 10px 14px;
+
+  border-radius: var(--radius-small);
+
+  background: #ffffff;
+  color: #000000;
+
+  font-weight: 800;
+  text-decoration: none;
+
+  transform: translateY(-180%);
+  transition: transform 180ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+
+/* =========================================================
+   4. APPLICATION
+========================================================= */
+
+.paintless-app {
+  display: grid;
+
+  grid-template-rows:
+    var(--top-bar-height)
+    var(--options-bar-height)
+    minmax(0, 1fr)
+    var(--status-bar-height);
+
+  width: 100%;
+  height: 100dvh;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 10% 0,
+      rgba(168, 76, 255, 0.11),
+      transparent 30%
+    ),
+    var(--background);
+}
+
+
+/* =========================================================
+   5. TOP BAR
+========================================================= */
+
+.top-bar {
+  position: relative;
+  z-index: 500;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+
+  min-width: 0;
+  padding: 0 15px;
+
+  border-bottom: 1px solid var(--border);
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(19, 12, 28, 0.99),
+      rgba(10, 7, 15, 0.99)
+    );
+
+  box-shadow:
+    0 5px 22px rgba(0, 0, 0, 0.25);
+}
+
+.brand-area {
+  min-width: 0;
+}
+
+.paintless-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  color: inherit;
+  text-decoration: none;
+}
+
+.paintless-brand img {
+  flex: 0 0 auto;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  filter:
+    drop-shadow(0 0 10px rgba(168, 76, 255, 0.35));
+}
+
+.paintless-brand__text {
+  display: grid;
+  gap: 2px;
+
+  min-width: 0;
+}
+
+.paintless-brand__text strong {
+  overflow: hidden;
+
+  color: #ffffff;
+
+  font-size: 1rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.paintless-brand__text small {
+  overflow: hidden;
+
+  color: var(--purple-light);
+
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.main-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  min-width: 0;
+}
+
+.menu-button {
+  min-height: 34px;
+  padding: 7px 11px;
+
+  border-radius: var(--radius-small);
+
+  background: transparent;
+  color: var(--text-soft);
+
+  font-size: 0.74rem;
+  font-weight: 700;
+
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.menu-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+
+  min-width: 0;
+}
+
+.top-action-button {
+  display: grid;
+  place-items: center;
+
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+
+  background: transparent;
+  color: var(--text-soft);
+
+  font-size: 1.15rem;
+  font-weight: 800;
+
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.top-action-button:hover:not(:disabled) {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.055);
+  color: #ffffff;
+}
+
+.top-divider {
+  width: 1px;
+  height: 25px;
+  margin: 0 3px;
+
+  background: var(--border);
+}
+
+.zoom-display {
+  min-width: 48px;
+
+  color: var(--text-soft);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.export-button,
+.primary-button {
+  min-height: 36px;
+  padding: 8px 17px;
+
+  border: 1px solid rgba(218, 160, 255, 0.58);
+  border-radius: var(--radius-pill);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--purple-dark),
+      var(--purple)
+    );
+
+  color: #ffffff;
+
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  box-shadow:
+    0 0 18px rgba(168, 76, 255, 0.2);
+
+  transition:
+    transform 150ms ease,
+    filter 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.export-button:hover,
+.primary-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.12);
+
+  box-shadow:
+    0 0 25px rgba(168, 76, 255, 0.35);
+}
+
+
+/* =========================================================
+   6. TOOL OPTIONS BAR
+========================================================= */
+
+.tool-options-bar {
+  position: relative;
+  z-index: 450;
+
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  min-width: 0;
+  padding: 6px 15px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  border-bottom: 1px solid var(--border);
+
+  background: rgba(13, 9, 19, 0.98);
+
+  scrollbar-width: thin;
+}
+
+.active-tool-name {
+  display: grid;
+  gap: 1px;
+
+  min-width: 85px;
+  padding-right: 17px;
+
+  border-right: 1px solid var(--border);
+}
+
+.active-tool-name span {
+  color: var(--text-muted);
+
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.active-tool-name strong {
+  color: #ffffff;
+
+  font-size: 0.78rem;
+}
+
+.tool-option-group {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  flex: 0 0 auto;
+}
+
+.tool-option-group label,
+.colour-control > span {
+  color: var(--text-muted);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tool-option-group input[type="range"] {
+  width: 105px;
+}
+
+.tool-option-group output {
+  min-width: 46px;
+
+  color: var(--text-soft);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.colour-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  flex: 0 0 auto;
+}
+
+.colour-control input[type="color"] {
+  width: 34px;
+  height: 30px;
+  padding: 2px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+
+  background: var(--surface-light);
+}
+
+
+/* =========================================================
+   7. RANGE INPUTS
+========================================================= */
+
+input[type="range"] {
+  height: 5px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border-radius: var(--radius-pill);
+
+  background:
+    linear-gradient(
+      to right,
+      var(--purple),
+      var(--cyan)
+    );
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+
+  background: var(--purple);
+
+  box-shadow:
+    0 0 9px rgba(168, 76, 255, 0.55);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+
+  background: var(--purple);
+
+  box-shadow:
+    0 0 9px rgba(168, 76, 255, 0.55);
+}
+
+
+/* =========================================================
+   8. EDITOR LAYOUT
+========================================================= */
+
+.editor-layout {
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    var(--toolbox-width)
+    minmax(0, 1fr)
+    var(--sidebar-width);
+
+  min-width: 0;
+  min-height: 0;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   9. TOOLBOX
+========================================================= */
+
+.toolbox {
+  position: relative;
+  z-index: 300;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+
+  min-height: 0;
+  padding: 8px 7px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border-right: 1px solid var(--border);
+
+  background:
+    linear-gradient(
+      to right,
+      rgba(17, 12, 25, 0.99),
+      rgba(12, 8, 18, 0.99)
+    );
+
+  scrollbar-width: thin;
+}
+
+.tool-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+
+  flex: 0 0 auto;
+
+  width: 58px;
+  min-height: 49px;
+  padding: 5px;
+
+  border: 1px solid transparent;
+  border-radius: 10px;
+
+  background: transparent;
+  color: var(--text-muted);
+
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.tool-button > span {
+  font-size: 1.18rem;
+  line-height: 1;
+}
+
+.tool-button > small {
+  font-size: 0.49rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tool-button:hover {
+  transform: translateY(-1px);
+
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.tool-button.is-active {
+  border-color: var(--border-strong);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(168, 76, 255, 0.22),
+      rgba(53, 231, 255, 0.06)
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    inset 0 0 18px rgba(168, 76, 255, 0.08),
+    0 0 16px rgba(168, 76, 255, 0.11);
+}
+
+.toolbox-divider {
+  flex: 0 0 auto;
+
+  width: 42px;
+  height: 1px;
+  margin: 4px 0;
+
+  background: var(--border);
+}
+
+.colour-stack {
+  position: relative;
+
+  flex: 0 0 auto;
+
+  width: 58px;
+  min-height: 68px;
+}
+
+.colour-chip {
+  position: absolute;
+
+  width: 35px;
+  height: 35px;
+
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  border-radius: 9px;
+
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.35);
+}
+
+.colour-chip--primary {
+  top: 3px;
+  left: 6px;
+  z-index: 2;
+
+  background: var(--purple);
+}
+
+.colour-chip--secondary {
+  top: 21px;
+  left: 22px;
+  z-index: 1;
+
+  background: #ffffff;
+}
+
+.swap-colours-button {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+
+  display: grid;
+  place-items: center;
+
+  width: 22px;
+  height: 22px;
+
+  border: 1px solid var(--border);
+  border-radius: 50%;
+
+  background: var(--surface-light);
+  color: var(--text-soft);
+
+  font-size: 0.68rem;
+}
+
+
+/* =========================================================
+   10. WORKSPACE
+========================================================= */
+
+.workspace {
+  position: relative;
+
+  min-width: 0;
+  min-height: 0;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      var(--workspace-grid) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      var(--workspace-grid) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(168, 76, 255, 0.045),
+      transparent 45%
+    ),
+    var(--workspace);
+
+  background-size:
+    24px 24px,
+    24px 24px,
+    auto,
+    auto;
+}
+
+.workspace-ruler {
+  position: absolute;
+  z-index: 22;
+
+  pointer-events: none;
+
+  background:
+    rgba(10, 7, 14, 0.96);
+}
+
+.workspace-ruler--horizontal {
+  top: 0;
+  left: 22px;
+  right: 0;
+
+  height: 22px;
+
+  border-bottom: 1px solid var(--border);
+
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 19px,
+      rgba(255, 255, 255, 0.13) 20px
+    );
+}
+
+.workspace-ruler--vertical {
+  top: 22px;
+  bottom: 0;
+  left: 0;
+
+  width: 22px;
+
+  border-right: 1px solid var(--border);
+
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 19px,
+      rgba(255, 255, 255, 0.13) 20px
+    );
+}
+
+.canvas-viewport {
+  position: absolute;
+  inset: 22px 0 0 22px;
+
+  display: grid;
+  place-items: center;
+
+  min-width: 0;
+  min-height: 0;
+  padding: 54px;
+
+  overflow: auto;
+
+  overscroll-behavior: contain;
+}
+
+.canvas-stage {
+  position: relative;
+
+  display: none;
+
+  flex: 0 0 auto;
+
+  background:
+    linear-gradient(
+      45deg,
+      #d5d5d5 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      -45deg,
+      #d5d5d5 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      #d5d5d5 75%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 75%,
+      #d5d5d5 75%
+    ),
+    #ffffff;
+
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+
+  background-size: 20px 20px;
+
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 24px 75px rgba(0, 0, 0, 0.62);
+}
+
+.canvas-stage.is-visible {
+  display: block;
+}
+
+#editor-canvas,
+#overlay-canvas {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+#editor-canvas {
+  position: relative;
+  z-index: 1;
+
+  background: transparent;
+
+  image-rendering: auto;
+  touch-action: none;
+}
+
+#overlay-canvas {
+  z-index: 2;
+
+  pointer-events: none;
+}
+
+#canvas-text-editor {
+  position: absolute;
+  z-index: 5;
+
+  min-width: 120px;
+  min-height: 42px;
+  padding: 6px;
+
+  resize: both;
+
+  border: 1px dashed var(--purple);
+  border-radius: 4px;
+
+  background: rgba(255, 255, 255, 0.9);
+  color: #000000;
+
+  outline: none;
+}
+
+
+/* =========================================================
+   11. EMPTY STATE
+========================================================= */
+
+.workspace-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 25;
+
+  width: min(460px, calc(100% - 42px));
+  padding: 34px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+
+  background:
+    radial-gradient(
+      circle at 80% 0,
+      rgba(168, 76, 255, 0.14),
+      transparent 42%
+    ),
+    rgba(10, 7, 15, 0.89);
+
+  text-align: center;
+
+  box-shadow:
+    var(--shadow),
+    var(--purple-glow);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  transform: translate(-50%, -50%);
+}
+
+.workspace-empty-state.is-hidden {
+  display: none;
+}
+
+.empty-state-logo {
+  display: grid;
+  place-items: center;
+
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 20px;
+
+  border: 1px solid rgba(211, 151, 255, 0.45);
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--purple-dark),
+      var(--purple)
+    );
+
+  color: #ffffff;
+
+  font-size: 2.1rem;
+  font-weight: 1000;
+
+  box-shadow:
+    0 0 25px rgba(168, 76, 255, 0.27);
+}
+
+.workspace-empty-state h1 {
+  margin: 0 0 10px;
+
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1;
+}
+
+.workspace-empty-state p {
+  margin: 0 auto 23px;
+
+  color: var(--text-soft);
+
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.workspace-empty-state small {
+  display: block;
+  margin-top: 18px;
+
+  color: var(--text-muted);
+
+  font-size: 0.67rem;
+}
+
+.empty-state-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.secondary-button {
+  min-height: 36px;
+  padding: 8px 17px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.secondary-button:hover {
+  border-color: var(--border-strong);
+  background: rgba(168, 76, 255, 0.09);
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   12. RIGHT SIDEBAR
+========================================================= */
+
+.right-sidebar {
+  position: relative;
+  z-index: 300;
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  min-height: 0;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border-left: 1px solid var(--border);
+
+  background:
+    linear-gradient(
+      to left,
+      rgba(17, 12, 25, 0.99),
+      rgba(12, 8, 18, 0.99)
+    );
+
+  scrollbar-width: thin;
+}
+
+.editor-panel {
+  flex: 0 0 auto;
+
+  padding: 15px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.panel-header h2 {
+  margin: 0;
+
+  color: var(--purple-light);
+
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.panel-menu-button,
+.reset-panel-button,
+.panel-header-actions button {
+  min-width: 29px;
+  min-height: 29px;
+  padding: 5px 8px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-soft);
+
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.panel-menu-button:hover,
+.reset-panel-button:hover,
+.panel-header-actions button:hover {
+  border-color: var(--border-strong);
+  background: rgba(168, 76, 255, 0.1);
+  color: #ffffff;
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+/* =========================================================
+   13. COLOUR PANEL
+========================================================= */
+
+.colour-preview {
+  display: grid;
+  grid-template-columns: 48px auto 1fr;
+  align-items: center;
+  gap: 9px;
+
+  margin-bottom: 13px;
+}
+
+.colour-preview input[type="color"] {
+  width: 48px;
+  height: 40px;
+  padding: 2px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+
+  background: var(--surface-light);
+}
+
+.colour-preview label {
+  color: var(--text-muted);
+
+  font-size: 0.61rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.colour-preview input[type="text"] {
+  min-width: 0;
+  height: 36px;
+  padding: 7px 9px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+
+  background: var(--surface-light);
+  color: #ffffff;
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.recent-colours {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+
+  min-height: 27px;
+}
+
+.recent-colour {
+  aspect-ratio: 1;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   14. ADJUSTMENTS
+========================================================= */
+
+.adjustment-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 7px;
+
+  margin-bottom: 14px;
+}
+
+.adjustment-control:last-child {
+  margin-bottom: 0;
+}
+
+.adjustment-control span {
+  color: var(--text-soft);
+
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.adjustment-control output {
+  color: var(--purple-light);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+.adjustment-control input {
+  grid-column: 1 / -1;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   15. LAYERS PANEL
+========================================================= */
+
+.layers-panel {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1 1 auto;
+
+  min-height: 220px;
+}
+
+.layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  flex: 1 1 auto;
+
+  min-height: 100px;
+  max-height: 330px;
+  margin-bottom: 12px;
+
+  overflow-y: auto;
+
+  scrollbar-width: thin;
+}
+
+.layer-item {
+  display: grid;
+  grid-template-columns: 30px 42px 1fr;
+  align-items: center;
+  gap: 8px;
+
+  min-height: 53px;
+  padding: 7px;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.025);
+
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.layer-item:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.layer-item.is-active {
+  border-color: var(--border-strong);
+  background: rgba(168, 76, 255, 0.11);
+}
+
+.layer-visibility {
+  display: grid;
+  place-items: center;
+
+  width: 28px;
+  height: 28px;
+
+  border-radius: 7px;
+
+  background: transparent;
+  color: var(--text-soft);
+}
+
+.layer-thumbnail {
+  width: 42px;
+  height: 36px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+
+  background:
+    linear-gradient(
+      45deg,
+      #d4d4d4 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      -45deg,
+      #d4d4d4 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      #d4d4d4 75%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 75%,
+      #d4d4d4 75%
+    ),
+    #ffffff;
+
+  background-size: 12px 12px;
+}
+
+.layer-name {
+  min-width: 0;
+
+  overflow: hidden;
+
+  color: var(--text-soft);
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-properties {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 9px;
+}
+
+.layer-properties label {
+  color: var(--text-muted);
+
+  font-size: 0.59rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.layer-properties select {
+  min-width: 0;
+  height: 33px;
+  padding: 5px 8px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+
+  background: var(--surface-light);
+  color: #ffffff;
+
+  font-size: 0.68rem;
+}
+
+.layer-properties input[type="range"] {
+  width: 100%;
+}
+
+
+/* =========================================================
+   16. STATUS BAR
+========================================================= */
+
+.status-bar {
+  position: relative;
+  z-index: 500;
+
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 15px;
+
+  min-width: 0;
+  padding: 0 12px;
+
+  border-top: 1px solid var(--border);
+
+  background: rgba(9, 6, 13, 0.99);
+  color: var(--text-muted);
+
+  font-size: 0.59rem;
+}
+
+.status-bar__left,
+.status-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.status-bar__left {
+  justify-content: flex-start;
+}
+
+.status-bar__right {
+  justify-content: flex-end;
+}
+
+.status-bar__centre {
+  min-width: 0;
+
+  overflow: hidden;
+
+  color: var(--purple-light);
+
+  font-size: 0.57rem;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-divider {
+  width: 1px;
+  height: 15px;
+
+  background: var(--border);
+}
+
+.status-bar button {
+  padding: 3px 7px;
+
+  border-radius: 5px;
+
+  background: transparent;
+  color: var(--text-soft);
+
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.status-bar button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   17. DIALOGS
+========================================================= */
+
+.paintless-dialog {
+  width: min(480px, calc(100% - 28px));
+  padding: 0;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-large);
+
+  background:
+    radial-gradient(
+      circle at 90% 0,
+      rgba(168, 76, 255, 0.15),
+      transparent 36%
+    ),
+    rgba(13, 9, 19, 0.99);
+
+  color: var(--text);
+
+  box-shadow:
+    0 35px 110px rgba(0, 0, 0, 0.82),
+    var(--purple-glow);
+}
+
+.paintless-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.paintless-dialog form {
+  margin: 0;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+
+  padding: 20px 21px 16px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.dialog-header p {
+  margin: 0 0 4px;
+
+  color: var(--purple-light);
+
+  font-size: 0.59rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dialog-header h2 {
+  margin: 0;
+
+  font-size: 1.5rem;
+}
+
+.dialog-close-button {
+  display: grid;
+  place-items: center;
+
+  width: 36px;
+  height: 36px;
+
+  border: 1px solid var(--border);
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+
+  font-size: 1.4rem;
+}
+
+.dialog-body {
+  display: grid;
+  gap: 15px;
+
+  padding: 20px 21px;
+}
+
+.dialog-body label {
+  display: grid;
+  gap: 7px;
+}
+
+.dialog-body label > span {
+  color: var(--text-muted);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dialog-body input[type="text"],
+.dialog-body input[type="number"],
+.dialog-body select {
+  width: 100%;
+  height: 41px;
+  padding: 8px 10px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+
+  background: var(--surface-light);
+  color: #ffffff;
+}
+
+.dialog-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+
+  padding: 15px 21px 20px;
+
+  border-top: 1px solid var(--border);
+}
+
+
+/* =========================================================
+   18. LOADING SCREEN
+========================================================= */
+
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: grid;
+  place-items: center;
+
+  padding: 20px;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(168, 76, 255, 0.17),
+      transparent 38%
+    ),
+    rgba(5, 3, 9, 0.98);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 220ms ease,
+    visibility 220ms ease;
+}
+
+.loading-screen.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.loading-card {
+  width: min(390px, 100%);
+  padding: 32px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-large);
+
+  background: rgba(14, 9, 20, 0.96);
+
+  text-align: center;
+
+  box-shadow:
+    var(--shadow),
+    var(--purple-glow);
+}
+
+.loading-card strong {
+  display: block;
+  margin-bottom: 10px;
+
+  color: #ffffff;
+
+  font-size: 1.8rem;
+  font-weight: 1000;
+  letter-spacing: 0.17em;
+}
+
+.loading-card p {
+  margin: 0 0 18px;
+
+  color: var(--text-soft);
+
+  font-size: 0.82rem;
+}
+
+.loading-track {
+  height: 8px;
+  margin-bottom: 11px;
+
+  overflow: hidden;
+
+  border-radius: var(--radius-pill);
+
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.loading-track span {
+  display: block;
+
+  width: 0;
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      to right,
+      var(--purple),
+      var(--cyan)
+    );
+
+  box-shadow:
+    0 0 17px rgba(168, 76, 255, 0.45);
+
+  transition: width 220ms ease;
+}
+
+.loading-card output {
+  color: var(--purple-light);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   19. SCROLLBARS
+========================================================= */
+
+* {
+  scrollbar-color:
+    rgba(168, 76, 255, 0.45)
+    rgba(255, 255, 255, 0.025);
+
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+
+  background:
+    rgba(168, 76, 255, 0.45);
+
+  background-clip: padding-box;
+}
+
+
+/* =========================================================
+   20. TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  :root {
+    --sidebar-width: 260px;
+  }
+
+  .paintless-brand__text small {
+    display: none;
+  }
+
+  .menu-button {
+    padding-inline: 8px;
+  }
+
+  .tool-options-bar {
+    gap: 15px;
+  }
+
+}
+
+
+/* =========================================================
+   21. SMALL TABLET
+========================================================= */
+
+@media (max-width: 860px) {
+
+  :root {
+    --sidebar-width: 235px;
+    --toolbox-width: 66px;
+  }
+
+  .top-bar {
+    grid-template-columns: auto 1fr;
+  }
+
+  .main-menu {
+    display: none;
+  }
+
+  .top-actions {
+    justify-self: end;
+  }
+
+  .tool-button {
+    width: 50px;
+  }
+
+  .tool-option-group input[type="range"] {
+    width: 80px;
+  }
+
+  .status-bar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .status-bar__centre {
+    display: none;
+  }
+
+}
+
+
+/* =========================================================
+   22. MOBILE
+========================================================= */
+
+@media (max-width: 680px) {
+
+  :root {
+    --top-bar-height: 56px;
+    --options-bar-height: 48px;
+    --status-bar-height: 28px;
+    --toolbox-width: 58px;
+  }
+
+  .paintless-app {
+    grid-template-rows:
+      var(--top-bar-height)
+      var(--options-bar-height)
+      minmax(0, 1fr)
+      var(--status-bar-height);
+  }
+
+  .top-bar {
+    padding-inline: 8px;
+  }
+
+  .paintless-brand img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .paintless-brand__text strong {
+    font-size: 0.81rem;
+  }
+
+  .top-divider,
+  .zoom-display,
+  #zoom-out-button,
+  #zoom-in-button {
+    display: none;
+  }
+
+  .export-button {
+    padding-inline: 12px;
+
+    font-size: 0.62rem;
+  }
+
+  .tool-options-bar {
+    gap: 13px;
+    padding-inline: 10px;
+  }
+
+  .active-tool-name {
+    min-width: 72px;
+  }
+
+  .editor-layout {
+    grid-template-columns:
+      var(--toolbox-width)
+      minmax(0, 1fr);
+  }
+
+  .right-sidebar {
+    position: fixed;
+    top:
+      calc(
+        var(--top-bar-height) +
+        var(--options-bar-height)
+      );
+    right: 0;
+    bottom: var(--status-bar-height);
+    z-index: 1000;
+
+    width: min(300px, 88vw);
+
+    border-left: 1px solid var(--border-strong);
+
+    box-shadow:
+      -20px 0 50px rgba(0, 0, 0, 0.55);
+
+    transform: translateX(105%);
+    transition: transform 220ms ease;
+  }
+
+  .right-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .toolbox {
+    padding-inline: 4px;
+  }
+
+  .tool-button {
+    width: 48px;
+    min-height: 46px;
+  }
+
+  .tool-button > small {
+    font-size: 0.44rem;
+  }
+
+  .canvas-viewport {
+    padding: 28px;
+  }
+
+  .workspace-empty-state {
+    width: min(360px, calc(100% - 24px));
+    padding: 25px 18px;
+  }
+
+  .empty-state-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+
+    font-size: 1.65rem;
+  }
+
+  .workspace-empty-state h1 {
+    font-size: 1.65rem;
+  }
+
+  .workspace-empty-state p {
+    font-size: 0.78rem;
+  }
+
+  .empty-state-actions {
+    flex-direction: column;
+  }
+
+  .empty-state-actions button {
+    width: 100%;
+  }
+
+  .status-bar {
+    grid-template-columns: 1fr auto;
+
+    padding-inline: 7px;
+  }
+
+  .status-bar__left .status-divider,
+  #canvas-size-status,
+  #cursor-position {
+    display: none;
+  }
+
+  .dialog-row {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* =========================================================
+   23. SHORT SCREENS
+========================================================= */
+
+@media (max-height: 650px) {
+
+  .tool-button {
+    min-height: 42px;
+  }
+
+  .tool-button > span {
+    font-size: 1rem;
+  }
+
+  .tool-button > small {
+    display: none;
+  }
+
+  .workspace-empty-state {
+    padding-block: 22px;
+  }
+
+  .empty-state-logo {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 12px;
+  }
+
+}
+
+
+/* =========================================================
+   24. REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+}
