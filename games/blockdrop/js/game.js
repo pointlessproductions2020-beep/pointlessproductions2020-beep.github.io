@@ -3215,25 +3215,52 @@ function clearCompletedLines() {
   }
 
 
-  completedRows
-    .sort(
-      (a, b) => b - a
-    )
-    .forEach((rowIndex) => {
+  /*
+   * Keep every row that was not completed.
+   *
+   * We remove all completed rows together before inserting
+   * replacements. This prevents row indexes shifting halfway
+   * through a double, triple or four-line clear.
+   */
 
-      arena.splice(
-        rowIndex,
-        1
-      );
+  const completedRowSet =
+    new Set(completedRows);
 
 
-      arena.unshift(
+  const remainingRows =
+    arena.filter(
+      (row, rowIndex) =>
+        !completedRowSet.has(rowIndex)
+    );
+
+
+  /*
+   * Create one new empty row for every cleared line.
+   */
+
+  const emptyRows =
+    Array.from(
+      {
+        length: completedRows.length
+      },
+      () =>
         new Array(
           BOARD_COLUMNS
         ).fill(0)
-      );
+    );
 
-    });
+
+  /*
+   * Replace the arena contents without replacing the arena
+   * array itself, because other parts of the game reference it.
+   */
+
+  arena.splice(
+    0,
+    arena.length,
+    ...emptyRows,
+    ...remainingRows
+  );
 
 
   const numberOfLines =
@@ -3330,7 +3357,6 @@ function clearCompletedLines() {
   return numberOfLines;
 
 }
-
 
 /* =========================================================
    24. SCORING AND LEVELS
