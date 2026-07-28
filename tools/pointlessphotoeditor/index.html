@@ -21,7 +21,8 @@
 
   <link
     rel="icon"
-    href="../../assets/images/logos/logo-round.webp"
+    type="image/png"
+    href="assets/images/paintless-logo.png"
   >
 
   <link
@@ -65,8 +66,8 @@
         >
 
           <img
-            src="../../assets/images/logos/logo-round.webp"
-            alt=""
+            src="assets/images/paintless-logo.png"
+            alt="Paintless"
             width="42"
             height="42"
           >
@@ -97,6 +98,7 @@
           class="menu-button"
           id="file-menu-button"
           type="button"
+          aria-expanded="false"
         >
           File
         </button>
@@ -105,6 +107,7 @@
           class="menu-button"
           id="edit-menu-button"
           type="button"
+          aria-expanded="false"
         >
           Edit
         </button>
@@ -113,6 +116,7 @@
           class="menu-button"
           id="image-menu-button"
           type="button"
+          aria-expanded="false"
         >
           Image
         </button>
@@ -121,6 +125,7 @@
           class="menu-button"
           id="layer-menu-button"
           type="button"
+          aria-expanded="false"
         >
           Layer
         </button>
@@ -129,6 +134,7 @@
           class="menu-button"
           id="help-menu-button"
           type="button"
+          aria-expanded="false"
         >
           Help
         </button>
@@ -142,7 +148,7 @@
           class="top-action-button"
           id="undo-button"
           type="button"
-          title="Undo"
+          title="Pretending that never happened"
           aria-label="Undo"
           disabled
         >
@@ -153,7 +159,7 @@
           class="top-action-button"
           id="redo-button"
           type="button"
-          title="Redo"
+          title="Actually, put it back"
           aria-label="Redo"
           disabled
         >
@@ -194,6 +200,15 @@
         </button>
 
         <button
+          class="secondary-button import-button"
+          id="import-image-button"
+          type="button"
+          title="Import an image as a new layer"
+        >
+          Import
+        </button>
+
+        <button
           class="export-button"
           id="export-button"
           type="button"
@@ -229,6 +244,8 @@
       </div>
 
 
+      <!-- BRUSH / ERASER OPTIONS -->
+
       <div
         class="tool-option-group"
         id="brush-options"
@@ -256,7 +273,10 @@
       </div>
 
 
-      <div class="tool-option-group">
+      <div
+        class="tool-option-group"
+        id="opacity-options"
+      >
 
         <label for="tool-opacity">
           Opacity
@@ -280,7 +300,10 @@
       </div>
 
 
-      <div class="tool-option-group">
+      <div
+        class="tool-option-group"
+        id="hardness-options"
+      >
 
         <label for="brush-hardness">
           Hardness
@@ -303,6 +326,234 @@
 
       </div>
 
+
+      <!-- SHAPE OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="shape-options"
+        hidden
+      >
+
+        <label for="shape-type">
+          Shape
+        </label>
+
+        <select id="shape-type">
+
+          <option value="rectangle">
+            Rectangle
+          </option>
+
+          <option value="ellipse">
+            Ellipse
+          </option>
+
+          <option value="rounded-rectangle">
+            Rounded Rectangle
+          </option>
+
+          <option value="line">
+            Line
+          </option>
+
+        </select>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="shape-fill-enabled"
+            type="checkbox"
+          >
+
+          <span>
+            Fill
+          </span>
+
+        </label>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="shape-stroke-enabled"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+            Stroke
+          </span>
+
+        </label>
+
+        <label for="shape-corner-radius">
+          Radius
+        </label>
+
+        <input
+          id="shape-corner-radius"
+          type="range"
+          min="0"
+          max="100"
+          value="24"
+        >
+
+        <output
+          id="shape-corner-radius-output"
+          for="shape-corner-radius"
+        >
+          24 px
+        </output>
+
+      </div>
+
+
+      <!-- SELECTION OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="selection-options"
+        hidden
+      >
+
+        <label for="selection-mode">
+          Selection
+        </label>
+
+        <select id="selection-mode">
+
+          <option value="rectangle">
+            Rectangle
+          </option>
+
+          <option value="magic-wand">
+            Magic Wand
+          </option>
+
+        </select>
+
+        <label for="wand-tolerance">
+          Tolerance
+        </label>
+
+        <input
+          id="wand-tolerance"
+          type="range"
+          min="0"
+          max="100"
+          value="24"
+        >
+
+        <output
+          id="wand-tolerance-output"
+          for="wand-tolerance"
+        >
+          24
+        </output>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="wand-contiguous"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+            Connected
+          </span>
+
+        </label>
+
+        <button
+          class="tool-option-button"
+          id="deselect-button"
+          type="button"
+        >
+          Deselect
+        </button>
+
+      </div>
+
+
+      <!-- TEXT OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="text-options"
+        hidden
+      >
+
+        <label for="text-font-family">
+          Font
+        </label>
+
+        <select id="text-font-family">
+
+          <option value="Segoe UI">
+            Segoe UI
+          </option>
+
+          <option value="Arial">
+            Arial
+          </option>
+
+          <option value="Georgia">
+            Georgia
+          </option>
+
+          <option value="Courier New">
+            Courier New
+          </option>
+
+          <option value="Impact">
+            Impact
+          </option>
+
+        </select>
+
+        <label for="text-font-size">
+          Size
+        </label>
+
+        <input
+          id="text-font-size"
+          type="number"
+          min="6"
+          max="500"
+          value="32"
+        >
+
+        <label class="compact-checkbox">
+
+          <input
+            id="text-bold"
+            type="checkbox"
+          >
+
+          <span>
+            Bold
+          </span>
+
+        </label>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="text-italic"
+            type="checkbox"
+          >
+
+          <span>
+            Italic
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <!-- COLOUR -->
 
       <label class="colour-control">
 
@@ -355,7 +606,7 @@
           class="tool-button"
           type="button"
           data-tool="eraser"
-          title="Eraser (E)"
+          title="Eraser (E) — Destroying evidence"
           aria-label="Eraser"
           aria-pressed="false"
         >
@@ -368,8 +619,8 @@
           class="tool-button"
           type="button"
           data-tool="move"
-          title="Move (V)"
-          aria-label="Move"
+          title="Move layer (V)"
+          aria-label="Move layer"
           aria-pressed="false"
         >
           <span aria-hidden="true">✥</span>
@@ -381,8 +632,8 @@
           class="tool-button"
           type="button"
           data-tool="select"
-          title="Select (M)"
-          aria-label="Select"
+          title="Selection tools (M)"
+          aria-label="Selection tools"
           aria-pressed="false"
         >
           <span aria-hidden="true">▧</span>
@@ -407,8 +658,8 @@
           class="tool-button"
           type="button"
           data-tool="fill"
-          title="Fill (G)"
-          aria-label="Fill"
+          title="Fill bucket (G)"
+          aria-label="Fill bucket"
           aria-pressed="false"
         >
           <span aria-hidden="true">◒</span>
@@ -463,8 +714,8 @@
           aria-label="Shapes"
           aria-pressed="false"
         >
-          <span aria-hidden="true">○</span>
-          <small>Shape</small>
+          <span aria-hidden="true">◯□</span>
+          <small>Shapes</small>
         </button>
 
 
@@ -500,7 +751,7 @@
             id="swap-colours-button"
             type="button"
             aria-label="Swap colours"
-            title="Swap colours"
+            title="Swap colours (X)"
           >
             ⇄
           </button>
@@ -573,7 +824,12 @@
         >
 
           <div class="empty-state-logo">
-            P
+
+            <img
+              src="assets/images/paintless-logo.png"
+              alt="Paintless crowned painter mascot"
+            >
+
           </div>
 
           <h1>
@@ -797,12 +1053,30 @@
             <div class="panel-header-actions">
 
               <button
+                id="import-layer-button"
+                type="button"
+                title="Import image as layer"
+                aria-label="Import image as layer"
+              >
+                🖼
+              </button>
+
+              <button
                 id="add-layer-button"
                 type="button"
                 title="Add layer"
                 aria-label="Add layer"
               >
                 +
+              </button>
+
+              <button
+                id="duplicate-layer-button"
+                type="button"
+                title="Duplicate layer"
+                aria-label="Duplicate layer"
+              >
+                ⧉
               </button>
 
               <button
@@ -857,6 +1131,46 @@
 
               <option value="lighten">
                 Lighten
+              </option>
+
+              <option value="color-dodge">
+                Colour Dodge
+              </option>
+
+              <option value="color-burn">
+                Colour Burn
+              </option>
+
+              <option value="hard-light">
+                Hard Light
+              </option>
+
+              <option value="soft-light">
+                Soft Light
+              </option>
+
+              <option value="difference">
+                Difference
+              </option>
+
+              <option value="exclusion">
+                Exclusion
+              </option>
+
+              <option value="hue">
+                Hue
+              </option>
+
+              <option value="saturation">
+                Saturation
+              </option>
+
+              <option value="color">
+                Colour
+              </option>
+
+              <option value="luminosity">
+                Luminosity
               </option>
 
             </select>
@@ -937,11 +1251,18 @@
 
 
   <!-- =====================================================
-       HIDDEN FILE INPUT
+       HIDDEN FILE INPUTS
   ====================================================== -->
 
   <input
     id="image-file-input"
+    type="file"
+    accept="image/png,image/jpeg,image/webp,image/gif"
+    hidden
+  >
+
+  <input
+    id="import-image-file-input"
     type="file"
     accept="image/png,image/jpeg,image/webp,image/gif"
     hidden
@@ -1226,6 +1547,12 @@
   >
 
     <div class="loading-card">
+
+      <img
+        class="loading-logo"
+        src="assets/images/paintless-logo.png"
+        alt="Paintless"
+      >
 
       <strong>
         PAINTLESS
