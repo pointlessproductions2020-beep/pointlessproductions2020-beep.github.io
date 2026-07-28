@@ -2610,17 +2610,18 @@ body.mobile-game-mode .overlay-icon {
   font-size: 1.5rem;
 }
 
-  body.mobile-game-mode .overlay-content h2 {
-    margin-bottom: 9px;
+body.mobile-game-mode .overlay-content h2 {
+  margin-bottom: 7px;
 
-    font-size: clamp(1.5rem, 7vw, 2.3rem);
-  }
+  font-size: clamp(1.45rem, 6.5vw, 2.1rem);
+}
 
-  body.mobile-game-mode .overlay-content p {
-    margin-bottom: 14px;
+body.mobile-game-mode .overlay-content p {
+  margin-bottom: 10px;
 
-    font-size: 0.73rem;
-  }
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
 
   body.mobile-game-mode .game-button {
     min-height: 42px;
