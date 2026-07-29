@@ -335,18 +335,28 @@
         hidden
       >
 
-        <label for="shape-type">
-          Shape
-        </label>
+        <!--
+          Hidden compatibility control.
 
-        <select id="shape-type">
+          The visible shape chooser now opens from the Shapes
+          button inside the left toolbar. tools.js can continue
+          reading this value without needing to use a native
+          dropdown in the top options bar.
+        -->
+
+        <select
+          id="shape-type"
+          aria-hidden="true"
+          tabindex="-1"
+          hidden
+        >
+
+          <option value="ellipse" selected>
+            Ellipse
+          </option>
 
           <option value="rectangle">
             Rectangle
-          </option>
-
-          <option value="ellipse">
-            Ellipse
           </option>
 
           <option value="rounded-rectangle">
@@ -358,6 +368,7 @@
           </option>
 
         </select>
+
 
         <label class="compact-checkbox">
 
@@ -372,6 +383,7 @@
 
         </label>
 
+
         <label class="compact-checkbox">
 
           <input
@@ -385,6 +397,7 @@
           </span>
 
         </label>
+
 
         <label for="shape-corner-radius">
           Radius
@@ -706,17 +719,112 @@
         </button>
 
 
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="shape"
-          title="Shapes (U)"
-          aria-label="Shapes"
-          aria-pressed="false"
+        <!-- SHAPE TOOL FAMILY -->
+
+        <div
+          class="tool-family"
+          id="shape-tool-family"
         >
-          <span aria-hidden="true">◯□</span>
-          <small>Shapes</small>
-        </button>
+
+          <button
+            class="tool-button tool-family__main"
+            id="shape-tool-button"
+            type="button"
+            data-tool="shape"
+            title="Ellipse (U) — hold for more shapes"
+            aria-label="Ellipse shape tool"
+            aria-pressed="false"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+
+            <span
+              id="shape-tool-icon"
+              aria-hidden="true"
+            >
+              ◯
+            </span>
+
+            <small id="shape-tool-label">
+              Ellipse
+            </small>
+
+            <span
+              class="tool-family__indicator"
+              aria-hidden="true"
+            >
+              ◢
+            </span>
+
+          </button>
+
+
+          <div
+            class="tool-family-menu"
+            id="shape-tool-menu"
+            role="menu"
+            aria-label="Choose a shape"
+            hidden
+          >
+
+            <button
+              class="tool-family-option is-selected"
+              type="button"
+              role="menuitem"
+              data-shape-choice="ellipse"
+              data-shape-icon="◯"
+              data-shape-label="Ellipse"
+              aria-pressed="true"
+            >
+              <span aria-hidden="true">◯</span>
+              <strong>Ellipse</strong>
+            </button>
+
+
+            <button
+              class="tool-family-option"
+              type="button"
+              role="menuitem"
+              data-shape-choice="rectangle"
+              data-shape-icon="□"
+              data-shape-label="Rectangle"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">□</span>
+              <strong>Rectangle</strong>
+            </button>
+
+
+            <button
+              class="tool-family-option"
+              type="button"
+              role="menuitem"
+              data-shape-choice="rounded-rectangle"
+              data-shape-icon="▢"
+              data-shape-label="Rounded"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">▢</span>
+              <strong>Rounded rectangle</strong>
+            </button>
+
+
+            <button
+              class="tool-family-option"
+              type="button"
+              role="menuitem"
+              data-shape-choice="line"
+              data-shape-icon="╱"
+              data-shape-label="Line"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">╱</span>
+              <strong>Line</strong>
+            </button>
+
+          </div>
+
+        </div>
 
 
         <span
