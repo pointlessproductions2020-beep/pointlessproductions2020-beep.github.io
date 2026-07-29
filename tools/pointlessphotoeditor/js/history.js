@@ -325,16 +325,16 @@
 
 
     for (
-      let index = 0;
-      index < firstLayers.layers.length;
-      index += 1
+      let layerIndex = 0;
+      layerIndex < firstLayers.layers.length;
+      layerIndex += 1
     ) {
 
       const firstLayer =
-        firstLayers.layers[index];
+        firstLayers.layers[layerIndex];
 
       const secondLayer =
-        secondLayers.layers[index];
+        secondLayers.layers[layerIndex];
 
 
       if (
@@ -368,32 +368,17 @@
 
 
       /*
-       * Check a spread of pixels rather than comparing every
-       * byte twice. The full image remains safely stored in
-       * the snapshot; this check only prevents obvious duplicate
-       * history entries.
+       * Compare every pixel byte.
+       *
+       * The old sampled comparison could miss small brush
+       * strokes, causing several separate actions to collapse
+       * into one Undo step.
        */
-
-      const sampleCount =
-        Math.min(
-          96,
-          firstData.length
-        );
-
-      const step =
-        Math.max(
-          1,
-          Math.floor(
-            firstData.length /
-            sampleCount
-          )
-        );
-
 
       for (
         let dataIndex = 0;
         dataIndex < firstData.length;
-        dataIndex += step
+        dataIndex += 1
       ) {
 
         if (
