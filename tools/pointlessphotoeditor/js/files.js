@@ -2,7 +2,7 @@
 
 /* =========================================================
    PAINTLESS
-   FILE OPENING AND EXPORT SYSTEM
+   FILE OPENING, IMAGE IMPORT AND EXPORT SYSTEM — v0.3
 ========================================================= */
 
 (() => {
@@ -11,68 +11,128 @@
      1. DOM REFERENCES
   ======================================================= */
 
+  const byId =
+    (id) =>
+      document.getElementById(
+        id
+      );
+
+
+  /*
+   * Open Image creates a completely new document.
+   */
+
   const imageFileInput =
-    document.getElementById(
+    byId(
       "image-file-input"
     );
 
+
   const openImageButton =
-    document.getElementById(
+    byId(
       "open-image-button"
     );
 
+
+  /*
+   * Import Image adds the selected image to the existing
+   * document as a completely new layer.
+   */
+
+  const importImageFileInput =
+    byId(
+      "import-image-file-input"
+    );
+
+
+  const importImageButton =
+    byId(
+      "import-image-button"
+    );
+
+
+  const importLayerButton =
+    byId(
+      "import-layer-button"
+    );
+
+
+  const addLayerButton =
+    byId(
+      "add-layer-button"
+    );
+
+
+  /*
+   * Export controls.
+   */
+
   const exportButton =
-    document.getElementById(
+    byId(
       "export-button"
     );
 
+
   const exportDialog =
-    document.getElementById(
+    byId(
       "export-dialog"
     );
 
+
   const exportFileNameInput =
-    document.getElementById(
+    byId(
       "export-file-name"
     );
 
+
   const exportFormatSelect =
-    document.getElementById(
+    byId(
       "export-format"
     );
 
+
   const exportQualityInput =
-    document.getElementById(
+    byId(
       "export-quality"
     );
 
+
   const confirmExportButton =
-    document.getElementById(
+    byId(
       "confirm-export-button"
     );
 
+
+  /*
+   * Status and loading screen.
+   */
+
   const saveStatus =
-    document.getElementById(
+    byId(
       "save-status"
     );
 
+
   const loadingScreen =
-    document.getElementById(
+    byId(
       "loading-screen"
     );
 
+
   const loadingMessage =
-    document.getElementById(
+    byId(
       "loading-message"
     );
 
+
   const loadingProgress =
-    document.getElementById(
+    byId(
       "loading-progress"
     );
 
+
   const loadingPercentage =
-    document.getElementById(
+    byId(
       "loading-percentage"
     );
 
@@ -88,14 +148,23 @@
     "image/gif"
   ];
 
-  const maximumFileSize =
-    40 * 1024 * 1024;
 
-  let loadingSequenceId = 0;
+  const maximumFileSize =
+    40 *
+    1024 *
+    1024;
+
+
+  let loadingSequenceId =
+    0;
+
+
+  let requestedFileAction =
+    null;
 
 
   /* =======================================================
-     3. HELPERS
+     3. PAINTLESS API HELPERS
   ======================================================= */
 
   function getLayersApi() {
@@ -202,12 +271,19 @@
   }
 
 
+  /* =======================================================
+     4. FILE-NAME HELPERS
+  ======================================================= */
+
   function cleanFileName(
     fileName
   ) {
 
     const withoutExtension =
-      String(fileName || "")
+      String(
+        fileName ||
+        ""
+      )
         .replace(
           /\.[^/.]+$/,
           ""
@@ -264,7 +340,10 @@
 
 
     return (
-      `${cleanedName || "paintless-masterpiece"}.${extension}`
+      `${
+        cleanedName ||
+        "paintless-masterpiece"
+      }.${extension}`
     );
 
   }
@@ -299,7 +378,7 @@
 
 
   /* =======================================================
-     4. LOADING SCREEN
+     5. LOADING SCREEN
   ======================================================= */
 
   function updateLoadingScreen(
@@ -351,7 +430,8 @@
       "Loading creativity..."
   ) {
 
-    loadingSequenceId += 1;
+    loadingSequenceId +=
+      1;
 
 
     updateLoadingScreen(
@@ -384,7 +464,9 @@
       sequenceId !== undefined &&
       sequenceId !== loadingSequenceId
     ) {
+
       return;
+
     }
 
 
@@ -401,15 +483,18 @@
   }
 
 
-  async function playPaintlessLoadingSequence(
-    {
-      openingMessage =
-        "Loading creativity...",
+  /*
+   * This is intentionally slower than the old loading sequence.
+   * The jokes now remain visible long enough to actually read.
+   */
 
-      finalMessage =
-        "Ready."
-    } = {}
-  ) {
+  async function playPaintlessLoadingSequence({
+    openingMessage =
+      "Loading creativity...",
+
+    finalMessage =
+      "Ready."
+  } = {}) {
 
     const sequenceId =
       showLoadingScreen(
@@ -424,7 +509,10 @@
           12,
 
         message:
-          "Waking up the pixels..."
+          "Waking up the pixels...",
+
+        wait:
+          620
       },
 
       {
@@ -432,7 +520,10 @@
           31,
 
         message:
-          "Loading brushes..."
+          "Loading brushes...",
+
+        wait:
+          680
       },
 
       {
@@ -440,7 +531,10 @@
           57,
 
         message:
-          "Politely asking layers to cooperate..."
+          "Politely asking layers to cooperate...",
+
+        wait:
+          760
       },
 
       {
@@ -448,7 +542,10 @@
           78,
 
         message:
-          "Looking for Ctrl+Z..."
+          "Looking for Ctrl+Z...",
+
+        wait:
+          720
       },
 
       {
@@ -456,7 +553,10 @@
           99,
 
         message:
-          "Loading creativity..."
+          "Loading creativity...",
+
+        wait:
+          700
       }
 
     ];
@@ -470,12 +570,14 @@
         sequenceId !==
         loadingSequenceId
       ) {
+
         return sequenceId;
+
       }
 
 
       await delay(
-        115
+        step.wait
       );
 
 
@@ -488,7 +590,7 @@
 
 
     await delay(
-      420
+      850
     );
 
 
@@ -499,7 +601,7 @@
 
 
     await delay(
-      650
+      1200
     );
 
 
@@ -510,7 +612,7 @@
 
 
     await delay(
-      260
+      600
     );
 
 
@@ -525,7 +627,7 @@
 
 
   /* =======================================================
-     5. FILE VALIDATION
+     6. FILE VALIDATION
   ======================================================= */
 
   function validateImageFile(
@@ -535,11 +637,13 @@
     if (!file) {
 
       return {
+
         valid:
           false,
 
         message:
           "No file was selected."
+
       };
 
     }
@@ -552,11 +656,13 @@
     ) {
 
       return {
+
         valid:
           false,
 
         message:
           "Paintless currently supports PNG, JPEG, WebP and GIF images."
+
       };
 
     }
@@ -568,29 +674,33 @@
     ) {
 
       return {
+
         valid:
           false,
 
         message:
           "That image is larger than 40 MB. The pixels have become too powerful."
+
       };
 
     }
 
 
     return {
+
       valid:
         true,
 
       message:
         ""
+
     };
 
   }
 
 
   /* =======================================================
-     6. IMAGE LOADING
+     7. IMAGE DECODING
   ======================================================= */
 
   function loadImageFromFile(
@@ -658,6 +768,31 @@
   }
 
 
+  function getImageDimensions(
+    image
+  ) {
+
+    return {
+
+      width:
+        image.naturalWidth ||
+        image.width ||
+        0,
+
+      height:
+        image.naturalHeight ||
+        image.height ||
+        0
+
+    };
+
+  }
+
+
+  /* =======================================================
+     8. OPEN IMAGE AS NEW DOCUMENT
+  ======================================================= */
+
   async function openImageFile(
     file
   ) {
@@ -674,6 +809,7 @@
         validation.message
       );
 
+
       return false;
 
     }
@@ -681,6 +817,7 @@
 
     const layersApi =
       getLayersApi();
+
 
     const canvasApi =
       getCanvasApi();
@@ -694,6 +831,7 @@
       setStatusMessage(
         "Paintless is still assembling itself."
       );
+
 
       return false;
 
@@ -709,8 +847,13 @@
     try {
 
       updateLoadingScreen(
-        12,
+        8,
         "Reading pixels..."
+      );
+
+
+      await delay(
+        420
       );
 
 
@@ -721,18 +864,26 @@
 
 
       updateLoadingScreen(
-        35,
+        28,
         "Measuring masterpiece..."
       );
 
 
-      const imageWidth =
-        image.naturalWidth ||
-        image.width;
+      await delay(
+        520
+      );
 
-      const imageHeight =
-        image.naturalHeight ||
-        image.height;
+
+      const {
+        width:
+          imageWidth,
+
+        height:
+          imageHeight
+      } =
+        getImageDimensions(
+          image
+        );
 
 
       if (
@@ -748,8 +899,13 @@
 
 
       updateLoadingScreen(
-        55,
-        "Building layers..."
+        48,
+        "Building a fresh canvas..."
+      );
+
+
+      await delay(
+        560
       );
 
 
@@ -769,64 +925,69 @@
         layersApi.getActiveLayer();
 
 
-      if (baseLayer) {
+      if (!baseLayer) {
 
-        baseLayer.name =
-          cleanFileName(
-            file.name
-          );
-
-
-        baseLayer.context.clearRect(
-          0,
-          0,
-          imageWidth,
-          imageHeight
-        );
-
-
-        baseLayer.context.drawImage(
-          image,
-          0,
-          0,
-          imageWidth,
-          imageHeight
+        throw new Error(
+          "Paintless could not create the image layer."
         );
 
       }
 
 
-      layersApi.renderLayerList();
+      baseLayer.name =
+        cleanFileName(
+          file.name
+        );
 
-      layersApi.renderLayers();
+
+      baseLayer.context.clearRect(
+        0,
+        0,
+        imageWidth,
+        imageHeight
+      );
 
 
-      canvasApi.setDocumentName(
+      baseLayer.context.drawImage(
+        image,
+        0,
+        0,
+        imageWidth,
+        imageHeight
+      );
+
+
+      layersApi.renderLayerList?.();
+
+      layersApi.renderLayers?.();
+
+
+      canvasApi.setDocumentName?.(
         cleanFileName(
           file.name
         )
       );
 
 
-      canvasApi.showCanvas();
+      canvasApi.showCanvas?.();
 
-      canvasApi.updateStageDimensions();
+      canvasApi.updateStageDimensions?.();
 
-      canvasApi.updateDocumentInformation();
+      canvasApi.updateDocumentInformation?.();
 
 
       updateLoadingScreen(
-        79,
+        72,
         "Teaching pixels to behave..."
       );
 
 
       await delay(
-        150
+        700
       );
 
 
-      canvasApi.fitCanvasToScreen();
+      canvasApi.fitCanvasToScreen?.();
 
 
       updateLoadingScreen(
@@ -836,7 +997,7 @@
 
 
       await delay(
-        260
+        900
       );
 
 
@@ -847,7 +1008,7 @@
 
 
       await delay(
-        520
+        1250
       );
 
 
@@ -858,7 +1019,7 @@
 
 
       await delay(
-        220
+        550
       );
 
 
@@ -868,7 +1029,7 @@
 
 
       getHistoryApi()
-        ?.resetHistory(
+        ?.resetHistory?.(
           "Open image"
         );
 
@@ -930,13 +1091,585 @@
 
   function requestOpenImage() {
 
-    imageFileInput?.click();
+    requestedFileAction =
+      "open";
+
+
+    if (imageFileInput) {
+
+      imageFileInput.value =
+        "";
+
+      imageFileInput.click();
+
+    }
 
   }
 
 
   /* =======================================================
-     7. COMPOSITE EXPORT CANVAS
+     9. CREATE A NEW IMPORT LAYER
+  ======================================================= */
+
+  function createImportedLayer(
+    layerName
+  ) {
+
+    const layersApi =
+      getLayersApi();
+
+
+    if (!layersApi) {
+
+      return null;
+
+    }
+
+
+    let createdLayer =
+      null;
+
+
+    /*
+     * First try the public layer functions.
+     */
+
+    const possibleLayerFunctions = [
+      "addLayer",
+      "createLayer",
+      "addBlankLayer",
+      "newLayer"
+    ];
+
+
+    for (
+      const functionName of
+      possibleLayerFunctions
+    ) {
+
+      if (
+        typeof layersApi[
+          functionName
+        ] ===
+        "function"
+      ) {
+
+        const result =
+          layersApi[
+            functionName
+          ](
+            layerName
+          );
+
+
+        createdLayer =
+          result ||
+          layersApi.getActiveLayer?.() ||
+          null;
+
+
+        if (createdLayer) {
+
+          break;
+
+        }
+
+      }
+
+    }
+
+
+    /*
+     * Fallback:
+     * use the existing Add Layer button because layers.js is
+     * already listening to it.
+     */
+
+    if (
+      !createdLayer &&
+      addLayerButton
+    ) {
+
+      addLayerButton.click();
+
+
+      createdLayer =
+        layersApi.getActiveLayer?.() ||
+        null;
+
+    }
+
+
+    if (
+      createdLayer &&
+      layerName
+    ) {
+
+      createdLayer.name =
+        layerName;
+
+    }
+
+
+    return createdLayer;
+
+  }
+
+
+  /* =======================================================
+     10. IMPORT IMAGE AS A NEW LAYER
+  ======================================================= */
+
+  async function importImageAsLayer(
+    file
+  ) {
+
+    const validation =
+      validateImageFile(
+        file
+      );
+
+
+    if (!validation.valid) {
+
+      setStatusMessage(
+        validation.message
+      );
+
+
+      return false;
+
+    }
+
+
+    const layersApi =
+      getLayersApi();
+
+
+    const canvasApi =
+      getCanvasApi();
+
+
+    if (
+      !layersApi ||
+      !canvasApi
+    ) {
+
+      setStatusMessage(
+        "Paintless is still assembling itself."
+      );
+
+
+      return false;
+
+    }
+
+
+    /*
+     * Import needs an existing canvas.
+     * If no document exists, opening as a new image is the
+     * friendliest behaviour.
+     */
+
+    if (
+      !canvasApi.isDocumentOpen?.()
+    ) {
+
+      return openImageFile(
+        file
+      );
+
+    }
+
+
+    const sequenceId =
+      showLoadingScreen(
+        "Importing image..."
+      );
+
+
+    try {
+
+      updateLoadingScreen(
+        10,
+        "Reading imported pixels..."
+      );
+
+
+      await delay(
+        450
+      );
+
+
+      const image =
+        await loadImageFromFile(
+          file
+        );
+
+
+      const {
+        width:
+          imageWidth,
+
+        height:
+          imageHeight
+      } =
+        getImageDimensions(
+          image
+        );
+
+
+      if (
+        !imageWidth ||
+        !imageHeight
+      ) {
+
+        throw new Error(
+          "The imported image has invalid dimensions."
+        );
+
+      }
+
+
+      updateLoadingScreen(
+        34,
+        "Finding somewhere nice to put it..."
+      );
+
+
+      await delay(
+        620
+      );
+
+
+      const documentSize =
+        layersApi.getDocumentSize?.() ||
+        {
+          width:
+            0,
+
+          height:
+            0
+        };
+
+
+      const documentWidth =
+        Number(
+          documentSize.width
+        ) ||
+        1;
+
+
+      const documentHeight =
+        Number(
+          documentSize.height
+        ) ||
+        1;
+
+
+      /*
+       * Oversized images are reduced so that they fit inside
+       * the current document while preserving their ratio.
+       *
+       * Smaller images remain at their original size.
+       */
+
+      const scale =
+        Math.min(
+          1,
+          documentWidth /
+            imageWidth,
+          documentHeight /
+            imageHeight
+        );
+
+
+      const drawWidth =
+        Math.max(
+          1,
+          Math.round(
+            imageWidth *
+            scale
+          )
+        );
+
+
+      const drawHeight =
+        Math.max(
+          1,
+          Math.round(
+            imageHeight *
+            scale
+          )
+        );
+
+
+      const drawX =
+        Math.round(
+          (
+            documentWidth -
+            drawWidth
+          ) /
+          2
+        );
+
+
+      const drawY =
+        Math.round(
+          (
+            documentHeight -
+            drawHeight
+          ) /
+          2
+        );
+
+
+      updateLoadingScreen(
+        57,
+        "Creating a brand-new layer..."
+      );
+
+
+      await delay(
+        650
+      );
+
+
+      const importedLayer =
+        createImportedLayer(
+          cleanFileName(
+            file.name
+          )
+        );
+
+
+      if (
+        !importedLayer ||
+        !importedLayer.context
+      ) {
+
+        throw new Error(
+          "Paintless could not create the imported layer."
+        );
+
+      }
+
+
+      importedLayer.context.clearRect(
+        0,
+        0,
+        importedLayer.canvas.width,
+        importedLayer.canvas.height
+      );
+
+
+      importedLayer.context.drawImage(
+        image,
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight
+      );
+
+
+      importedLayer.name =
+        cleanFileName(
+          file.name
+        );
+
+
+      layersApi.renderLayerList?.();
+
+      layersApi.renderLayers?.();
+
+
+      updateLoadingScreen(
+        78,
+        "Centring the masterpiece..."
+      );
+
+
+      await delay(
+        700
+      );
+
+
+      updateLoadingScreen(
+        99,
+        "Almost imported..."
+      );
+
+
+      await delay(
+        850
+      );
+
+
+      updateLoadingScreen(
+        99,
+        "Just kidding..."
+      );
+
+
+      await delay(
+        1150
+      );
+
+
+      updateLoadingScreen(
+        100,
+        "Image imported."
+      );
+
+
+      await delay(
+        550
+      );
+
+
+      hideLoadingScreen(
+        sequenceId
+      );
+
+
+      /*
+       * Save the result as one clean Undo step.
+       */
+
+      if (
+        typeof getHistoryApi()
+          ?.saveHistory ===
+        "function"
+      ) {
+
+        getHistoryApi()
+          .saveHistory(
+            "Import image"
+          );
+
+      } else {
+
+        dispatchFileEvent(
+          "paintless:history-requested",
+          {
+            reason:
+              "Import image"
+          }
+        );
+
+      }
+
+
+      setStatusMessage(
+        `${file.name} imported as a new layer.`
+      );
+
+
+      dispatchFileEvent(
+        "paintless:image-imported",
+        {
+          file,
+
+          layer:
+            importedLayer,
+
+          originalWidth:
+            imageWidth,
+
+          originalHeight:
+            imageHeight,
+
+          width:
+            drawWidth,
+
+          height:
+            drawHeight,
+
+          x:
+            drawX,
+
+          y:
+            drawY
+        }
+      );
+
+
+      return true;
+
+    } catch (error) {
+
+      console.error(
+        "Paintless could not import the image:",
+        error
+      );
+
+
+      hideLoadingScreen(
+        sequenceId
+      );
+
+
+      setStatusMessage(
+        "Paintless could not import that image."
+      );
+
+
+      return false;
+
+    } finally {
+
+      if (importImageFileInput) {
+
+        importImageFileInput.value =
+          "";
+
+      }
+
+    }
+
+  }
+
+
+  function requestImportImage() {
+
+    const canvasApi =
+      getCanvasApi();
+
+
+    /*
+     * If no document exists, use the regular Open Image picker.
+     */
+
+    if (
+      !canvasApi?.isDocumentOpen?.()
+    ) {
+
+      requestOpenImage();
+
+
+      return;
+
+    }
+
+
+    requestedFileAction =
+      "import";
+
+
+    if (importImageFileInput) {
+
+      importImageFileInput.value =
+        "";
+
+      importImageFileInput.click();
+
+    }
+
+  }
+
+
+  /* =======================================================
+     11. COMPOSITE EXPORT CANVAS
   ======================================================= */
 
   function createCompositeCanvas(
@@ -948,7 +1681,9 @@
 
 
     if (!layersApi) {
+
       return null;
+
     }
 
 
@@ -1012,7 +1747,9 @@
           !layer.visible ||
           layer.opacity <= 0
         ) {
+
           return;
+
         }
 
 
@@ -1068,6 +1805,7 @@
                 )
               );
 
+
               return;
 
             }
@@ -1108,6 +1846,7 @@
     downloadLink.href =
       downloadUrl;
 
+
     downloadLink.download =
       fileName;
 
@@ -1138,7 +1877,7 @@
 
 
   /* =======================================================
-     8. EXPORT DIALOG
+     12. EXPORT DIALOG
   ======================================================= */
 
   function openExportDialog() {
@@ -1148,12 +1887,13 @@
 
 
     if (
-      !canvasApi?.isDocumentOpen()
+      !canvasApi?.isDocumentOpen?.()
     ) {
 
       setStatusMessage(
         "Open or create a document before exporting."
       );
+
 
       return false;
 
@@ -1163,7 +1903,7 @@
     if (exportFileNameInput) {
 
       exportFileNameInput.value =
-        canvasApi.getDocumentName() ||
+        canvasApi.getDocumentName?.() ||
         "paintless-masterpiece";
 
     }
@@ -1199,7 +1939,7 @@
 
 
   /* =======================================================
-     9. EXPORT IMAGE
+     13. EXPORT IMAGE
   ======================================================= */
 
   async function exportImage({
@@ -1213,12 +1953,13 @@
 
 
     if (
-      !canvasApi?.isDocumentOpen()
+      !canvasApi?.isDocumentOpen?.()
     ) {
 
       setStatusMessage(
         "There is currently nothing to export."
       );
+
 
       return false;
 
@@ -1239,7 +1980,8 @@
       clamp(
         Number(
           quality
-        ) || 0.92,
+        ) ||
+        0.92,
         0.1,
         1
       );
@@ -1254,7 +1996,7 @@
     const downloadName =
       createDownloadName(
         fileName ||
-        canvasApi.getDocumentName(),
+        canvasApi.getDocumentName?.(),
         extension
       );
 
@@ -1268,8 +2010,13 @@
     try {
 
       updateLoadingScreen(
-        20,
+        18,
         "Collecting layers..."
+      );
+
+
+      await delay(
+        450
       );
 
 
@@ -1288,13 +2035,8 @@
       }
 
 
-      await delay(
-        120
-      );
-
-
       updateLoadingScreen(
-        54,
+        48,
         "Compressing pixels..."
       );
 
@@ -1307,14 +2049,19 @@
         );
 
 
+      await delay(
+        650
+      );
+
+
       updateLoadingScreen(
-        83,
+        76,
         "Removing unnecessary nonsense..."
       );
 
 
       await delay(
-        160
+        700
       );
 
 
@@ -1325,7 +2072,7 @@
 
 
       await delay(
-        460
+        1050
       );
 
 
@@ -1342,7 +2089,7 @@
 
 
       await delay(
-        220
+        550
       );
 
 
@@ -1431,7 +2178,7 @@
 
 
   /* =======================================================
-     10. DRAG AND DROP
+     14. DRAG AND DROP
   ======================================================= */
 
   function containsImageFile(
@@ -1439,7 +2186,9 @@
   ) {
 
     if (!dataTransfer) {
+
       return false;
+
     }
 
 
@@ -1467,7 +2216,9 @@
         event.dataTransfer
       )
     ) {
+
       return;
+
     }
 
 
@@ -1496,7 +2247,9 @@
     if (
       event.relatedTarget
     ) {
+
       return;
+
     }
 
 
@@ -1533,22 +2286,40 @@
 
 
     if (!imageFile) {
+
       return;
+
     }
 
 
     event.preventDefault();
 
 
-    await openImageFile(
-      imageFile
-    );
+    const canvasApi =
+      getCanvasApi();
+
+
+    if (
+      canvasApi?.isDocumentOpen?.()
+    ) {
+
+      await importImageAsLayer(
+        imageFile
+      );
+
+    } else {
+
+      await openImageFile(
+        imageFile
+      );
+
+    }
 
   }
 
 
   /* =======================================================
-     11. CLIPBOARD IMAGE PASTE
+     15. CLIPBOARD IMAGE PASTE
   ======================================================= */
 
   async function handleClipboardPaste(
@@ -1565,12 +2336,15 @@
         activeElement.tagName ===
           "INPUT" ||
         activeElement.tagName ===
-          "TEXTAREA"
+          "TEXTAREA" ||
+        activeElement.isContentEditable
       );
 
 
     if (typing) {
+
       return;
+
     }
 
 
@@ -1593,7 +2367,9 @@
 
 
     if (!imageItem) {
+
       return;
+
     }
 
 
@@ -1602,22 +2378,40 @@
 
 
     if (!imageFile) {
+
       return;
+
     }
 
 
     event.preventDefault();
 
 
-    await openImageFile(
-      imageFile
-    );
+    const canvasApi =
+      getCanvasApi();
+
+
+    if (
+      canvasApi?.isDocumentOpen?.()
+    ) {
+
+      await importImageAsLayer(
+        imageFile
+      );
+
+    } else {
+
+      await openImageFile(
+        imageFile
+      );
+
+    }
 
   }
 
 
   /* =======================================================
-     12. EVENT LISTENERS
+     16. FILE INPUT EVENTS
   ======================================================= */
 
   imageFileInput?.addEventListener(
@@ -1636,13 +2430,57 @@
 
       }
 
+
+      requestedFileAction =
+        null;
+
     }
   );
 
 
+  importImageFileInput?.addEventListener(
+    "change",
+    async () => {
+
+      const selectedFile =
+        importImageFileInput.files?.[0];
+
+
+      if (selectedFile) {
+
+        await importImageAsLayer(
+          selectedFile
+        );
+
+      }
+
+
+      requestedFileAction =
+        null;
+
+    }
+  );
+
+
+  /* =======================================================
+     17. BUTTON EVENTS
+  ======================================================= */
+
   openImageButton?.addEventListener(
     "click",
     requestOpenImage
+  );
+
+
+  importImageButton?.addEventListener(
+    "click",
+    requestImportImage
+  );
+
+
+  importLayerButton?.addEventListener(
+    "click",
+    requestImportImage
   );
 
 
@@ -1658,6 +2496,7 @@
 
       event.preventDefault();
 
+
       confirmExport();
 
     }
@@ -1669,7 +2508,9 @@
     () => {
 
       if (!exportQualityInput) {
+
         return;
+
       }
 
 
@@ -1690,6 +2531,10 @@
     }
   );
 
+
+  /* =======================================================
+     18. WINDOW EVENTS
+  ======================================================= */
 
   window.addEventListener(
     "dragover",
@@ -1731,12 +2576,15 @@
           activeElement.tagName ===
             "TEXTAREA" ||
           activeElement.tagName ===
-            "SELECT"
+            "SELECT" ||
+          activeElement.isContentEditable
         );
 
 
       if (typing) {
+
         return;
+
       }
 
 
@@ -1753,6 +2601,7 @@
 
         event.preventDefault();
 
+
         requestOpenImage();
 
       }
@@ -1766,7 +2615,27 @@
 
         event.preventDefault();
 
+
         openExportDialog();
+
+      }
+
+
+      /*
+       * Ctrl/Command + Shift + O imports an image as a layer.
+       */
+
+      if (
+        modifierPressed &&
+        event.shiftKey &&
+        event.key.toLowerCase() ===
+          "o"
+      ) {
+
+        event.preventDefault();
+
+
+        requestImportImage();
 
       }
 
@@ -1775,14 +2644,18 @@
 
 
   /* =======================================================
-     13. PUBLIC API
+     19. PUBLIC API
   ======================================================= */
 
   window.PaintlessFiles = {
 
     requestOpenImage,
 
+    requestImportImage,
+
     openImageFile,
+
+    importImageAsLayer,
 
     openExportDialog,
 
@@ -1802,6 +2675,7 @@
 
     cleanFileName,
 
+
     getSupportedImageTypes() {
 
       return [
@@ -1814,7 +2688,7 @@
 
 
   /* =======================================================
-     14. INITIAL STATE
+     20. INITIAL STATE
   ======================================================= */
 
   if (
@@ -1830,7 +2704,7 @@
 
 
   console.log(
-    "%cPaintless files ready.",
+    "%cPaintless files ready — Open and Import are connected.",
     [
       "color:#69f59c",
       "font-weight:bold",
