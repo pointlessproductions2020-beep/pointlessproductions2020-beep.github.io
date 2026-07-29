@@ -154,7 +154,8 @@
 
     "sharpen.js",
 
-
+    "smart-tools.js",
+     
     /*
      * Future Paintless systems.
      */
