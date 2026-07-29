@@ -2,7 +2,7 @@
 
 /* =========================================================
    PAINTLESS
-   DRAWING AND TOOLS SYSTEM
+   DRAWING AND TOOLS SYSTEM — v0.3
 ========================================================= */
 
 (() => {
@@ -11,89 +11,176 @@
      1. DOM REFERENCES
   ======================================================= */
 
+  const byId =
+    (id) =>
+      document.getElementById(
+        id
+      );
+
+
   const editorCanvas =
-    document.getElementById(
+    byId(
       "editor-canvas"
     );
 
   const overlayCanvas =
-    document.getElementById(
+    byId(
       "overlay-canvas"
     );
 
   const canvasTextEditor =
-    document.getElementById(
+    byId(
       "canvas-text-editor"
     );
 
   const activeToolName =
-    document.getElementById(
+    byId(
       "active-tool-name"
     );
 
+
   const brushSizeInput =
-    document.getElementById(
+    byId(
       "brush-size"
     );
 
   const brushSizeOutput =
-    document.getElementById(
+    byId(
       "brush-size-output"
     );
 
   const toolOpacityInput =
-    document.getElementById(
+    byId(
       "tool-opacity"
     );
 
   const toolOpacityOutput =
-    document.getElementById(
+    byId(
       "tool-opacity-output"
     );
 
   const brushHardnessInput =
-    document.getElementById(
+    byId(
       "brush-hardness"
     );
 
   const brushHardnessOutput =
-    document.getElementById(
+    byId(
       "brush-hardness-output"
     );
 
+
   const primaryColourInput =
-    document.getElementById(
+    byId(
       "primary-colour"
     );
 
   const panelColourPicker =
-    document.getElementById(
+    byId(
       "panel-colour-picker"
     );
 
   const hexColourInput =
-    document.getElementById(
+    byId(
       "hex-colour-input"
     );
 
   const primaryColourChip =
-    document.getElementById(
+    byId(
       "primary-colour-chip"
     );
 
   const secondaryColourChip =
-    document.getElementById(
+    byId(
       "secondary-colour-chip"
     );
 
   const swapColoursButton =
-    document.getElementById(
+    byId(
       "swap-colours-button"
     );
 
   const recentColours =
-    document.getElementById(
+    byId(
       "recent-colours"
+    );
+
+
+  const brushOptions =
+    byId(
+      "brush-options"
+    );
+
+  const opacityOptions =
+    byId(
+      "opacity-options"
+    );
+
+  const hardnessOptions =
+    byId(
+      "hardness-options"
+    );
+
+  const shapeOptions =
+    byId(
+      "shape-options"
+    );
+
+  const selectionOptions =
+    byId(
+      "selection-options"
+    );
+
+  const textOptions =
+    byId(
+      "text-options"
+    );
+
+
+  const shapeTypeInput =
+    byId(
+      "shape-type"
+    );
+
+  const shapeFillEnabledInput =
+    byId(
+      "shape-fill-enabled"
+    );
+
+  const shapeStrokeEnabledInput =
+    byId(
+      "shape-stroke-enabled"
+    );
+
+  const shapeCornerRadiusInput =
+    byId(
+      "shape-corner-radius"
+    );
+
+  const shapeCornerRadiusOutput =
+    byId(
+      "shape-corner-radius-output"
+    );
+
+
+  const textFontFamilyInput =
+    byId(
+      "text-font-family"
+    );
+
+  const textFontSizeInput =
+    byId(
+      "text-font-size"
+    );
+
+  const textBoldInput =
+    byId(
+      "text-bold"
+    );
+
+  const textItalicInput =
+    byId(
+      "text-italic"
     );
 
 
@@ -103,8 +190,23 @@
     );
 
 
+  if (
+    !editorCanvas ||
+    !overlayCanvas ||
+    !overlayContext
+  ) {
+
+    console.error(
+      "Paintless tools could not start because the canvas is missing."
+    );
+
+    return;
+
+  }
+
+
   /* =======================================================
-     2. TOOL DEFINITIONS
+     2. TOOL DEFINITIONS AND STATE
   ======================================================= */
 
   const toolDefinitions = {
@@ -117,7 +219,7 @@
         "b",
 
       cursor:
-        "crosshair"
+        "none"
     },
 
     eraser: {
@@ -128,7 +230,7 @@
         "e",
 
       cursor:
-        "crosshair"
+        "none"
     },
 
     move: {
@@ -222,10 +324,6 @@
   };
 
 
-  /* =======================================================
-     3. TOOL STATE
-  ======================================================= */
-
   let activeTool =
     "brush";
 
@@ -243,6 +341,32 @@
 
   let brushHardness =
     0.8;
+
+
+  let selectedShape =
+    shapeTypeInput?.value ||
+    "ellipse";
+
+
+  let shapeFillEnabled =
+    Boolean(
+      shapeFillEnabledInput?.checked
+    );
+
+
+  let shapeStrokeEnabled =
+    shapeStrokeEnabledInput
+      ? Boolean(
+          shapeStrokeEnabledInput.checked
+        )
+      : true;
+
+
+  let shapeCornerRadius =
+    Number(
+      shapeCornerRadiusInput?.value ||
+      24
+    );
 
 
   let pointerDown =
@@ -283,24 +407,22 @@
 
 
   /* =======================================================
-     4. HELPERS
+     3. SHARED HELPERS
   ======================================================= */
 
-  function clamp(
-    value,
-    minimum,
-    maximum
-  ) {
-
-    return Math.min(
-      maximum,
-      Math.max(
-        minimum,
-        Number(value)
-      )
-    );
-
-  }
+  const clamp =
+    (
+      value,
+      minimum,
+      maximum
+    ) =>
+      Math.min(
+        maximum,
+        Math.max(
+          minimum,
+          Number(value)
+        )
+      );
 
 
   function normaliseHexColour(
@@ -308,7 +430,10 @@
   ) {
 
     const colour =
-      String(value || "")
+      String(
+        value ||
+        ""
+      )
         .trim()
         .toLowerCase();
 
@@ -355,26 +480,12 @@
     const hex =
       normaliseHexColour(
         hexColour
-      );
-
-
-    if (!hex) {
-
-      return {
-        red:
-          0,
-
-        green:
-          0,
-
-        blue:
-          0
-      };
-
-    }
+      ) ||
+      "#000000";
 
 
     return {
+
       red:
         parseInt(
           hex.slice(
@@ -401,6 +512,7 @@
           ),
           16
         )
+
     };
 
   }
@@ -412,76 +524,64 @@
     blue
   ) {
 
-    const values =
-      [
-        red,
-        green,
-        blue
-      ].map(
-        (value) =>
-          clamp(
-            Math.round(value),
-            0,
-            255
+    const part =
+      (value) =>
+        clamp(
+          Math.round(
+            value
+          ),
+          0,
+          255
+        )
+          .toString(
+            16
           )
-            .toString(16)
-            .padStart(
-              2,
-              "0"
-            )
-      );
+          .padStart(
+            2,
+            "0"
+          );
 
 
     return (
       "#" +
-      values.join("")
+      part(red) +
+      part(green) +
+      part(blue)
     );
 
   }
 
 
-  function getLayersApi() {
-
-    return (
+  const getLayersApi =
+    () =>
       window.PaintlessLayers ||
-      null
-    );
-
-  }
+      null;
 
 
-  function getCanvasApi() {
-
-    return (
+  const getCanvasApi =
+    () =>
       window.PaintlessCanvas ||
-      null
-    );
-
-  }
+      null;
 
 
-  function getActiveLayer() {
-
-    return (
+  const getActiveLayer =
+    () =>
       getLayersApi()
         ?.getActiveLayer() ||
-      null
-    );
-
-  }
+      null;
 
 
   function getCanvasPoint(
     event
   ) {
 
-    const canvasApi =
-      getCanvasApi();
-
-
-    if (!canvasApi) {
-
-      return {
+    return (
+      getCanvasApi()
+        ?.clientToCanvas(
+          event.clientX,
+          event.clientY
+        ) ||
+      {
         x:
           0,
 
@@ -490,14 +590,7 @@
 
         inside:
           false
-      };
-
-    }
-
-
-    return canvasApi.clientToCanvas(
-      event.clientX,
-      event.clientY
+      }
     );
 
   }
@@ -544,14 +637,6 @@
 
   function clearOverlay() {
 
-    if (
-      !overlayCanvas ||
-      !overlayContext
-    ) {
-      return;
-    }
-
-
     overlayContext.setTransform(
       1,
       0,
@@ -561,13 +646,15 @@
       0
     );
 
-
     overlayContext.globalAlpha =
       1;
 
     overlayContext.globalCompositeOperation =
       "source-over";
 
+    overlayContext.setLineDash(
+      []
+    );
 
     overlayContext.clearRect(
       0,
@@ -586,33 +673,314 @@
 
 
     if (!layer) {
-      return false;
-    }
-
-
-    if (layer.locked) {
-
-      dispatchToolEvent(
-        "paintless:status-message",
-        {
-          message:
-            "That layer is locked."
-        }
-      );
 
       return false;
 
     }
 
 
-    return true;
+    if (!layer.locked) {
+
+      return true;
+
+    }
+
+
+    dispatchToolEvent(
+      "paintless:status-message",
+      {
+        message:
+          "That layer is locked."
+      }
+    );
+
+
+    return false;
 
   }
 
 
   /* =======================================================
-     5. COLOUR MANAGEMENT
+     4. TOOL OPTIONS VISIBILITY
   ======================================================= */
+
+  function updateToolOptionVisibility() {
+
+    if (brushOptions) {
+
+      brushOptions.hidden =
+        ![
+          "brush",
+          "eraser",
+          "shape"
+        ].includes(
+          activeTool
+        );
+
+    }
+
+
+    if (opacityOptions) {
+
+      opacityOptions.hidden =
+        ![
+          "brush",
+          "eraser",
+          "fill",
+          "gradient",
+          "shape",
+          "text"
+        ].includes(
+          activeTool
+        );
+
+    }
+
+
+    if (hardnessOptions) {
+
+      hardnessOptions.hidden =
+        ![
+          "brush",
+          "eraser"
+        ].includes(
+          activeTool
+        );
+
+    }
+
+
+    if (shapeOptions) {
+
+      shapeOptions.hidden =
+        activeTool !==
+        "shape";
+
+    }
+
+
+    if (selectionOptions) {
+
+      selectionOptions.hidden =
+        activeTool !==
+        "select";
+
+    }
+
+
+    if (textOptions) {
+
+      textOptions.hidden =
+        activeTool !==
+        "text";
+
+    }
+
+  }
+
+
+  /* =======================================================
+     5. BRUSH CURSOR PREVIEW
+  ======================================================= */
+
+  const brushCursorPreview =
+    document.createElement(
+      "div"
+    );
+
+
+  brushCursorPreview.className =
+    "brush-cursor-preview";
+
+
+  const brushCursorHardness =
+    document.createElement(
+      "span"
+    );
+
+
+  brushCursorHardness.className =
+    "brush-cursor-preview__hardness";
+
+
+  brushCursorPreview.appendChild(
+    brushCursorHardness
+  );
+
+
+  document.body.appendChild(
+    brushCursorPreview
+  );
+
+
+  function updateBrushCursorAppearance() {
+
+    const zoom =
+      Math.max(
+        0.01,
+        Number(
+          getCanvasApi()
+            ?.getZoom?.() ||
+          1
+        )
+      );
+
+
+    const diameter =
+      Math.max(
+        2,
+        brushSize *
+          zoom
+      );
+
+
+    const innerDiameter =
+      Math.max(
+        2,
+        diameter *
+          brushHardness
+      );
+
+
+    brushCursorPreview.style.width =
+      `${diameter}px`;
+
+    brushCursorPreview.style.height =
+      `${diameter}px`;
+
+    brushCursorHardness.style.width =
+      `${innerDiameter}px`;
+
+    brushCursorHardness.style.height =
+      `${innerDiameter}px`;
+
+
+    brushCursorPreview.classList.toggle(
+      "is-eraser",
+      activeTool ===
+        "eraser"
+    );
+
+  }
+
+
+  function updateBrushCursorPosition(
+    event
+  ) {
+
+    const point =
+      getCanvasPoint(
+        event
+      );
+
+
+    const visible =
+      [
+        "brush",
+        "eraser"
+      ].includes(
+        activeTool
+      ) &&
+      point.inside;
+
+
+    brushCursorPreview.classList.toggle(
+      "is-visible",
+      visible
+    );
+
+
+    if (!visible) {
+
+      return;
+
+    }
+
+
+    brushCursorPreview.style.left =
+      `${event.clientX}px`;
+
+    brushCursorPreview.style.top =
+      `${event.clientY}px`;
+
+
+    updateBrushCursorAppearance();
+
+  }
+
+
+  function hideBrushCursorPreview() {
+
+    brushCursorPreview.classList.remove(
+      "is-visible"
+    );
+
+  }
+
+
+  /* =======================================================
+     6. COLOUR MANAGEMENT
+  ======================================================= */
+
+  function renderRecentColours() {
+
+    if (!recentColours) {
+
+      return;
+
+    }
+
+
+    recentColours.innerHTML =
+      "";
+
+
+    recentColourValues.forEach(
+      (colour) => {
+
+        const button =
+          document.createElement(
+            "button"
+          );
+
+
+        button.type =
+          "button";
+
+        button.className =
+          "recent-colour";
+
+        button.style.background =
+          colour;
+
+        button.title =
+          colour.toUpperCase();
+
+
+        button.setAttribute(
+          "aria-label",
+          `Use colour ${colour}`
+        );
+
+
+        button.addEventListener(
+          "click",
+          () =>
+            setPrimaryColour(
+              colour
+            )
+        );
+
+
+        recentColours.appendChild(
+          button
+        );
+
+      }
+    );
+
+  }
+
 
   function addRecentColour(
     colour
@@ -625,7 +993,9 @@
 
 
     if (!normalised) {
+
       return;
+
     }
 
 
@@ -668,7 +1038,9 @@
 
 
     if (!normalised) {
+
       return false;
+
     }
 
 
@@ -745,7 +1117,9 @@
 
 
     if (!normalised) {
+
       return false;
+
     }
 
 
@@ -817,80 +1191,24 @@
   }
 
 
-  function renderRecentColours() {
-
-    if (!recentColours) {
-      return;
-    }
-
-
-    recentColours.innerHTML =
-      "";
-
-
-    recentColourValues.forEach(
-      (colour) => {
-
-        const button =
-          document.createElement(
-            "button"
-          );
-
-
-        button.type =
-          "button";
-
-        button.className =
-          "recent-colour";
-
-        button.style.background =
-          colour;
-
-        button.title =
-          colour.toUpperCase();
-
-        button.setAttribute(
-          "aria-label",
-          `Use colour ${colour}`
-        );
-
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            setPrimaryColour(
-              colour
-            );
-
-          }
-        );
-
-
-        recentColours.appendChild(
-          button
-        );
-
-      }
-    );
-
-  }
-
-
   /* =======================================================
-     6. TOOL SELECTION
+     7. TOOL SELECTION
   ======================================================= */
 
   function setActiveTool(
     toolName
   ) {
 
-    if (
-      !toolDefinitions[
+    const definition =
+      toolDefinitions[
         toolName
-      ]
-    ) {
+      ];
+
+
+    if (!definition) {
+
       return false;
+
     }
 
 
@@ -923,17 +1241,13 @@
 
           button.setAttribute(
             "aria-pressed",
-            String(selected)
+            String(
+              selected
+            )
           );
 
         }
       );
-
-
-    const definition =
-      toolDefinitions[
-        activeTool
-      ];
 
 
     if (activeToolName) {
@@ -951,6 +1265,10 @@
 
 
     clearOverlay();
+
+    updateToolOptionVisibility();
+
+    updateBrushCursorAppearance();
 
 
     dispatchToolEvent(
@@ -970,7 +1288,7 @@
 
 
   /* =======================================================
-     7. BRUSH ENGINE
+     8. BRUSH ENGINE
   ======================================================= */
 
   function stampBrushPoint(
@@ -992,7 +1310,6 @@
 
 
     layerContext.save();
-
 
     layerContext.globalAlpha =
       opacity;
@@ -1024,74 +1341,61 @@
 
       layerContext.fill();
 
-    } else {
+      layerContext.restore();
 
-      const colourValues =
-        hexToRgb(
-          colour
-        );
-
-
-      const solidRadius =
-        radius *
-        hardness;
-
-
-      const gradient =
-        layerContext.createRadialGradient(
-          x,
-          y,
-          solidRadius,
-          x,
-          y,
-          radius
-        );
-
-
-      if (erase) {
-
-        gradient.addColorStop(
-          0,
-          "rgba(0,0,0,1)"
-        );
-
-        gradient.addColorStop(
-          1,
-          "rgba(0,0,0,0)"
-        );
-
-      } else {
-
-        gradient.addColorStop(
-          0,
-          `rgba(${colourValues.red},${colourValues.green},${colourValues.blue},1)`
-        );
-
-        gradient.addColorStop(
-          1,
-          `rgba(${colourValues.red},${colourValues.green},${colourValues.blue},0)`
-        );
-
-      }
-
-
-      layerContext.fillStyle =
-        gradient;
-
-      layerContext.beginPath();
-
-      layerContext.arc(
-        x,
-        y,
-        radius,
-        0,
-        Math.PI * 2
-      );
-
-      layerContext.fill();
+      return;
 
     }
 
+
+    const rgb =
+      hexToRgb(
+        colour
+      );
+
+
+    const solidRadius =
+      radius *
+      hardness;
+
+
+    const gradient =
+      layerContext.createRadialGradient(
+        x,
+        y,
+        solidRadius,
+        x,
+        y,
+        radius
+      );
+
+
+    gradient.addColorStop(
+      0,
+      `rgba(${rgb.red},${rgb.green},${rgb.blue},1)`
+    );
+
+
+    gradient.addColorStop(
+      1,
+      `rgba(${rgb.red},${rgb.green},${rgb.blue},0)`
+    );
+
+
+    layerContext.fillStyle =
+      gradient;
+
+    layerContext.beginPath();
+
+    layerContext.arc(
+      x,
+      y,
+      radius,
+      0,
+      Math.PI * 2
+    );
+
+    layerContext.fill();
 
     layerContext.restore();
 
@@ -1104,6 +1408,13 @@
     toPoint,
     erase = false
   ) {
+
+    if (!layer) {
+
+      return;
+
+    }
+
 
     const distance =
       Math.hypot(
@@ -1186,17 +1497,12 @@
 
 
   /* =======================================================
-     8. EYEDROPPER
+     9. EYEDROPPER
   ======================================================= */
 
   function pickColourAtPoint(
     point
   ) {
-
-    if (!editorCanvas) {
-      return;
-    }
-
 
     const context =
       editorCanvas.getContext(
@@ -1266,7 +1572,7 @@
 
 
   /* =======================================================
-     9. FLOOD FILL
+     10. FLOOD FILL
   ======================================================= */
 
   function coloursWithinTolerance(
@@ -1301,6 +1607,13 @@
     layer,
     point
   ) {
+
+    if (!layer) {
+
+      return false;
+
+    }
+
 
     const width =
       layer.canvas.width;
@@ -1351,21 +1664,20 @@
       4;
 
 
-    const targetColour =
-      [
-        pixels[
-          startIndex
-        ],
-        pixels[
-          startIndex + 1
-        ],
-        pixels[
-          startIndex + 2
-        ],
-        pixels[
-          startIndex + 3
-        ]
-      ];
+    const targetColour = [
+      pixels[
+        startIndex
+      ],
+      pixels[
+        startIndex + 1
+      ],
+      pixels[
+        startIndex + 2
+      ],
+      pixels[
+        startIndex + 3
+      ]
+    ];
 
 
     const fillRgb =
@@ -1374,16 +1686,15 @@
       );
 
 
-    const fillColour =
-      [
-        fillRgb.red,
-        fillRgb.green,
-        fillRgb.blue,
-        Math.round(
-          toolOpacity *
-          255
-        )
-      ];
+    const fillColour = [
+      fillRgb.red,
+      fillRgb.green,
+      fillRgb.blue,
+      Math.round(
+        toolOpacity *
+        255
+      )
+    ];
 
 
     if (
@@ -1393,7 +1704,9 @@
         0
       )
     ) {
+
       return false;
+
     }
 
 
@@ -1408,11 +1721,10 @@
       );
 
 
-    const stack =
-      [
-        startX,
-        startY
-      ];
+    const stack = [
+      startX,
+      startY
+    ];
 
 
     let changed =
@@ -1436,7 +1748,9 @@
         x >= width ||
         y >= height
       ) {
+
         continue;
+
       }
 
 
@@ -1451,7 +1765,9 @@
           pixelNumber
         ]
       ) {
+
         continue;
+
       }
 
 
@@ -1466,21 +1782,20 @@
         4;
 
 
-      const currentColour =
-        [
-          pixels[
-            index
-          ],
-          pixels[
-            index + 1
-          ],
-          pixels[
-            index + 2
-          ],
-          pixels[
-            index + 3
-          ]
-        ];
+      const currentColour = [
+        pixels[
+          index
+        ],
+        pixels[
+          index + 1
+        ],
+        pixels[
+          index + 2
+        ],
+        pixels[
+          index + 3
+        ]
+      ];
 
 
       if (
@@ -1490,7 +1805,9 @@
           tolerance
         )
       ) {
+
         continue;
+
       }
 
 
@@ -1537,7 +1854,9 @@
 
 
     if (!changed) {
+
       return false;
+
     }
 
 
@@ -1557,7 +1876,7 @@
 
 
   /* =======================================================
-     10. GRADIENT TOOL
+     11. GRADIENT TOOL
   ======================================================= */
 
   function drawGradientPreview(
@@ -1565,16 +1884,9 @@
     toPoint
   ) {
 
-    if (!overlayContext) {
-      return;
-    }
-
-
     clearOverlay();
 
-
     overlayContext.save();
-
 
     overlayContext.strokeStyle =
       "#ffffff";
@@ -1589,7 +1901,6 @@
       ]
     );
 
-
     overlayContext.beginPath();
 
     overlayContext.moveTo(
@@ -1603,7 +1914,6 @@
     );
 
     overlayContext.stroke();
-
 
     overlayContext.setLineDash(
       []
@@ -1641,7 +1951,6 @@
 
     overlayContext.fill();
 
-
     overlayContext.restore();
 
   }
@@ -1653,6 +1962,13 @@
     toPoint
   ) {
 
+    if (!layer) {
+
+      return false;
+
+    }
+
+
     const distance =
       Math.hypot(
         toPoint.x -
@@ -1663,8 +1979,12 @@
       );
 
 
-    if (distance < 2) {
+    if (
+      distance < 2
+    ) {
+
       return false;
+
     }
 
 
@@ -1677,12 +1997,13 @@
       );
 
 
-    const primaryRgb =
+    const first =
       hexToRgb(
         primaryColour
       );
 
-    const secondaryRgb =
+
+    const second =
       hexToRgb(
         secondaryColour
       );
@@ -1690,26 +2011,23 @@
 
     gradient.addColorStop(
       0,
-      `rgba(${primaryRgb.red},${primaryRgb.green},${primaryRgb.blue},${toolOpacity})`
+      `rgba(${first.red},${first.green},${first.blue},${toolOpacity})`
     );
 
 
     gradient.addColorStop(
       1,
-      `rgba(${secondaryRgb.red},${secondaryRgb.green},${secondaryRgb.blue},${toolOpacity})`
+      `rgba(${second.red},${second.green},${second.blue},${toolOpacity})`
     );
 
 
     layer.context.save();
 
-
     layer.context.globalCompositeOperation =
       "source-over";
 
-
     layer.context.fillStyle =
       gradient;
-
 
     layer.context.fillRect(
       0,
@@ -1717,7 +2035,6 @@
       layer.canvas.width,
       layer.canvas.height
     );
-
 
     layer.context.restore();
 
@@ -1731,7 +2048,7 @@
 
 
   /* =======================================================
-     11. SHAPE TOOL
+     12. SHAPE TOOL
   ======================================================= */
 
   function getNormalisedRectangle(
@@ -1740,6 +2057,7 @@
   ) {
 
     return {
+
       x:
         Math.min(
           firstPoint.x,
@@ -1763,7 +2081,116 @@
           secondPoint.y -
           firstPoint.y
         )
+
     };
+
+  }
+
+
+  function createRoundedRectanglePath(
+    context,
+    rectangle,
+    radius
+  ) {
+
+    const safeRadius =
+      Math.min(
+        Math.max(
+          0,
+          radius
+        ),
+        rectangle.width / 2,
+        rectangle.height / 2
+      );
+
+
+    context.beginPath();
+
+
+    context.moveTo(
+      rectangle.x +
+        safeRadius,
+      rectangle.y
+    );
+
+
+    context.lineTo(
+      rectangle.x +
+        rectangle.width -
+        safeRadius,
+      rectangle.y
+    );
+
+
+    context.quadraticCurveTo(
+      rectangle.x +
+        rectangle.width,
+      rectangle.y,
+      rectangle.x +
+        rectangle.width,
+      rectangle.y +
+        safeRadius
+    );
+
+
+    context.lineTo(
+      rectangle.x +
+        rectangle.width,
+      rectangle.y +
+        rectangle.height -
+        safeRadius
+    );
+
+
+    context.quadraticCurveTo(
+      rectangle.x +
+        rectangle.width,
+      rectangle.y +
+        rectangle.height,
+      rectangle.x +
+        rectangle.width -
+        safeRadius,
+      rectangle.y +
+        rectangle.height
+    );
+
+
+    context.lineTo(
+      rectangle.x +
+        safeRadius,
+      rectangle.y +
+        rectangle.height
+    );
+
+
+    context.quadraticCurveTo(
+      rectangle.x,
+      rectangle.y +
+        rectangle.height,
+      rectangle.x,
+      rectangle.y +
+        rectangle.height -
+        safeRadius
+    );
+
+
+    context.lineTo(
+      rectangle.x,
+      rectangle.y +
+        safeRadius
+    );
+
+
+    context.quadraticCurveTo(
+      rectangle.x,
+      rectangle.y,
+      rectangle.x +
+        safeRadius,
+      rectangle.y
+    );
+
+
+    context.closePath();
 
   }
 
@@ -1782,11 +2209,25 @@
       );
 
 
+    const isLine =
+      selectedShape ===
+      "line";
+
+
     if (
-      rectangle.width < 1 ||
-      rectangle.height < 1
+      isLine
+        ? Math.hypot(
+            secondPoint.x -
+              firstPoint.x,
+            secondPoint.y -
+              firstPoint.y
+          ) < 1
+        : rectangle.width < 1 ||
+          rectangle.height < 1
     ) {
+
       return false;
+
     }
 
 
@@ -1795,19 +2236,27 @@
 
     context.globalAlpha =
       preview
-        ? 0.8
+        ? 0.82
         : toolOpacity;
 
 
     context.strokeStyle =
       primaryColour;
 
+    context.fillStyle =
+      secondaryColour;
 
     context.lineWidth =
       Math.max(
         1,
         brushSize
       );
+
+    context.lineCap =
+      "round";
+
+    context.lineJoin =
+      "round";
 
 
     if (preview) {
@@ -1822,12 +2271,90 @@
     }
 
 
-    context.strokeRect(
-      rectangle.x,
-      rectangle.y,
-      rectangle.width,
-      rectangle.height
-    );
+    context.beginPath();
+
+
+    switch (
+      selectedShape
+    ) {
+
+      case "ellipse":
+
+        context.ellipse(
+          rectangle.x +
+            rectangle.width / 2,
+          rectangle.y +
+            rectangle.height / 2,
+          rectangle.width / 2,
+          rectangle.height / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+
+        break;
+
+
+      case "rounded-rectangle":
+
+        createRoundedRectanglePath(
+          context,
+          rectangle,
+          shapeCornerRadius
+        );
+
+        break;
+
+
+      case "line":
+
+        context.moveTo(
+          firstPoint.x,
+          firstPoint.y
+        );
+
+        context.lineTo(
+          secondPoint.x,
+          secondPoint.y
+        );
+
+        break;
+
+
+      case "rectangle":
+      default:
+
+        context.rect(
+          rectangle.x,
+          rectangle.y,
+          rectangle.width,
+          rectangle.height
+        );
+
+        break;
+
+    }
+
+
+    if (
+      !isLine &&
+      shapeFillEnabled
+    ) {
+
+      context.fill();
+
+    }
+
+
+    if (
+      isLine ||
+      shapeStrokeEnabled ||
+      !shapeFillEnabled
+    ) {
+
+      context.stroke();
+
+    }
 
 
     context.restore();
@@ -1843,11 +2370,6 @@
     secondPoint
   ) {
 
-    if (!overlayContext) {
-      return;
-    }
-
-
     clearOverlay();
 
 
@@ -1862,7 +2384,7 @@
 
 
   /* =======================================================
-     12. SELECTION AND CROP GUIDES
+     13. SELECTION AND CROP GUIDES
   ======================================================= */
 
   function drawSelectionGuide(
@@ -1870,11 +2392,6 @@
     secondPoint,
     cropMode = false
   ) {
-
-    if (!overlayContext) {
-      return;
-    }
-
 
     const rectangle =
       getNormalisedRectangle(
@@ -1884,7 +2401,6 @@
 
 
     clearOverlay();
-
 
     overlayContext.save();
 
@@ -1947,7 +2463,7 @@
 
 
   /* =======================================================
-     13. CROP
+     14. CROP
   ======================================================= */
 
   function commitCrop(
@@ -1984,7 +2500,6 @@
       Math.min(
         editorCanvas.width -
           cropX,
-
         Math.max(
           1,
           Math.round(
@@ -1998,7 +2513,6 @@
       Math.min(
         editorCanvas.height -
           cropY,
-
         Math.max(
           1,
           Math.round(
@@ -2012,7 +2526,9 @@
       cropWidth < 2 ||
       cropHeight < 2
     ) {
+
       return false;
+
     }
 
 
@@ -2020,8 +2536,14 @@
       getLayersApi();
 
 
-    if (!layersApi) {
+    if (
+      !layersApi?.layers ||
+      typeof layersApi.resizeDocument !==
+        "function"
+    ) {
+
       return false;
+
     }
 
 
@@ -2043,7 +2565,9 @@
 
 
           cropCanvas
-            .getContext("2d")
+            .getContext(
+              "2d"
+            )
             .drawImage(
               layer.canvas,
               cropX,
@@ -2113,13 +2637,20 @@
 
 
   /* =======================================================
-     14. MOVE LAYER TOOL
+     15. MOVE LAYER TOOL
   ======================================================= */
 
   function beginMoveLayer(
     layer,
     point
   ) {
+
+    if (!layer) {
+
+      return;
+
+    }
+
 
     movingLayerBackup =
       document.createElement(
@@ -2135,7 +2666,9 @@
 
 
     movingLayerBackup
-      .getContext("2d")
+      .getContext(
+        "2d"
+      )
       .drawImage(
         layer.canvas,
         0,
@@ -2160,10 +2693,13 @@
   ) {
 
     if (
+      !layer ||
       !movingLayerBackup ||
       !moveStartPoint
     ) {
+
       return;
+
     }
 
 
@@ -2218,32 +2754,66 @@
 
 
   /* =======================================================
-     15. TEXT TOOL
+     16. TEXT TOOL
   ======================================================= */
+
+  function getTextSettings() {
+
+    return {
+
+      fontFamily:
+        textFontFamilyInput?.value ||
+        "Segoe UI",
+
+      fontSize:
+        Math.max(
+          6,
+          Number(
+            textFontSizeInput?.value ||
+            brushSize * 1.5
+          )
+        ),
+
+      fontWeight:
+        textBoldInput?.checked
+          ? "700"
+          : "400",
+
+      fontStyle:
+        textItalicInput?.checked
+          ? "italic"
+          : "normal"
+
+    };
+
+  }
+
 
   function beginTextEditing(
     point
   ) {
 
     if (!canvasTextEditor) {
+
       return;
+
     }
 
 
-    const canvasApi =
-      getCanvasApi();
-
-
     const clientPoint =
-      canvasApi?.canvasToClient(
-        point.x,
-        point.y
-      );
+      getCanvasApi()
+        ?.canvasToClient(
+          point.x,
+          point.y
+        );
+
+
+    const settings =
+      getTextSettings();
 
 
     canvasTextEditor.hidden =
       false;
-
 
     canvasTextEditor.value =
       "";
@@ -2261,10 +2831,11 @@
       );
 
 
-    if (clientPoint) {
+    canvasTextEditor.style.position =
+      "fixed";
 
-      canvasTextEditor.style.position =
-        "fixed";
+
+    if (clientPoint) {
 
       canvasTextEditor.style.left =
         `${clientPoint.x}px`;
@@ -2278,20 +2849,22 @@
     canvasTextEditor.style.color =
       primaryColour;
 
-
     canvasTextEditor.style.fontSize =
-      `${Math.max(
-        12,
-        brushSize * 1.5
-      )}px`;
+      `${settings.fontSize}px`;
+
+    canvasTextEditor.style.fontFamily =
+      settings.fontFamily;
+
+    canvasTextEditor.style.fontWeight =
+      settings.fontWeight;
+
+    canvasTextEditor.style.fontStyle =
+      settings.fontStyle;
 
 
     requestAnimationFrame(
-      () => {
-
-        canvasTextEditor.focus();
-
-      }
+      () =>
+        canvasTextEditor.focus()
     );
 
   }
@@ -2305,7 +2878,9 @@
       !canvasTextEditor ||
       canvasTextEditor.hidden
     ) {
+
       return;
+
     }
 
 
@@ -2337,52 +2912,47 @@
         );
 
 
-      const fontSize =
-        Math.max(
-          12,
-          brushSize * 1.5
-        );
+      const settings =
+        getTextSettings();
 
 
       layer.context.save();
 
-
       layer.context.globalAlpha =
         toolOpacity;
 
-
       layer.context.fillStyle =
         primaryColour;
-
-
-      layer.context.font =
-        `${fontSize}px "Segoe UI", sans-serif`;
-
 
       layer.context.textBaseline =
         "top";
 
 
-      const lines =
-        text.split(
+      layer.context.font =
+        `${settings.fontStyle} ${settings.fontWeight} ${settings.fontSize}px "${settings.fontFamily}", sans-serif`;
+
+
+      text
+        .split(
           "\n"
-        );
-
-
-      lines.forEach(
-        (line, index) => {
-
-          layer.context.fillText(
+        )
+        .forEach(
+          (
             line,
-            x,
-            y +
-              index *
-              fontSize *
-              1.2
-          );
+            index
+          ) => {
 
-        }
-      );
+            layer.context.fillText(
+              line,
+              x,
+              y +
+                index *
+                settings.fontSize *
+                1.2
+            );
+
+          }
+        );
 
 
       layer.context.restore();
@@ -2408,7 +2978,7 @@
 
 
   /* =======================================================
-     16. POINTER DOWN
+     17. POINTER ACTIONS
   ======================================================= */
 
   function handlePointerDown(
@@ -2416,22 +2986,24 @@
   ) {
 
     if (
-      event.button !== 0 &&
       event.pointerType ===
-        "mouse"
+        "mouse" &&
+      event.button !==
+        0
     ) {
+
       return;
+
     }
 
 
-    const canvasApi =
-      getCanvasApi();
-
-
     if (
-      !canvasApi?.isDocumentOpen()
+      !getCanvasApi()
+        ?.isDocumentOpen()
     ) {
+
       return;
+
     }
 
 
@@ -2442,7 +3014,9 @@
 
 
     if (!point.inside) {
+
       return;
+
     }
 
 
@@ -2465,9 +3039,18 @@
       "text"
     ) {
 
+      finishTextEditing(
+        true
+      );
+
+
       beginTextEditing(
         point
       );
+
+
+      event.preventDefault();
+
 
       return;
 
@@ -2479,7 +3062,9 @@
       activeTool !==
         "select"
     ) {
+
       return;
+
     }
 
 
@@ -2489,6 +3074,7 @@
     pointerId =
       event.pointerId;
 
+
     startPoint = {
       x:
         point.x,
@@ -2497,13 +3083,16 @@
         point.y
     };
 
+
     previousPoint = {
       ...startPoint
     };
 
+
     currentPoint = {
       ...startPoint
     };
+
 
     actionChangedCanvas =
       false;
@@ -2519,10 +3108,12 @@
 
 
     if (
-      activeTool ===
-        "brush" ||
-      activeTool ===
+      [
+        "brush",
         "eraser"
+      ].includes(
+        activeTool
+      )
     ) {
 
       drawBrushSegment(
@@ -2550,6 +3141,9 @@
 
       pointerDown =
         false;
+
+      pointerId =
+        null;
 
 
       if (actionChangedCanvas) {
@@ -2581,20 +3175,23 @@
   }
 
 
-  /* =======================================================
-     17. POINTER MOVE
-  ======================================================= */
-
   function handlePointerMove(
     event
   ) {
+
+    updateBrushCursorPosition(
+      event
+    );
+
 
     if (
       !pointerDown ||
       event.pointerId !==
         pointerId
     ) {
+
       return;
+
     }
 
 
@@ -2605,6 +3202,7 @@
 
 
     currentPoint = {
+
       x:
         clamp(
           point.x,
@@ -2618,6 +3216,7 @@
           0,
           editorCanvas.height
         )
+
     };
 
 
@@ -2625,87 +3224,79 @@
       getActiveLayer();
 
 
-    if (
-      activeTool ===
-        "brush" ||
-      activeTool ===
-        "eraser"
+    switch (
+      activeTool
     ) {
 
-      drawBrushSegment(
-        layer,
-        previousPoint,
-        currentPoint,
-        activeTool ===
-          "eraser"
-      );
+      case "brush":
+      case "eraser":
 
-    }
+        drawBrushSegment(
+          layer,
+          previousPoint,
+          currentPoint,
+          activeTool ===
+            "eraser"
+        );
 
-
-    if (
-      activeTool ===
-      "gradient"
-    ) {
-
-      drawGradientPreview(
-        startPoint,
-        currentPoint
-      );
-
-    }
+        break;
 
 
-    if (
-      activeTool ===
-      "shape"
-    ) {
+      case "gradient":
 
-      drawShapePreview(
-        startPoint,
-        currentPoint
-      );
+        drawGradientPreview(
+          startPoint,
+          currentPoint
+        );
 
-    }
+        break;
 
 
-    if (
-      activeTool ===
-      "select"
-    ) {
+      case "shape":
 
-      drawSelectionGuide(
-        startPoint,
-        currentPoint,
-        false
-      );
+        drawShapePreview(
+          startPoint,
+          currentPoint
+        );
 
-    }
+        break;
 
 
-    if (
-      activeTool ===
-      "crop"
-    ) {
+      case "select":
 
-      drawSelectionGuide(
-        startPoint,
-        currentPoint,
-        true
-      );
+        drawSelectionGuide(
+          startPoint,
+          currentPoint,
+          false
+        );
 
-    }
+        break;
 
 
-    if (
-      activeTool ===
-      "move"
-    ) {
+      case "crop":
 
-      updateMoveLayer(
-        layer,
-        currentPoint
-      );
+        drawSelectionGuide(
+          startPoint,
+          currentPoint,
+          true
+        );
+
+        break;
+
+
+      case "move":
+
+        updateMoveLayer(
+          layer,
+          currentPoint
+        );
+
+        break;
+
+
+      default:
+
+        break;
 
     }
 
@@ -2720,9 +3311,28 @@
   }
 
 
-  /* =======================================================
-     18. POINTER UP
-  ======================================================= */
+  function resetPointerState() {
+
+    pointerDown =
+      false;
+
+    pointerId =
+      null;
+
+    startPoint =
+      null;
+
+    previousPoint =
+      null;
+
+    currentPoint =
+      null;
+
+    actionChangedCanvas =
+      false;
+
+  }
+
 
   function handlePointerUp(
     event
@@ -2733,12 +3343,19 @@
       event.pointerId !==
         pointerId
     ) {
+
       return;
+
     }
 
 
     const layer =
       getActiveLayer();
+
+
+    const endPoint =
+      currentPoint ||
+      startPoint;
 
 
     if (
@@ -2750,8 +3367,7 @@
         applyGradient(
           layer,
           startPoint,
-          currentPoint ||
-            startPoint
+          endPoint
         );
 
     }
@@ -2766,8 +3382,7 @@
         drawShape(
           layer.context,
           startPoint,
-          currentPoint ||
-            startPoint,
+          endPoint,
           false
         );
 
@@ -2789,8 +3404,7 @@
       actionChangedCanvas =
         commitCrop(
           startPoint,
-          currentPoint ||
-            startPoint
+          endPoint
         );
 
     }
@@ -2849,23 +3463,7 @@
     );
 
 
-    pointerDown =
-      false;
-
-    pointerId =
-      null;
-
-    startPoint =
-      null;
-
-    previousPoint =
-      null;
-
-    currentPoint =
-      null;
-
-    actionChangedCanvas =
-      false;
+    resetPointerState();
 
 
     event.preventDefault();
@@ -2877,7 +3475,7 @@
 
     if (
       activeTool ===
-      "move" &&
+        "move" &&
       movingLayerBackup
     ) {
 
@@ -2913,30 +3511,13 @@
 
     clearOverlay();
 
-
-    pointerDown =
-      false;
-
-    pointerId =
-      null;
-
-    startPoint =
-      null;
-
-    previousPoint =
-      null;
-
-    currentPoint =
-      null;
-
-    actionChangedCanvas =
-      false;
+    resetPointerState();
 
   }
 
 
   /* =======================================================
-     19. OPTIONS UI
+     18. OPTION UPDATES
   ======================================================= */
 
   function updateBrushSize(
@@ -2969,6 +3550,9 @@
         )} px`;
 
     }
+
+
+    updateBrushCursorAppearance();
 
   }
 
@@ -3048,11 +3632,48 @@
 
     }
 
+
+    updateBrushCursorAppearance();
+
+  }
+
+
+  function updateShapeCornerRadius(
+    value
+  ) {
+
+    shapeCornerRadius =
+      clamp(
+        value,
+        0,
+        100
+      );
+
+
+    if (shapeCornerRadiusInput) {
+
+      shapeCornerRadiusInput.value =
+        String(
+          shapeCornerRadius
+        );
+
+    }
+
+
+    if (shapeCornerRadiusOutput) {
+
+      shapeCornerRadiusOutput.textContent =
+        `${Math.round(
+          shapeCornerRadius
+        )} px`;
+
+    }
+
   }
 
 
   /* =======================================================
-     20. EVENT LISTENERS
+     19. EVENT LISTENERS
   ======================================================= */
 
   document
@@ -3064,110 +3685,101 @@
 
         button.addEventListener(
           "click",
-          () => {
-
+          () =>
             setActiveTool(
               button.dataset.tool
-            );
-
-          }
+            )
         );
 
       }
     );
 
 
-  editorCanvas?.addEventListener(
+  editorCanvas.addEventListener(
     "pointerdown",
     handlePointerDown
   );
 
 
-  editorCanvas?.addEventListener(
+  editorCanvas.addEventListener(
     "pointermove",
     handlePointerMove
   );
 
 
-  editorCanvas?.addEventListener(
+  editorCanvas.addEventListener(
+    "pointerenter",
+    updateBrushCursorPosition
+  );
+
+
+  editorCanvas.addEventListener(
+    "pointerleave",
+    hideBrushCursorPreview
+  );
+
+
+  editorCanvas.addEventListener(
     "pointerup",
     handlePointerUp
   );
 
 
-  editorCanvas?.addEventListener(
+  editorCanvas.addEventListener(
     "pointercancel",
     cancelPointerAction
   );
 
 
-  editorCanvas?.addEventListener(
+  editorCanvas.addEventListener(
     "contextmenu",
-    (event) => {
-
-      event.preventDefault();
-
-    }
+    (event) =>
+      event.preventDefault()
   );
 
 
   brushSizeInput?.addEventListener(
     "input",
-    () => {
-
+    () =>
       updateBrushSize(
         brushSizeInput.value
-      );
-
-    }
+      )
   );
 
 
   toolOpacityInput?.addEventListener(
     "input",
-    () => {
-
+    () =>
       updateToolOpacity(
         toolOpacityInput.value
-      );
-
-    }
+      )
   );
 
 
   brushHardnessInput?.addEventListener(
     "input",
-    () => {
-
+    () =>
       updateBrushHardness(
         brushHardnessInput.value
-      );
-
-    }
+      )
   );
 
 
   primaryColourInput?.addEventListener(
     "input",
-    () => {
-
+    () =>
       setPrimaryColour(
         primaryColourInput.value
-      );
-
-    }
+      )
   );
 
 
   panelColourPicker?.addEventListener(
     "input",
-    () => {
-
+    () =>
       setPrimaryColour(
         panelColourPicker.value
-      );
-
-    }
+      )
   );
 
 
@@ -3175,13 +3787,11 @@
     "change",
     () => {
 
-      const accepted =
-        setPrimaryColour(
+      if (
+        !setPrimaryColour(
           hexColourInput.value
-        );
-
-
-      if (!accepted) {
+        )
+      ) {
 
         hexColourInput.value =
           primaryColour.toUpperCase();
@@ -3194,11 +3804,8 @@
 
   primaryColourChip?.addEventListener(
     "click",
-    () => {
-
-      primaryColourInput?.click();
-
-    }
+    () =>
+      primaryColourInput?.click()
   );
 
 
@@ -3213,7 +3820,10 @@
         );
 
 
-      if (colour !== null) {
+      if (
+        colour !==
+        null
+      ) {
 
         setSecondaryColour(
           colour
@@ -3231,20 +3841,122 @@
   );
 
 
+  shapeTypeInput?.addEventListener(
+    "change",
+    () => {
+
+      selectedShape =
+        shapeTypeInput.value ||
+        "ellipse";
+
+
+      dispatchToolEvent(
+        "paintless:shape-changed",
+        {
+          shape:
+            selectedShape
+        }
+      );
+
+    }
+  );
+
+
+  shapeFillEnabledInput?.addEventListener(
+    "change",
+    () => {
+
+      shapeFillEnabled =
+        Boolean(
+          shapeFillEnabledInput.checked
+        );
+
+
+      if (
+        !shapeFillEnabled &&
+        !shapeStrokeEnabled
+      ) {
+
+        shapeStrokeEnabled =
+          true;
+
+
+        if (
+          shapeStrokeEnabledInput
+        ) {
+
+          shapeStrokeEnabledInput.checked =
+            true;
+
+        }
+
+      }
+
+    }
+  );
+
+
+  shapeStrokeEnabledInput?.addEventListener(
+    "change",
+    () => {
+
+      shapeStrokeEnabled =
+        Boolean(
+          shapeStrokeEnabledInput.checked
+        );
+
+
+      if (
+        !shapeStrokeEnabled &&
+        !shapeFillEnabled
+      ) {
+
+        shapeFillEnabled =
+          true;
+
+
+        if (
+          shapeFillEnabledInput
+        ) {
+
+          shapeFillEnabledInput.checked =
+            true;
+
+        }
+
+      }
+
+    }
+  );
+
+
+  shapeCornerRadiusInput?.addEventListener(
+    "input",
+    () =>
+      updateShapeCornerRadius(
+        shapeCornerRadiusInput.value
+      )
+  );
+
+
   canvasTextEditor?.addEventListener(
     "keydown",
     (event) => {
 
       if (
         event.key ===
-          "Escape"
+        "Escape"
       ) {
 
         event.preventDefault();
 
+
         finishTextEditing(
           false
         );
+
+
+        return;
 
       }
 
@@ -3252,16 +3964,19 @@
       if (
         event.key ===
           "Enter" &&
-        (
-          event.ctrlKey ||
-          event.metaKey
-        )
+        !event.shiftKey
       ) {
 
         event.preventDefault();
 
+
         finishTextEditing(
           true
+        );
+
+
+        setActiveTool(
+          "move"
         );
 
       }
@@ -3272,13 +3987,10 @@
 
   canvasTextEditor?.addEventListener(
     "blur",
-    () => {
-
+    () =>
       finishTextEditing(
         true
-      );
-
-    }
+      )
   );
 
 
@@ -3298,12 +4010,15 @@
           activeElement.tagName ===
             "TEXTAREA" ||
           activeElement.tagName ===
-            "SELECT"
+            "SELECT" ||
+          activeElement.isContentEditable
         );
 
 
       if (typing) {
+
         return;
+
       }
 
 
@@ -3314,9 +4029,11 @@
 
         cancelPointerAction();
 
+
         finishTextEditing(
           false
         );
+
 
         return;
 
@@ -3346,6 +4063,7 @@
 
         event.preventDefault();
 
+
         setActiveTool(
           matchingTool[0]
         );
@@ -3354,10 +4072,12 @@
 
 
       if (
-        pressedKey === "x"
+        pressedKey ===
+        "x"
       ) {
 
         event.preventDefault();
+
 
         swapColours();
 
@@ -3365,26 +4085,32 @@
 
 
       if (
-        event.key === "["
+        event.key ===
+        "["
       ) {
 
         event.preventDefault();
 
+
         updateBrushSize(
-          brushSize - 2
+          brushSize -
+          2
         );
 
       }
 
 
       if (
-        event.key === "]"
+        event.key ===
+        "]"
       ) {
 
         event.preventDefault();
 
+
         updateBrushSize(
-          brushSize + 2
+          brushSize +
+          2
         );
 
       }
@@ -3394,12 +4120,13 @@
 
 
   /* =======================================================
-     21. PUBLIC API
+     20. PUBLIC API
   ======================================================= */
 
   window.PaintlessTools = {
 
     setActiveTool,
+
 
     getActiveTool() {
 
@@ -3407,11 +4134,13 @@
 
     },
 
+
     setPrimaryColour,
 
     setSecondaryColour,
 
     swapColours,
+
 
     getPrimaryColour() {
 
@@ -3419,14 +4148,17 @@
 
     },
 
+
     getSecondaryColour() {
 
       return secondaryColour;
 
     },
 
+
     setBrushSize:
       updateBrushSize,
+
 
     getBrushSize() {
 
@@ -3434,8 +4166,10 @@
 
     },
 
+
     setToolOpacity:
       updateToolOpacity,
+
 
     getToolOpacity() {
 
@@ -3443,14 +4177,66 @@
 
     },
 
+
     setBrushHardness:
       updateBrushHardness,
+
 
     getBrushHardness() {
 
       return brushHardness;
 
     },
+
+
+    setShape(
+      shape
+    ) {
+
+      const allowedShapes = [
+        "rectangle",
+        "ellipse",
+        "rounded-rectangle",
+        "line"
+      ];
+
+
+      if (
+        !allowedShapes.includes(
+          shape
+        )
+      ) {
+
+        return false;
+
+      }
+
+
+      selectedShape =
+        shape;
+
+
+      if (
+        shapeTypeInput
+      ) {
+
+        shapeTypeInput.value =
+          shape;
+
+      }
+
+
+      return true;
+
+    },
+
+
+    getShape() {
+
+      return selectedShape;
+
+    },
+
 
     finishTextEditing,
 
@@ -3460,7 +4246,7 @@
 
 
   /* =======================================================
-     22. INITIAL STATE
+     21. INITIAL STATE
   ======================================================= */
 
   setPrimaryColour(
@@ -3498,6 +4284,11 @@
   updateBrushHardness(
     brushHardness *
     100
+  );
+
+
+  updateShapeCornerRadius(
+    shapeCornerRadius
   );
 
 
