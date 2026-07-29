@@ -160,7 +160,7 @@
      * Future Paintless systems.
      */
 
-    "paintless3d.js"
+    "../paintless3d/paintless3d.js"
 
   ];
 
