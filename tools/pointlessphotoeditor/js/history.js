@@ -2,7 +2,7 @@
 
 /* =========================================================
    PAINTLESS
-   UNDO AND REDO HISTORY SYSTEM
+   RELIABLE MULTI-STEP UNDO AND REDO HISTORY SYSTEM
 ========================================================= */
 
 (() => {
@@ -36,7 +36,7 @@
   const redoStack = [];
 
   const maximumHistoryEntries =
-    30;
+    80;
 
   let restoringHistory =
     false;
@@ -47,12 +47,24 @@
   let pendingHistoryTimer =
     null;
 
+  let pendingHistoryReason =
+    null;
+
   let lastSavedReason =
     "Initial state";
 
+  let transactionDepth =
+    0;
+
+  let transactionReason =
+    null;
+
+  let transactionChanged =
+    false;
+
 
   /* =======================================================
-     3. HELPERS
+     3. API HELPERS
   ======================================================= */
 
   function getLayersApi() {
@@ -100,23 +112,33 @@
       return;
     }
 
-
     saveStatus.textContent =
       message;
 
   }
 
 
+  /* =======================================================
+     4. BUTTON STATE
+  ======================================================= */
+
   function updateHistoryButtons() {
+
+    const canUndo =
+      undoStack.length > 1;
+
+    const canRedo =
+      redoStack.length > 0;
+
 
     if (undoButton) {
 
       undoButton.disabled =
-        undoStack.length <= 1;
+        !canUndo;
 
       undoButton.title =
-        undoStack.length > 1
-          ? `Undo ${undoStack.at(-1)?.reason || ""}`
+        canUndo
+          ? `Undo ${undoStack.at(-1)?.reason || "edit"}`
           : "Nothing to undo";
 
     }
@@ -125,14 +147,102 @@
     if (redoButton) {
 
       redoButton.disabled =
-        redoStack.length === 0;
+        !canRedo;
 
       redoButton.title =
-        redoStack.length > 0
-          ? `Redo ${redoStack.at(-1)?.reason || ""}`
+        canRedo
+          ? `Redo ${redoStack.at(-1)?.reason || "edit"}`
           : "Nothing to redo";
 
     }
+
+  }
+
+
+  /* =======================================================
+     5. IMAGE DATA CLONING
+  ======================================================= */
+
+  function cloneImageData(
+    imageData
+  ) {
+
+    if (!imageData) {
+      return null;
+    }
+
+    return new ImageData(
+      new Uint8ClampedArray(
+        imageData.data
+      ),
+      imageData.width,
+      imageData.height
+    );
+
+  }
+
+
+  function cloneLayersSnapshot(
+    layersSnapshot
+  ) {
+
+    if (!layersSnapshot) {
+      return null;
+    }
+
+    return {
+
+      activeLayerId:
+        layersSnapshot.activeLayerId,
+
+      nextLayerNumber:
+        layersSnapshot.nextLayerNumber,
+
+      documentWidth:
+        layersSnapshot.documentWidth,
+
+      documentHeight:
+        layersSnapshot.documentHeight,
+
+      layers:
+        Array.isArray(
+          layersSnapshot.layers
+        )
+          ? layersSnapshot.layers.map(
+              (layer) => ({
+                id:
+                  layer.id,
+
+                name:
+                  layer.name,
+
+                visible:
+                  layer.visible,
+
+                opacity:
+                  layer.opacity,
+
+                blendMode:
+                  layer.blendMode,
+
+                locked:
+                  layer.locked,
+
+                width:
+                  layer.width,
+
+                height:
+                  layer.height,
+
+                imageData:
+                  cloneImageData(
+                    layer.imageData
+                  )
+              })
+            )
+          : []
+
+    };
 
   }
 
@@ -145,8 +255,8 @@
       return null;
     }
 
-
     return {
+
       reason:
         snapshot.reason,
 
@@ -157,72 +267,154 @@
         snapshot.documentName,
 
       layersSnapshot:
-        {
-          activeLayerId:
-            snapshot.layersSnapshot.activeLayerId,
+        cloneLayersSnapshot(
+          snapshot.layersSnapshot
+        )
 
-          nextLayerNumber:
-            snapshot.layersSnapshot.nextLayerNumber,
-
-          documentWidth:
-            snapshot.layersSnapshot.documentWidth,
-
-          documentHeight:
-            snapshot.layersSnapshot.documentHeight,
-
-          layers:
-            snapshot.layersSnapshot.layers.map(
-              (layer) => {
-
-                const copiedImageData =
-                  new ImageData(
-                    new Uint8ClampedArray(
-                      layer.imageData.data
-                    ),
-                    layer.imageData.width,
-                    layer.imageData.height
-                  );
-
-
-                return {
-                  id:
-                    layer.id,
-
-                  name:
-                    layer.name,
-
-                  visible:
-                    layer.visible,
-
-                  opacity:
-                    layer.opacity,
-
-                  blendMode:
-                    layer.blendMode,
-
-                  locked:
-                    layer.locked,
-
-                  width:
-                    layer.width,
-
-                  height:
-                    layer.height,
-
-                  imageData:
-                    copiedImageData
-                };
-
-              }
-            )
-        }
     };
 
   }
 
 
   /* =======================================================
-     4. CREATE SNAPSHOT
+     6. SNAPSHOT COMPARISON
+  ======================================================= */
+
+  function snapshotsAppearEqual(
+    firstSnapshot,
+    secondSnapshot
+  ) {
+
+    if (
+      !firstSnapshot ||
+      !secondSnapshot
+    ) {
+      return false;
+    }
+
+
+    const firstLayers =
+      firstSnapshot.layersSnapshot;
+
+    const secondLayers =
+      secondSnapshot.layersSnapshot;
+
+
+    if (
+      !firstLayers ||
+      !secondLayers
+    ) {
+      return false;
+    }
+
+
+    if (
+      firstSnapshot.documentName !==
+        secondSnapshot.documentName ||
+      firstLayers.documentWidth !==
+        secondLayers.documentWidth ||
+      firstLayers.documentHeight !==
+        secondLayers.documentHeight ||
+      firstLayers.activeLayerId !==
+        secondLayers.activeLayerId ||
+      firstLayers.layers.length !==
+        secondLayers.layers.length
+    ) {
+      return false;
+    }
+
+
+    for (
+      let index = 0;
+      index < firstLayers.layers.length;
+      index += 1
+    ) {
+
+      const firstLayer =
+        firstLayers.layers[index];
+
+      const secondLayer =
+        secondLayers.layers[index];
+
+
+      if (
+        firstLayer.id !== secondLayer.id ||
+        firstLayer.name !== secondLayer.name ||
+        firstLayer.visible !== secondLayer.visible ||
+        firstLayer.opacity !== secondLayer.opacity ||
+        firstLayer.blendMode !== secondLayer.blendMode ||
+        firstLayer.locked !== secondLayer.locked ||
+        firstLayer.width !== secondLayer.width ||
+        firstLayer.height !== secondLayer.height
+      ) {
+        return false;
+      }
+
+
+      const firstData =
+        firstLayer.imageData?.data;
+
+      const secondData =
+        secondLayer.imageData?.data;
+
+
+      if (
+        !firstData ||
+        !secondData ||
+        firstData.length !== secondData.length
+      ) {
+        return false;
+      }
+
+
+      /*
+       * Check a spread of pixels rather than comparing every
+       * byte twice. The full image remains safely stored in
+       * the snapshot; this check only prevents obvious duplicate
+       * history entries.
+       */
+
+      const sampleCount =
+        Math.min(
+          96,
+          firstData.length
+        );
+
+      const step =
+        Math.max(
+          1,
+          Math.floor(
+            firstData.length /
+            sampleCount
+          )
+        );
+
+
+      for (
+        let dataIndex = 0;
+        dataIndex < firstData.length;
+        dataIndex += step
+      ) {
+
+        if (
+          firstData[dataIndex] !==
+          secondData[dataIndex]
+        ) {
+          return false;
+        }
+
+      }
+
+    }
+
+
+    return true;
+
+  }
+
+
+  /* =======================================================
+     7. CREATE SNAPSHOT
   ======================================================= */
 
   function createHistorySnapshot(
@@ -248,13 +440,22 @@
       layersApi.createLayersSnapshot();
 
 
+    if (!layersSnapshot) {
+      return null;
+    }
+
+
     const canvasApi =
       getCanvasApi();
 
 
     return {
+
       reason:
-        String(reason || "Edit"),
+        String(
+          reason ||
+          "Edit"
+        ),
 
       timestamp:
         Date.now(),
@@ -263,22 +464,93 @@
         canvasApi?.getDocumentName?.() ||
         "Untitled Masterpiece",
 
-      layersSnapshot
+      layersSnapshot:
+        cloneLayersSnapshot(
+          layersSnapshot
+        )
+
     };
 
   }
 
 
   /* =======================================================
-     5. SAVE HISTORY
+     8. PENDING SAVE CONTROL
+  ======================================================= */
+
+  function cancelPendingHistorySave() {
+
+    if (
+      pendingHistoryTimer !==
+      null
+    ) {
+
+      window.clearTimeout(
+        pendingHistoryTimer
+      );
+
+    }
+
+    pendingHistoryTimer =
+      null;
+
+    pendingHistoryReason =
+      null;
+
+  }
+
+
+  function flushPendingHistorySave() {
+
+    if (
+      pendingHistoryTimer ===
+      null
+    ) {
+      return false;
+    }
+
+
+    const reason =
+      pendingHistoryReason ||
+      "Edit";
+
+
+    cancelPendingHistorySave();
+
+
+    return saveHistory(
+      reason
+    );
+
+  }
+
+
+  /* =======================================================
+     9. SAVE HISTORY
   ======================================================= */
 
   function saveHistory(
-    reason = "Edit"
+    reason = "Edit",
+    options = {}
   ) {
 
     if (restoringHistory) {
       return false;
+    }
+
+
+    if (transactionDepth > 0) {
+
+      transactionChanged =
+        true;
+
+      transactionReason =
+        reason ||
+        transactionReason ||
+        "Edit";
+
+      return true;
+
     }
 
 
@@ -293,12 +565,36 @@
     }
 
 
+    const latestSnapshot =
+      undoStack.at(-1);
+
+
+    if (
+      options.allowDuplicate !== true &&
+      snapshotsAppearEqual(
+        latestSnapshot,
+        snapshot
+      )
+    ) {
+
+      /*
+       * The state did not actually change.
+       * Do not create a useless Undo step.
+       */
+
+      updateHistoryButtons();
+
+      return false;
+
+    }
+
+
     undoStack.push(
       snapshot
     );
 
 
-    if (
+    while (
       undoStack.length >
       maximumHistoryEntries
     ) {
@@ -317,7 +613,6 @@
     lastSavedReason =
       snapshot.reason;
 
-
     historyReady =
       true;
 
@@ -325,9 +620,15 @@
     updateHistoryButtons();
 
 
-    setStatusMessage(
-      `${snapshot.reason} saved.`
-    );
+    if (
+      options.silent !== true
+    ) {
+
+      setStatusMessage(
+        `${snapshot.reason} saved.`
+      );
+
+    }
 
 
     dispatchHistoryEvent(
@@ -350,33 +651,215 @@
   }
 
 
+  /*
+   * Old Paintless files already call queueHistorySave().
+   *
+   * The old engine waited 80ms and repeatedly cancelled the
+   * previous save. That could merge several separate actions
+   * into one Undo step.
+   *
+   * The default is now immediate. A delay is only used when
+   * the caller explicitly supplies one, such as a slider.
+   */
+
   function queueHistorySave(
     reason = "Edit",
-    delay = 80
+    delay = 0
   ) {
 
-    window.clearTimeout(
-      pendingHistoryTimer
-    );
+    if (restoringHistory) {
+      return false;
+    }
+
+
+    if (transactionDepth > 0) {
+
+      transactionChanged =
+        true;
+
+      transactionReason =
+        reason ||
+        transactionReason ||
+        "Edit";
+
+      return true;
+
+    }
+
+
+    cancelPendingHistorySave();
+
+
+    if (
+      Number(delay) <= 0
+    ) {
+
+      return saveHistory(
+        reason
+      );
+
+    }
+
+
+    pendingHistoryReason =
+      reason;
 
 
     pendingHistoryTimer =
       window.setTimeout(
         () => {
 
+          const savedReason =
+            pendingHistoryReason ||
+            reason;
+
+          pendingHistoryTimer =
+            null;
+
+          pendingHistoryReason =
+            null;
+
           saveHistory(
-            reason
+            savedReason
           );
 
         },
-        delay
+        Number(delay)
       );
+
+
+    return true;
 
   }
 
 
   /* =======================================================
-     6. RESTORE SNAPSHOT
+     10. HISTORY TRANSACTIONS
+  ======================================================= */
+
+  function beginTransaction(
+    reason = "Edit"
+  ) {
+
+    if (restoringHistory) {
+      return false;
+    }
+
+
+    if (transactionDepth === 0) {
+
+      flushPendingHistorySave();
+
+      transactionReason =
+        reason;
+
+      transactionChanged =
+        false;
+
+    }
+
+
+    transactionDepth += 1;
+
+    return true;
+
+  }
+
+
+  function markTransactionChanged(
+    reason = null
+  ) {
+
+    if (transactionDepth <= 0) {
+      return false;
+    }
+
+
+    transactionChanged =
+      true;
+
+
+    if (reason) {
+
+      transactionReason =
+        reason;
+
+    }
+
+
+    return true;
+
+  }
+
+
+  function endTransaction(
+    reason = null
+  ) {
+
+    if (transactionDepth <= 0) {
+      return false;
+    }
+
+
+    transactionDepth -= 1;
+
+
+    if (reason) {
+
+      transactionReason =
+        reason;
+
+    }
+
+
+    if (transactionDepth > 0) {
+      return true;
+    }
+
+
+    const shouldSave =
+      transactionChanged;
+
+    const finalReason =
+      transactionReason ||
+      "Edit";
+
+
+    transactionReason =
+      null;
+
+    transactionChanged =
+      false;
+
+
+    if (!shouldSave) {
+      return false;
+    }
+
+
+    return saveHistory(
+      finalReason
+    );
+
+  }
+
+
+  function cancelTransaction() {
+
+    transactionDepth =
+      0;
+
+    transactionReason =
+      null;
+
+    transactionChanged =
+      false;
+
+  }
+
+
+  /* =======================================================
+     11. RESTORE SNAPSHOT
   ======================================================= */
 
   function restoreSnapshot(
@@ -402,27 +885,34 @@
     }
 
 
+    cancelPendingHistorySave();
+
     restoringHistory =
       true;
 
 
     try {
 
-      layersApi.restoreLayersSnapshot(
+      const copiedSnapshot =
         cloneSnapshot(
           snapshot
-        ).layersSnapshot
+        );
+
+
+      layersApi.restoreLayersSnapshot(
+        copiedSnapshot.layersSnapshot
       );
 
 
       canvasApi?.setDocumentName?.(
-        snapshot.documentName
+        copiedSnapshot.documentName
       );
-
 
       canvasApi?.showCanvas?.();
 
       canvasApi?.updateStageDimensions?.();
+
+      canvasApi?.renderComposite?.();
 
       canvasApi?.updateDocumentInformation?.();
 
@@ -430,7 +920,9 @@
       requestAnimationFrame(
         () => {
 
-          canvasApi?.fitCanvasToScreen?.();
+          canvasApi?.updateStageDimensions?.();
+
+          canvasApi?.renderComposite?.();
 
         }
       );
@@ -440,7 +932,7 @@
         "paintless:history-restored",
         {
           reason:
-            snapshot.reason
+            copiedSnapshot.reason
         }
       );
 
@@ -475,17 +967,25 @@
 
 
   /* =======================================================
-     7. UNDO
+     12. UNDO
   ======================================================= */
 
   function undo() {
+
+    flushPendingHistorySave();
+
 
     if (
       restoringHistory ||
       undoStack.length <= 1
     ) {
+
       return false;
+
     }
+
+
+    cancelTransaction();
 
 
     const currentSnapshot =
@@ -513,13 +1013,15 @@
         redoStack.pop()
       );
 
+      updateHistoryButtons();
+
       return false;
 
     }
 
 
     setStatusMessage(
-      `Undid ${currentSnapshot.reason}.`
+      `Pretending ${currentSnapshot.reason.toLowerCase()} never happened.`
     );
 
 
@@ -547,17 +1049,25 @@
 
 
   /* =======================================================
-     8. REDO
+     13. REDO
   ======================================================= */
 
   function redo() {
+
+    flushPendingHistorySave();
+
 
     if (
       restoringHistory ||
       redoStack.length === 0
     ) {
+
       return false;
+
     }
+
+
+    cancelTransaction();
 
 
     const snapshot =
@@ -581,13 +1091,15 @@
         undoStack.pop()
       );
 
+      updateHistoryButtons();
+
       return false;
 
     }
 
 
     setStatusMessage(
-      `Redid ${snapshot.reason}.`
+      `Fine. ${snapshot.reason} is back.`
     );
 
 
@@ -615,16 +1127,16 @@
 
 
   /* =======================================================
-     9. RESET HISTORY
+     14. RESET AND CLEAR
   ======================================================= */
 
   function resetHistory(
     reason = "New document"
   ) {
 
-    window.clearTimeout(
-      pendingHistoryTimer
-    );
+    cancelPendingHistorySave();
+
+    cancelTransaction();
 
 
     undoStack.splice(
@@ -643,31 +1155,43 @@
       false;
 
 
-    saveHistory(
-      reason
-    );
+    const saved =
+      saveHistory(
+        reason,
+        {
+          allowDuplicate:
+            true,
+
+          silent:
+            true
+        }
+      );
 
 
     setStatusMessage(
-      "Fresh canvas. No mistakes yet."
+      "Fresh canvas. Try not to ruin it."
     );
 
 
     dispatchHistoryEvent(
       "paintless:history-reset",
       {
-        reason
+        reason,
+        saved
       }
     );
+
+
+    return saved;
 
   }
 
 
   function clearHistory() {
 
-    window.clearTimeout(
-      pendingHistoryTimer
-    );
+    cancelPendingHistorySave();
+
+    cancelTransaction();
 
 
     undoStack.splice(
@@ -697,17 +1221,24 @@
 
 
   /* =======================================================
-     10. HISTORY INFORMATION
+     15. HISTORY INFORMATION
   ======================================================= */
 
   function getHistoryInformation() {
 
     return {
+
       undoCount:
-        undoStack.length,
+        Math.max(
+          0,
+          undoStack.length - 1
+        ),
 
       redoCount:
         redoStack.length,
+
+      storedSnapshots:
+        undoStack.length,
 
       canUndo:
         undoStack.length > 1,
@@ -719,14 +1250,21 @@
 
       restoringHistory,
 
-      historyReady
+      historyReady,
+
+      transactionDepth,
+
+      pendingSave:
+        pendingHistoryTimer !==
+        null
+
     };
 
   }
 
 
   /* =======================================================
-     11. BUTTON EVENTS
+     16. BUTTON EVENTS
   ======================================================= */
 
   undoButton?.addEventListener(
@@ -742,7 +1280,7 @@
 
 
   /* =======================================================
-     12. KEYBOARD SHORTCUTS
+     17. KEYBOARD SHORTCUTS
   ======================================================= */
 
   window.addEventListener(
@@ -761,7 +1299,8 @@
           activeElement.tagName ===
             "TEXTAREA" ||
           activeElement.tagName ===
-            "SELECT"
+            "SELECT" ||
+          activeElement.isContentEditable
         );
 
 
@@ -817,7 +1356,7 @@
 
 
   /* =======================================================
-     13. PAINTLESS EVENTS
+     18. PAINTLESS EVENTS
   ======================================================= */
 
   document.addEventListener(
@@ -828,9 +1367,55 @@
         event.detail?.reason ||
         "Edit";
 
+      const delay =
+        Number(
+          event.detail?.delay ??
+          0
+        );
+
 
       queueHistorySave(
-        reason
+        reason,
+        delay
+      );
+
+    }
+  );
+
+
+  document.addEventListener(
+    "paintless:history-transaction-begin",
+    (event) => {
+
+      beginTransaction(
+        event.detail?.reason ||
+        "Edit"
+      );
+
+    }
+  );
+
+
+  document.addEventListener(
+    "paintless:history-transaction-change",
+    (event) => {
+
+      markTransactionChanged(
+        event.detail?.reason ||
+        null
+      );
+
+    }
+  );
+
+
+  document.addEventListener(
+    "paintless:history-transaction-end",
+    (event) => {
+
+      endTransaction(
+        event.detail?.reason ||
+        null
       );
 
     }
@@ -890,7 +1475,7 @@
 
       queueHistorySave(
         "Rename document",
-        120
+        180
       );
 
     }
@@ -918,14 +1503,27 @@
 
 
   /* =======================================================
-     14. PUBLIC API
+     19. PUBLIC API
   ======================================================= */
 
   window.PaintlessHistory = {
 
     saveHistory,
 
+    commitHistory:
+      saveHistory,
+
     queueHistorySave,
+
+    flushPendingHistorySave,
+
+    beginTransaction,
+
+    markTransactionChanged,
+
+    endTransaction,
+
+    cancelTransaction,
 
     undo,
 
@@ -951,7 +1549,7 @@
 
 
   /* =======================================================
-     15. INITIAL STATE
+     20. INITIAL STATE
   ======================================================= */
 
   updateHistoryButtons();
