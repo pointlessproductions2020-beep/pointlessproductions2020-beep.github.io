@@ -2,36 +2,29 @@
 
 /* =========================================================
    PAINTLESS3D
-   UI COORDINATOR — v0.1
+   LIVE UI COORDINATOR — v0.2
 
    File:
    js/paintless3d/ui.js
 
-   Purpose:
-   - Connects the complete Paintless3D interface
-   - Coordinates Depth, Preview and Export panels
-   - Keeps the right sidebar tidy
-   - Adds a compact Paintless3D dashboard
-   - Shows current mode, preview state and active-layer depth
-   - Adds buttons for Depth, Preview and Export
-   - Updates automatically as Paintless3D changes
-   - Adds mobile-friendly panel behaviour
-   - Provides one place for future UI improvements
-   - Does not perform rendering itself
-
-   Connected modules:
-   - core.js
-   - mode.js
-   - depth.js
-   - renderer.js
-   - preview.js
-   - export.js
+   New behaviour:
+   - Paintless3D is permanently live while 3D mode is active
+   - The old Preview panel is now Live 3D Settings
+   - Dashboard buttons are:
+       Depth
+       3D Settings
+       Export
+   - Coordinates the Depth, Settings and Export panels
+   - Keeps only one large panel open at a time
+   - Shows active-layer 3D state and depth
+   - Shows live renderer statistics
+   - Keeps backwards compatibility with previous module events
 ========================================================= */
 
 (() => {
 
   /* =======================================================
-     1. PAINTLESS3D CHECK
+     1. SYSTEM CHECK
   ======================================================= */
 
   const paintless3d =
@@ -47,7 +40,6 @@
     console.error(
       "Paintless3D UI could not start because paintless3d.js has not loaded."
     );
-
 
     return;
 
@@ -84,13 +76,10 @@
     automaticallyOpenDepth:
       true,
 
-    automaticallyOpenPreview:
-      true,
+    automaticallyOpenSettings:
+      false,
 
     automaticallyOpenExport:
-      true,
-
-    compactOnMobile:
       true,
 
     renderCount:
@@ -104,6 +93,12 @@
 
     lastRenderHeight:
       0,
+
+    lastRenderLayers:
+      0,
+
+    lastRenderReason:
+      null,
 
     lastExportFilename:
       null,
@@ -138,13 +133,16 @@
     modeBadge:
       null,
 
-    previewBadge:
+    liveBadge:
       null,
 
-    activeLayerName:
+    layerName:
       null,
 
-    activeLayerDepth:
+    layerState:
+      null,
+
+    layerDepth:
       null,
 
     renderInformation:
@@ -153,7 +151,7 @@
     depthButton:
       null,
 
-    previewButton:
+    settingsButton:
       null,
 
     exportButton:
@@ -162,13 +160,13 @@
     depthPanel:
       null,
 
-    previewPanel:
+    settingsPanel:
       null,
 
     exportPanel:
       null,
 
-    globalPreviewButton:
+    globalSettingsButton:
       null,
 
     globalModeSwitch:
@@ -236,9 +234,10 @@
   }
 
 
-  function getPreviewApi() {
+  function getSettingsApi() {
 
     return (
+      window.Paintless3DSettings ||
       window.Paintless3DPreview ||
       paintless3d.getModule?.(
         "preview"
@@ -256,6 +255,16 @@
       paintless3d.getModule?.(
         "export"
       )?.api ||
+      null
+    );
+
+  }
+
+
+  function getLayersApi() {
+
+    return (
+      window.PaintlessLayers ||
       null
     );
 
@@ -437,6 +446,16 @@
 
     if (
       value <
+      1
+    ) {
+
+      return "<1 ms";
+
+    }
+
+
+    if (
+      value <
       1000
     ) {
 
@@ -521,9 +540,33 @@
   }
 
 
+  function is3DMode() {
+
+    if (
+      typeof paintless3d.is3DMode ===
+      "function"
+    ) {
+
+      return Boolean(
+        paintless3d.is3DMode()
+      );
+
+    }
+
+
+    return Boolean(
+      getCoreApi()
+        ?.is3DMode?.()
+    );
+
+  }
+
+
   function getActiveLayer() {
 
     return (
+      getLayersApi()
+        ?.getActiveLayer?.() ||
       getModeApi()
         ?.getActiveLayer?.() ||
       getToolCore()
@@ -548,13 +591,33 @@
   }
 
 
-  function getActiveDepth() {
+  function layerStereoIsEnabled(
+    layer =
+      getActiveLayer()
+  ) {
 
-    return (
-      getDepthApi()
-        ?.getActiveLayerDepth?.() ||
-      0
+    return Boolean(
+      layer?.stereo3dEnabled
     );
+
+  }
+
+
+  function getLayerDepth(
+    layer =
+      getActiveLayer()
+  ) {
+
+    if (!layer) {
+
+      return 0;
+
+    }
+
+
+    return Number(
+      layer.depth3d
+    ) || 0;
 
   }
 
@@ -588,13 +651,46 @@
       );
 
 
+    dom.globalSettingsButton =
+      document.getElementById(
+        "paintless3d-preview-button"
+      );
+
+
+    dom.globalModeSwitch =
+      document.getElementById(
+        "paintless3d-mode-switch"
+      );
+
+
+    refreshPanelReferences();
+
+  }
+
+
+  function getDashboardParent() {
+
+    return (
+      dom.layersPanel ||
+      dom.sidebar
+    );
+
+  }
+
+
+  /* =======================================================
+     7. PANEL REFERENCES
+  ======================================================= */
+
+  function refreshPanelReferences() {
+
     dom.depthPanel =
       document.getElementById(
         "paintless3d-depth-control"
       );
 
 
-    dom.previewPanel =
+    dom.settingsPanel =
       document.getElementById(
         "paintless3d-preview-panel"
       );
@@ -606,38 +702,86 @@
       );
 
 
-    dom.globalPreviewButton =
-      document.getElementById(
-        "paintless3d-preview-button"
-      );
+    return {
+      depth:
+        dom.depthPanel,
 
+      settings:
+        dom.settingsPanel,
 
-    dom.globalModeSwitch =
-      document.getElementById(
-        "paintless3d-mode-switch"
-      );
+      export:
+        dom.exportPanel
+    };
 
   }
 
 
-  function getDashboardParent() {
+  function getPanelElement(
+    panelName
+  ) {
+
+    refreshPanelReferences();
+
 
     if (
-      dom.layersPanel
+      panelName ===
+      "settings"
     ) {
 
-      return dom.layersPanel;
+      return dom.settingsPanel;
 
     }
 
 
-    return dom.sidebar;
+    if (
+      panelName ===
+      "export"
+    ) {
+
+      return dom.exportPanel;
+
+    }
+
+
+    return dom.depthPanel;
+
+  }
+
+
+  function panelIsOpen(
+    panelName
+  ) {
+
+    const panel =
+      getPanelElement(
+        panelName
+      );
+
+
+    if (
+      panelName ===
+      "depth"
+    ) {
+
+      return Boolean(
+        is3DMode() &&
+        panel
+      );
+
+    }
+
+
+    return Boolean(
+      panel?.classList.contains(
+        "is-open"
+      )
+    );
 
   }
 
 
   /* =======================================================
-     7. STYLES
+     8. STYLES
   ======================================================= */
 
   function installStyles() {
@@ -645,7 +789,7 @@
     if (
       uiState.stylesInstalled ||
       document.getElementById(
-        "paintless3d-ui-styles"
+        "paintless3d-live-ui-styles"
       )
     ) {
 
@@ -665,7 +809,7 @@
 
 
     style.id =
-      "paintless3d-ui-styles";
+      "paintless3d-live-ui-styles";
 
 
     style.textContent = `
@@ -697,6 +841,10 @@
           0 10px 30px rgba(0, 0, 0, 0.2);
       }
 
+      html[data-paintless-mode="3d"]
+      .paintless3d-dashboard,
+      body.paintless-3d-mode
+      .paintless3d-dashboard,
       body.paintless3d-editor-active
       .paintless3d-dashboard {
         display: block;
@@ -772,9 +920,17 @@
           );
       }
 
+      .paintless3d-dashboard-badge.is-live {
+        color: #9dffbd;
+        border-color: rgba(105, 245, 156, 0.35);
+        background: rgba(105, 245, 156, 0.075);
+      }
+
       .paintless3d-dashboard-layer {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns:
+          minmax(0, 1fr)
+          auto;
         align-items: center;
         gap: 9px;
         margin-top: 10px;
@@ -814,11 +970,26 @@
         white-space: nowrap;
       }
 
+      .paintless3d-dashboard-layer-state {
+        display: block;
+        margin-top: 3px;
+        color: rgba(255, 255, 255, 0.4);
+        font:
+          600 8px/1.2
+          "Segoe UI",
+          Arial,
+          sans-serif;
+      }
+
+      .paintless3d-dashboard-layer-state.is-enabled {
+        color: #8ff7b4;
+      }
+
       .paintless3d-dashboard-depth {
         display: inline-grid;
         place-items: center;
-        min-width: 44px;
-        height: 29px;
+        min-width: 48px;
+        height: 31px;
         padding: 0 7px;
         border: 1px solid rgba(255, 255, 255, 0.13);
         border-radius: 9px;
@@ -830,29 +1001,38 @@
             rgba(37, 230, 255, 0.13)
           );
         font:
-          900 11px/1
+          900 10px/1
           "Segoe UI",
           Arial,
           sans-serif;
       }
 
+      .paintless3d-dashboard-depth.is-flat {
+        color: rgba(255, 255, 255, 0.52);
+        background: rgba(255, 255, 255, 0.035);
+      }
+
       .paintless3d-dashboard-actions {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns:
+          repeat(
+            3,
+            minmax(0, 1fr)
+          );
         gap: 5px;
         margin-top: 9px;
       }
 
       .paintless3d-dashboard-action {
         min-width: 0;
-        height: 32px;
+        height: 34px;
         padding: 0 4px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 9px;
         color: rgba(255, 255, 255, 0.62);
         background: rgba(255, 255, 255, 0.035);
         font:
-          800 8px/1
+          800 7px/1
           "Segoe UI",
           Arial,
           sans-serif;
@@ -889,7 +1069,7 @@
         margin-top: 8px;
         padding-top: 8px;
         border-top: 1px solid rgba(255, 255, 255, 0.075);
-        color: rgba(255, 255, 255, 0.38);
+        color: rgba(255, 255, 255, 0.4);
         font:
           600 8px/1.35
           "Segoe UI",
@@ -899,7 +1079,7 @@
       }
 
       .paintless3d-dashboard-render strong {
-        color: rgba(255, 255, 255, 0.68);
+        color: rgba(255, 255, 255, 0.7);
         font-weight: 800;
       }
 
@@ -908,13 +1088,19 @@
       body.paintless3d-editor-active
       .paintless3d-preview-panel,
       body.paintless3d-editor-active
+      .paintless3d-export-panel,
+      body.paintless-3d-mode
+      .paintless3d-depth-control,
+      body.paintless-3d-mode
+      .paintless3d-preview-panel,
+      body.paintless-3d-mode
       .paintless3d-export-panel {
         animation:
-          paintless3d-panel-arrive
+          paintless3d-live-panel-arrive
           150ms ease;
       }
 
-      @keyframes paintless3d-panel-arrive {
+      @keyframes paintless3d-live-panel-arrive {
         from {
           opacity: 0;
           transform: translateY(-4px);
@@ -936,20 +1122,8 @@
         }
 
         .paintless3d-dashboard-action {
-          height: 34px;
-          font-size: 7px;
-        }
-      }
-
-      @media (max-width: 430px) {
-        .paintless3d-dashboard-title {
-          font-size: 10px;
-        }
-
-        .paintless3d-dashboard-badge {
-          min-width: 28px;
-          padding-inline: 4px;
-          font-size: 7px;
+          height: 35px;
+          font-size: 6px;
         }
       }
     `;
@@ -974,7 +1148,7 @@
 
 
   /* =======================================================
-     8. DASHBOARD CREATION
+     9. DASHBOARD CREATION
   ======================================================= */
 
   function createDashboardButton(
@@ -1085,17 +1259,17 @@
       );
 
 
-    const previewBadge =
+    const liveBadge =
       createElement(
         "span",
         "paintless3d-dashboard-badge",
-        "Preview"
+        "Live"
       );
 
 
     badges.append(
       modeBadge,
-      previewBadge
+      liveBadge
     );
 
 
@@ -1135,17 +1309,26 @@
       );
 
 
+    const layerState =
+      createElement(
+        "span",
+        "paintless3d-dashboard-layer-state",
+        "Flat layer"
+      );
+
+
     layerCopy.append(
       layerLabel,
-      layerName
+      layerName,
+      layerState
     );
 
 
     const layerDepth =
       createElement(
         "span",
-        "paintless3d-dashboard-depth",
-        "0"
+        "paintless3d-dashboard-depth is-flat",
+        "Flat"
       );
 
 
@@ -1169,10 +1352,10 @@
       );
 
 
-    const previewButton =
+    const settingsButton =
       createDashboardButton(
-        "Preview",
-        "preview"
+        "3D Settings",
+        "settings"
       );
 
 
@@ -1185,7 +1368,7 @@
 
     actions.append(
       depthButton,
-      previewButton,
+      settingsButton,
       exportButton
     );
 
@@ -1194,7 +1377,7 @@
       createElement(
         "div",
         "paintless3d-dashboard-render",
-        "Renderer ready."
+        "Live renderer ready."
       );
 
 
@@ -1218,15 +1401,19 @@
       modeBadge;
 
 
-    dom.previewBadge =
-      previewBadge;
+    dom.liveBadge =
+      liveBadge;
 
 
-    dom.activeLayerName =
+    dom.layerName =
       layerName;
 
 
-    dom.activeLayerDepth =
+    dom.layerState =
+      layerState;
+
+
+    dom.layerDepth =
       layerDepth;
 
 
@@ -1238,8 +1425,8 @@
       depthButton;
 
 
-    dom.previewButton =
-      previewButton;
+    dom.settingsButton =
+      settingsButton;
 
 
     dom.exportButton =
@@ -1247,6 +1434,72 @@
 
 
     return dashboard;
+
+  }
+
+
+  function collectDashboardReferences(
+    dashboard
+  ) {
+
+    dom.dashboard =
+      dashboard;
+
+
+    dom.modeBadge =
+      dashboard.querySelectorAll(
+        ".paintless3d-dashboard-badge"
+      )[0] ||
+      null;
+
+
+    dom.liveBadge =
+      dashboard.querySelectorAll(
+        ".paintless3d-dashboard-badge"
+      )[1] ||
+      null;
+
+
+    dom.layerName =
+      dashboard.querySelector(
+        ".paintless3d-dashboard-layer-name"
+      );
+
+
+    dom.layerState =
+      dashboard.querySelector(
+        ".paintless3d-dashboard-layer-state"
+      );
+
+
+    dom.layerDepth =
+      dashboard.querySelector(
+        ".paintless3d-dashboard-depth"
+      );
+
+
+    dom.renderInformation =
+      dashboard.querySelector(
+        ".paintless3d-dashboard-render"
+      );
+
+
+    dom.depthButton =
+      dashboard.querySelector(
+        '[data-paintless3d-panel="depth"]'
+      );
+
+
+    dom.settingsButton =
+      dashboard.querySelector(
+        '[data-paintless3d-panel="settings"]'
+      );
+
+
+    dom.exportButton =
+      dashboard.querySelector(
+        '[data-paintless3d-panel="export"]'
+      );
 
   }
 
@@ -1261,64 +1514,7 @@
 
     if (existingDashboard) {
 
-      dom.dashboard =
-        existingDashboard;
-
-
-      dom.modeBadge =
-        existingDashboard.querySelector(
-          ".paintless3d-dashboard-badge"
-        );
-
-
-      dom.previewBadge =
-        existingDashboard.querySelectorAll(
-          ".paintless3d-dashboard-badge"
-        )[1] ||
-        null;
-
-
-      dom.activeLayerName =
-        existingDashboard.querySelector(
-          ".paintless3d-dashboard-layer-name"
-        );
-
-
-      dom.activeLayerDepth =
-        existingDashboard.querySelector(
-          ".paintless3d-dashboard-depth"
-        );
-
-
-      dom.renderInformation =
-        existingDashboard.querySelector(
-          ".paintless3d-dashboard-render"
-        );
-
-
-      dom.depthButton =
-        existingDashboard.querySelector(
-          '[data-paintless3d-panel="depth"]'
-        );
-
-
-      dom.previewButton =
-        existingDashboard.querySelector(
-          '[data-paintless3d-panel="preview"]'
-        );
-
-
-      dom.exportButton =
-        existingDashboard.querySelector(
-          '[data-paintless3d-panel="export"]'
-        );
-
-
-      uiState.dashboardInstalled =
-        true;
-
-
-      return true;
+      existingDashboard.remove();
 
     }
 
@@ -1338,10 +1534,8 @@
       createDashboard();
 
 
-    /*
-     * Put the dashboard before the individual 3D controls,
-     * keeping the complete 3D area grouped together.
-     */
+    refreshPanelReferences();
+
 
     const first3DPanel =
       parent.querySelector(
@@ -1371,6 +1565,11 @@
     }
 
 
+    collectDashboardReferences(
+      dashboard
+    );
+
+
     uiState.dashboardInstalled =
       true;
 
@@ -1381,62 +1580,8 @@
 
 
   /* =======================================================
-     9. PANEL MANAGEMENT
+     10. PANEL MANAGEMENT
   ======================================================= */
-
-  function refreshPanelReferences() {
-
-    dom.depthPanel =
-      document.getElementById(
-        "paintless3d-depth-control"
-      );
-
-
-    dom.previewPanel =
-      document.getElementById(
-        "paintless3d-preview-panel"
-      );
-
-
-    dom.exportPanel =
-      document.getElementById(
-        "paintless3d-export-panel"
-      );
-
-  }
-
-
-  function getPanelElement(
-    panelName
-  ) {
-
-    refreshPanelReferences();
-
-
-    if (
-      panelName ===
-      "preview"
-    ) {
-
-      return dom.previewPanel;
-
-    }
-
-
-    if (
-      panelName ===
-      "export"
-    ) {
-
-      return dom.exportPanel;
-
-    }
-
-
-    return dom.depthPanel;
-
-  }
-
 
   function updatePanelButtons() {
 
@@ -1448,8 +1593,8 @@
       ],
 
       [
-        dom.previewButton,
-        "preview"
+        dom.settingsButton,
+        "settings"
       ],
 
       [
@@ -1494,6 +1639,39 @@
   }
 
 
+  function closeDepthPanel() {
+
+    getDepthApi()
+      ?.hideDepthControl?.();
+
+
+    return true;
+
+  }
+
+
+  function closeSettingsPanel() {
+
+    getSettingsApi()
+      ?.closePanel?.();
+
+
+    return true;
+
+  }
+
+
+  function closeExportPanel() {
+
+    getExportApi()
+      ?.closePanel?.();
+
+
+    return true;
+
+  }
+
+
   function closeAllPanels({
     except =
       null
@@ -1504,19 +1682,17 @@
       "depth"
     ) {
 
-      getDepthApi()
-        ?.hideDepthControl?.();
+      closeDepthPanel();
 
     }
 
 
     if (
       except !==
-      "preview"
+      "settings"
     ) {
 
-      getPreviewApi()
-        ?.closePanel?.();
+      closeSettingsPanel();
 
     }
 
@@ -1526,8 +1702,7 @@
       "export"
     ) {
 
-      getExportApi()
-        ?.closePanel?.();
+      closeExportPanel();
 
     }
 
@@ -1548,13 +1723,25 @@
     const safePanel =
       [
         "depth",
-        "preview",
+        "settings",
         "export"
       ].includes(
         panelName
       )
         ? panelName
         : "depth";
+
+
+    if (
+      !is3DMode()
+    ) {
+
+      getCoreApi()
+        ?.requestMode?.(
+          "3d"
+        );
+
+    }
 
 
     if (
@@ -1571,10 +1758,10 @@
 
     if (
       safePanel ===
-      "preview"
+      "settings"
     ) {
 
-      getPreviewApi()
+      getSettingsApi()
         ?.openPanel?.();
 
     } else if (
@@ -1602,8 +1789,15 @@
 
     if (announce) {
 
+      const label =
+        safePanel ===
+          "settings"
+          ? "3D settings"
+          : safePanel;
+
+
       sendStatusMessage(
-        `Paintless3D ${safePanel} controls opened.`
+        `Paintless3D ${label} opened.`
       );
 
     }
@@ -1627,51 +1821,54 @@
     panelName
   ) {
 
+    const safePanel =
+      [
+        "depth",
+        "settings",
+        "export"
+      ].includes(
+        panelName
+      )
+        ? panelName
+        : "depth";
+
+
     if (
       uiState.activePanel ===
-      panelName
+      safePanel &&
+      safePanel !==
+        "depth" &&
+      panelIsOpen(
+        safePanel
+      )
     ) {
 
-      const panel =
-        getPanelElement(
-          panelName
-        );
+      closeAllPanels();
 
 
-      const currentlyOpen =
-        panelName ===
-          "depth"
-          ? uiState.active
-          : panel?.classList.contains(
-              "is-open"
-            );
+      uiState.activePanel =
+        null;
 
 
-      if (
-        currentlyOpen &&
-        panelName !==
-          "depth"
-      ) {
-
-        closeAllPanels();
+      updatePanelButtons();
 
 
-        uiState.activePanel =
-          null;
+      dispatch(
+        "paintless3d:ui-panel-changed",
+        {
+          panel:
+            null
+        }
+      );
 
 
-        updatePanelButtons();
-
-
-        return false;
-
-      }
+      return false;
 
     }
 
 
     return openPanel(
-      panelName,
+      safePanel,
       {
         announce:
           true
@@ -1682,7 +1879,7 @@
 
 
   /* =======================================================
-     10. DASHBOARD DISPLAY
+     11. DASHBOARD DISPLAY
   ======================================================= */
 
   function updateLayerDisplay() {
@@ -1691,9 +1888,21 @@
       getActiveLayer();
 
 
-    if (dom.activeLayerName) {
+    const enabled =
+      layerStereoIsEnabled(
+        layer
+      );
 
-      dom.activeLayerName.textContent =
+
+    const depth =
+      getLayerDepth(
+        layer
+      );
+
+
+    if (dom.layerName) {
+
+      dom.layerName.textContent =
         getLayerName(
           layer
         );
@@ -1701,12 +1910,38 @@
     }
 
 
-    if (dom.activeLayerDepth) {
+    if (dom.layerState) {
 
-      dom.activeLayerDepth.textContent =
-        formatDepth(
-          getActiveDepth()
-        );
+      dom.layerState.textContent =
+        !layer
+          ? "No layer selected"
+          : enabled
+            ? "3D depth enabled"
+            : "Flat layer";
+
+
+      dom.layerState.classList.toggle(
+        "is-enabled",
+        enabled
+      );
+
+    }
+
+
+    if (dom.layerDepth) {
+
+      dom.layerDepth.textContent =
+        enabled
+          ? formatDepth(
+              depth
+            )
+          : "Flat";
+
+
+      dom.layerDepth.classList.toggle(
+        "is-flat",
+        !enabled
+      );
 
     }
 
@@ -1718,63 +1953,74 @@
 
   function updateModeDisplay() {
 
-    const is3D =
-      paintless3d.is3DMode?.() ||
-      false;
+    const active =
+      is3DMode();
 
 
     uiState.active =
-      is3D;
+      active;
 
 
     dom.modeBadge
       ?.classList.toggle(
         "is-active",
-        is3D
+        active
       );
 
 
     if (dom.modeBadge) {
 
       dom.modeBadge.textContent =
-        is3D
+        active
           ? "3D"
           : "2D";
 
     }
 
 
-    return is3D;
+    return active;
 
   }
 
 
-  function updatePreviewDisplay() {
+  function updateLiveDisplay() {
 
-    const enabled =
-      getCoreApi()
-        ?.isPreviewEnabled?.() ||
-      false;
-
-
-    dom.previewBadge
-      ?.classList.toggle(
-        "is-active",
-        enabled
+    const live =
+      Boolean(
+        is3DMode() &&
+        (
+          getRendererApi()
+            ?.isEnabled?.() ??
+          true
+        )
       );
 
 
-    if (dom.previewBadge) {
+    dom.liveBadge
+      ?.classList.toggle(
+        "is-active",
+        live
+      );
 
-      dom.previewBadge.textContent =
-        enabled
-          ? "Preview On"
-          : "Preview";
+
+    dom.liveBadge
+      ?.classList.toggle(
+        "is-live",
+        live
+      );
+
+
+    if (dom.liveBadge) {
+
+      dom.liveBadge.textContent =
+        live
+          ? "Live"
+          : "Off";
 
     }
 
 
-    return enabled;
+    return live;
 
   }
 
@@ -1793,8 +2039,13 @@
       0
     ) {
 
-      dom.renderInformation.textContent =
-        "Renderer ready. Enable Preview to see the anaglyph image.";
+      dom.renderInformation.innerHTML =
+        [
+          "<strong>Live renderer ready.</strong>",
+          " Toggle a layer's red/blue button to add depth."
+        ].join(
+          ""
+        );
 
 
       return true;
@@ -1807,18 +2058,24 @@
         "<strong>",
         `${uiState.lastRenderWidth} × ${uiState.lastRenderHeight}`,
         "</strong>",
-        " rendered in ",
+        " · ",
         "<strong>",
         formatDuration(
           uiState.lastRenderDuration
         ),
         "</strong>",
         " · ",
+        uiState.lastRenderLayers,
+        uiState.lastRenderLayers ===
+          1
+          ? " layer"
+          : " layers",
+        " · ",
         uiState.renderCount,
         uiState.renderCount ===
           1
-          ? " render"
-          : " renders"
+          ? " refresh"
+          : " refreshes"
       ].join(
         ""
       );
@@ -1833,7 +2090,7 @@
 
     updateModeDisplay();
 
-    updatePreviewDisplay();
+    updateLiveDisplay();
 
     updateLayerDisplay();
 
@@ -1846,18 +2103,25 @@
       "paintless3d:ui-updated",
       {
         mode:
-          paintless3d.getMode?.(),
+          is3DMode()
+            ? "3d"
+            : "2d",
 
-        preview:
-          getCoreApi()
-            ?.isPreviewEnabled?.() ||
-          false,
+        live:
+          Boolean(
+            is3DMode() &&
+            getRendererApi()
+              ?.isEnabled?.()
+          ),
 
         layer:
           getActiveLayer(),
 
+        stereoEnabled:
+          layerStereoIsEnabled(),
+
         depth:
-          getActiveDepth(),
+          getLayerDepth(),
 
         activePanel:
           uiState.activePanel
@@ -1871,7 +2135,7 @@
 
 
   /* =======================================================
-     11. EVENT HANDLERS
+     12. BUTTON HANDLERS
   ======================================================= */
 
   function handleDepthButton() {
@@ -1887,27 +2151,10 @@
   }
 
 
-  function handlePreviewButton() {
+  function handleSettingsButton() {
 
-    if (
-      !getCoreApi()
-        ?.isPreviewEnabled?.()
-    ) {
-
-      getCoreApi()
-        ?.setPreviewEnabled?.(
-          true
-        );
-
-    }
-
-
-    openPanel(
-      "preview",
-      {
-        announce:
-          true
-      }
+    togglePanel(
+      "settings"
     );
 
   }
@@ -1926,21 +2173,25 @@
   }
 
 
+  /* =======================================================
+     13. DOCUMENT EVENT HANDLERS
+  ======================================================= */
+
   function handleModeChanged(
     event
   ) {
 
-    const is3D =
+    const active =
       event.detail?.mode ===
       "3d";
 
 
     uiState.active =
-      is3D;
+      active;
 
 
     if (
-      is3D &&
+      active &&
       uiState.automaticallyOpenDepth
     ) {
 
@@ -1958,7 +2209,7 @@
     }
 
 
-    if (!is3D) {
+    if (!active) {
 
       closeAllPanels();
 
@@ -1974,39 +2225,9 @@
   }
 
 
-  function handlePreviewChanged(
-    event
-  ) {
+  function handleLiveStateChanged() {
 
-    const enabled =
-      Boolean(
-        event.detail?.enabled
-      );
-
-
-    if (
-      enabled &&
-      uiState.automaticallyOpenPreview
-    ) {
-
-      openPanel(
-        "preview"
-      );
-
-    } else if (
-      !enabled &&
-      uiState.activePanel ===
-        "preview"
-    ) {
-
-      openPanel(
-        "depth"
-      );
-
-    }
-
-
-    updateDashboard();
+    updateLiveDisplay();
 
   }
 
@@ -2021,6 +2242,27 @@
   function handleDepthChanged() {
 
     updateLayerDisplay();
+
+  }
+
+
+  function handleStereoChanged() {
+
+    updateLayerDisplay();
+
+  }
+
+
+  function handleRenderRequested() {
+
+    if (
+      dom.renderInformation
+    ) {
+
+      dom.renderInformation.textContent =
+        "Refreshing live stereoscopic image…";
+
+    }
 
   }
 
@@ -2054,7 +2296,66 @@
       0;
 
 
+    uiState.lastRenderLayers =
+      Number(
+        event.detail?.layers
+      ) ||
+      0;
+
+
+    uiState.lastRenderReason =
+      event.detail?.reason ||
+      "live-render";
+
+
     updateRenderDisplay();
+
+  }
+
+
+  function handleRenderFailed() {
+
+    if (
+      dom.renderInformation
+    ) {
+
+      dom.renderInformation.textContent =
+        "Live 3D rendering failed. Check the console.";
+
+    }
+
+  }
+
+
+  function handleSettingsPanelOpened() {
+
+    uiState.activePanel =
+      "settings";
+
+
+    updatePanelButtons();
+
+  }
+
+
+  function handleSettingsPanelClosed() {
+
+    if (
+      uiState.activePanel ===
+      "settings"
+    ) {
+
+      uiState.activePanel =
+        "depth";
+
+
+      getDepthApi()
+        ?.showDepthControl?.();
+
+    }
+
+
+    updatePanelButtons();
 
   }
 
@@ -2068,6 +2369,16 @@
       openPanel(
         "export"
       );
+
+    }
+
+
+    if (
+      dom.renderInformation
+    ) {
+
+      dom.renderInformation.textContent =
+        "Preparing full-resolution 3D export…";
 
     }
 
@@ -2116,6 +2427,20 @@
   }
 
 
+  function handleExportFailed() {
+
+    if (
+      dom.renderInformation
+    ) {
+
+      dom.renderInformation.textContent =
+        "Paintless3D export failed. Check the console.";
+
+    }
+
+  }
+
+
   function handlePanelChanged(
     event
   ) {
@@ -2125,9 +2450,11 @@
 
 
     if (
+      panel ===
+      null ||
       [
         "depth",
-        "preview",
+        "settings",
         "export"
       ].includes(
         panel
@@ -2160,7 +2487,7 @@
   ) {
 
     if (
-      !paintless3d.is3DMode?.() ||
+      !is3DMode() ||
       event.ctrlKey ||
       event.metaKey ||
       event.altKey
@@ -2220,7 +2547,9 @@
       event.preventDefault();
 
 
-      handlePreviewButton();
+      togglePanel(
+        "settings"
+      );
 
 
       return;
@@ -2250,7 +2579,7 @@
 
 
   /* =======================================================
-     12. CONNECT EVENTS
+     14. EVENT CONNECTION
   ======================================================= */
 
   function connectEvents() {
@@ -2262,10 +2591,10 @@
       );
 
 
-    dom.previewButton
+    dom.settingsButton
       ?.addEventListener(
         "click",
-        handlePreviewButton
+        handleSettingsButton
       );
 
 
@@ -2283,8 +2612,14 @@
 
 
     document.addEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
+      "paintless3d:live-state-changed",
+      handleLiveStateChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:live-rendering-changed",
+      handleLiveStateChanged
     );
 
 
@@ -2307,8 +2642,58 @@
 
 
     document.addEventListener(
+      "paintless3d:layer-stereo-changed",
+      handleStereoChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:render-requested",
+      handleRenderRequested
+    );
+
+
+    document.addEventListener(
       "paintless3d:render-completed",
       handleRenderCompleted
+    );
+
+
+    document.addEventListener(
+      "paintless3d:render-failed",
+      handleRenderFailed
+    );
+
+
+    document.addEventListener(
+      "paintless3d:preview-panel-opened",
+      handleSettingsPanelOpened
+    );
+
+
+    document.addEventListener(
+      "paintless3d:preview-panel-closed",
+      handleSettingsPanelClosed
+    );
+
+
+    document.addEventListener(
+      "paintless3d:settings-panel-changed",
+      (event) => {
+
+        if (
+          event.detail?.open
+        ) {
+
+          handleSettingsPanelOpened();
+
+        } else {
+
+          handleSettingsPanelClosed();
+
+        }
+
+      }
     );
 
 
@@ -2325,6 +2710,12 @@
 
 
     document.addEventListener(
+      "paintless3d:export-failed",
+      handleExportFailed
+    );
+
+
+    document.addEventListener(
       "paintless3d:ui-panel-changed",
       handlePanelChanged
     );
@@ -2332,6 +2723,12 @@
 
     document.addEventListener(
       "paintless:document-reset",
+      handleDocumentReset
+    );
+
+
+    document.addEventListener(
+      "paintless:layers-restored",
       handleDocumentReset
     );
 
@@ -2353,10 +2750,10 @@
       );
 
 
-    dom.previewButton
+    dom.settingsButton
       ?.removeEventListener(
         "click",
-        handlePreviewButton
+        handleSettingsButton
       );
 
 
@@ -2374,8 +2771,14 @@
 
 
     document.removeEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
+      "paintless3d:live-state-changed",
+      handleLiveStateChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:live-rendering-changed",
+      handleLiveStateChanged
     );
 
 
@@ -2398,8 +2801,38 @@
 
 
     document.removeEventListener(
+      "paintless3d:layer-stereo-changed",
+      handleStereoChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:render-requested",
+      handleRenderRequested
+    );
+
+
+    document.removeEventListener(
       "paintless3d:render-completed",
       handleRenderCompleted
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:render-failed",
+      handleRenderFailed
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:preview-panel-opened",
+      handleSettingsPanelOpened
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:preview-panel-closed",
+      handleSettingsPanelClosed
     );
 
 
@@ -2416,6 +2849,12 @@
 
 
     document.removeEventListener(
+      "paintless3d:export-failed",
+      handleExportFailed
+    );
+
+
+    document.removeEventListener(
       "paintless3d:ui-panel-changed",
       handlePanelChanged
     );
@@ -2423,6 +2862,12 @@
 
     document.removeEventListener(
       "paintless:document-reset",
+      handleDocumentReset
+    );
+
+
+    document.removeEventListener(
+      "paintless:layers-restored",
       handleDocumentReset
     );
 
@@ -2436,7 +2881,7 @@
 
 
   /* =======================================================
-     13. INITIALISATION
+     15. INITIALISE
   ======================================================= */
 
   async function initialise() {
@@ -2456,11 +2901,9 @@
     installStyles();
 
 
-    const installed =
-      installDashboard();
-
-
-    if (!installed) {
+    if (
+      !installDashboard()
+    ) {
 
       throw new Error(
         "Paintless3D UI could not find the right-side panel."
@@ -2476,8 +2919,7 @@
 
 
     uiState.active =
-      paintless3d.is3DMode?.() ||
-      false;
+      is3DMode();
 
 
     uiState.initialised =
@@ -2507,13 +2949,16 @@
       "paintless3d:ui-ready",
       {
         ui:
-          publicApi
+          publicApi,
+
+        live:
+          true
       }
     );
 
 
     console.log(
-      "%cPaintless3D UI ready.",
+      "%cPaintless3D Live UI ready.",
       [
         "color:#a84cff",
         "font-weight:bold",
@@ -2529,7 +2974,7 @@
 
 
   /* =======================================================
-     14. DESTROY
+     16. DESTROY
   ======================================================= */
 
   async function destroy() {
@@ -2579,7 +3024,7 @@
 
 
   /* =======================================================
-     15. PUBLIC API
+     17. PUBLIC API
   ======================================================= */
 
   const publicApi = {
@@ -2608,7 +3053,7 @@
 
     updateModeDisplay,
 
-    updatePreviewDisplay,
+    updateLiveDisplay,
 
     updateRenderDisplay,
 
@@ -2647,18 +3092,34 @@
     },
 
 
-    setAutomaticPreviewPanel(
+    setAutomaticSettingsPanel(
       enabled
     ) {
 
-      uiState.automaticallyOpenPreview =
+      uiState.automaticallyOpenSettings =
         Boolean(
           enabled
         );
 
 
       return uiState
-        .automaticallyOpenPreview;
+        .automaticallyOpenSettings;
+
+    },
+
+
+    setAutomaticPreviewPanel(
+      enabled
+    ) {
+
+      /*
+       * Backwards-compatible name.
+       */
+
+      return publicApi
+        .setAutomaticSettingsPanel(
+          enabled
+        );
 
     },
 
@@ -2695,24 +3156,37 @@
 
     getSummary() {
 
+      const layer =
+        getActiveLayer();
+
+
       return {
 
         active:
           uiState.active,
 
+        live:
+          Boolean(
+            is3DMode() &&
+            getRendererApi()
+              ?.isEnabled?.()
+          ),
+
         activePanel:
           uiState.activePanel,
 
-        previewEnabled:
-          getCoreApi()
-            ?.isPreviewEnabled?.() ||
-          false,
-
         activeLayer:
-          getActiveLayer(),
+          layer,
+
+        activeLayerStereoEnabled:
+          layerStereoIsEnabled(
+            layer
+          ),
 
         activeLayerDepth:
-          getActiveDepth(),
+          getLayerDepth(
+            layer
+          ),
 
         renderCount:
           uiState.renderCount,
@@ -2725,6 +3199,12 @@
 
         lastRenderHeight:
           uiState.lastRenderHeight,
+
+        lastRenderLayers:
+          uiState.lastRenderLayers,
+
+        lastRenderReason:
+          uiState.lastRenderReason,
 
         lastExportFilename:
           uiState.lastExportFilename,
@@ -2744,7 +3224,7 @@
 
 
   /* =======================================================
-     16. REGISTER MODULE
+     18. REGISTER MODULE
   ======================================================= */
 
   paintless3d.registerModule(
@@ -2752,7 +3232,7 @@
     {
 
       label:
-        "Paintless3D Interface",
+        "Paintless3D Live Interface",
 
       initialised:
         false,
