@@ -38,6 +38,49 @@
   const deleteLayerButton =
     document.getElementById("delete-layer-button");
 
+   const duplicateLayerButton =
+  document.createElement("button");
+
+
+duplicateLayerButton.id =
+  "duplicate-layer-button";
+
+
+duplicateLayerButton.type =
+  "button";
+
+
+duplicateLayerButton.className =
+  addLayerButton?.className ||
+  deleteLayerButton?.className ||
+  "";
+
+
+duplicateLayerButton.innerHTML =
+  "⧉";
+
+
+duplicateLayerButton.title =
+  "Duplicate active layer";
+
+
+duplicateLayerButton.setAttribute(
+  "aria-label",
+  "Duplicate active layer"
+);
+
+
+if (
+  deleteLayerButton?.parentElement
+) {
+
+  deleteLayerButton.parentElement.insertBefore(
+    duplicateLayerButton,
+    deleteLayerButton
+  );
+
+}
+
   const layerBlendMode =
     document.getElementById("layer-blend-mode");
 
@@ -1161,7 +1204,7 @@
     layerId,
     enabled,
     {
-      initialDepth = -100
+      initialDepth = -300
     } = {}
   ) {
 
@@ -2634,6 +2677,29 @@
     }
   );
 
+
+   duplicateLayerButton?.addEventListener(
+  "click",
+  () => {
+
+    if (!getActiveLayer()) {
+      return;
+    }
+
+
+    duplicateLayer();
+
+
+    dispatchLayerEvent(
+      "paintless:history-requested",
+      {
+        reason:
+          "Duplicate layer"
+      }
+    );
+
+  }
+);
 
   layerBlendMode?.addEventListener(
     "change",
