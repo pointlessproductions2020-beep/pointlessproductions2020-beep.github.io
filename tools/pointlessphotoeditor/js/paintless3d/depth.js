@@ -3024,8 +3024,8 @@
      13. CONNECT EVENTS
   ======================================================= */
 
-  
-
+   function connectEvents() {
+   
 
     document.addEventListener(
       "paintless3d:mode-changed",
