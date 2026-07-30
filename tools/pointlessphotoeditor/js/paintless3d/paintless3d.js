@@ -68,7 +68,9 @@ const moduleFiles = [
 
   "export.js",
 
-  "ui.js"
+  "ui.js",
+
+  "toolbar.js"
 
 ];
 
