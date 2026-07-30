@@ -2,42 +2,27 @@
 
 /* =========================================================
    PAINTLESS3D
-   ANAGLYPH RENDERER — v0.1
+   LIVE ANAGLYPH RENDERER — v0.2
 
    File:
    js/paintless3d/renderer.js
 
-   Purpose:
-   - Renders Paintless layers as stereoscopic red/cyan artwork
-   - Uses each layer's layer.depth3d value
-   - Positive depth moves forward
-   - Negative depth moves behind the screen
-   - Zero depth remains on the screen plane
-   - Creates a dedicated preview canvas
-   - Never permanently changes the original artwork
-   - Supports layer visibility, opacity and blend modes
-   - Supports red/cyan, red/blue and green/magenta modes
-   - Supports eye swapping
-   - Supports convergence and depth-strength settings
-   - Re-renders automatically when artwork or depth changes
-   - Produces full-resolution output for the future exporter
-
-   This renderer listens for:
-
-   paintless3d:preview-changed
-   paintless3d:layer-depth-changed
-   paintless3d:render-requested
-   paintless3d:strength-changed
-   paintless3d:convergence-changed
-   paintless3d:channel-mode-changed
-   paintless3d:swap-eyes-changed
-   paintless3d:ghost-reduction-changed
+   New behaviour:
+   - Entering 3D mode automatically enables live rendering
+   - No Preview on/off requirement
+   - Original Paintless tools remain interactive
+   - The preview canvas never receives pointer input
+   - The overlay canvas always remains above the renderer
+   - Flat layers remain on the screen plane
+   - Only stereo3dEnabled layers use their depth3d value
+   - Layer changes and painting automatically refresh
+   - Full-resolution export remains supported
 ========================================================= */
 
 (() => {
 
   /* =======================================================
-     1. PAINTLESS3D CHECK
+     1. SYSTEM CHECK
   ======================================================= */
 
   const paintless3d =
@@ -54,14 +39,13 @@
       "Paintless3D Renderer could not start because paintless3d.js has not loaded."
     );
 
-
     return;
 
   }
 
 
   /* =======================================================
-     2. RENDERER STATE
+     2. STATE
   ======================================================= */
 
   const rendererState = {
@@ -81,7 +65,7 @@
     renderQueued:
       false,
 
-    renderFrame:
+    animationFrame:
       null,
 
     renderCount:
@@ -117,11 +101,11 @@
     automaticRendering:
       true,
 
-    hideOriginalDuringPreview:
+    liveRendering:
       true,
 
-    maximumPreviewPixels:
-      24000000,
+    previewOpacity:
+      1,
 
     depthScale:
       1,
@@ -129,14 +113,14 @@
     alphaMode:
       "maximum",
 
-    previewOpacity:
-      1,
-
-    previewQuality:
-      "full",
+    maximumPreviewPixels:
+      24000000,
 
     backgroundColour:
-      null
+      null,
+
+    renderDebounce:
+      0
 
   };
 
@@ -169,7 +153,7 @@
 
 
   /* =======================================================
-     4. INTERNAL CANVASES
+     4. INTERNAL RENDER TARGETS
   ======================================================= */
 
   const internal = {
@@ -190,12 +174,6 @@
       null,
 
     combinedContext:
-      null,
-
-    temporaryCanvas:
-      null,
-
-    temporaryContext:
       null,
 
     resizeObserver:
@@ -340,7 +318,6 @@
           message
         );
 
-
       return;
 
     }
@@ -386,10 +363,8 @@
 
 
   function createCanvas(
-    width =
-      1,
-    height =
-      1
+    width = 1,
+    height = 1
   ) {
 
     const canvas =
@@ -424,8 +399,7 @@
   function getCanvasContext(
     canvas,
     {
-      willReadFrequently =
-        false
+      willReadFrequently = false
     } = {}
   ) {
 
@@ -442,90 +416,55 @@
   }
 
 
-  function getDocumentSize() {
-
-    const layersApi =
-      getLayersApi();
-
-
-    const size =
-      layersApi?.getDocumentSize?.() ||
-      getToolCore()
-        ?.getDocumentSize?.();
-
-
-    const width =
-      Number(
-        size?.width
-      ) ||
-      dom.editorCanvas?.width ||
-      1;
-
-
-    const height =
-      Number(
-        size?.height
-      ) ||
-      dom.editorCanvas?.height ||
-      1;
-
-
-    return {
-
-      width:
-        Math.max(
-          1,
-          Math.round(
-            width
-          )
-        ),
-
-      height:
-        Math.max(
-          1,
-          Math.round(
-            height
-          )
-        )
-
-    };
-
-  }
-
-
-  function getLayerName(
-    layer,
-    index
+  function resizeCanvas(
+    canvas,
+    width,
+    height
   ) {
 
-    return (
-      layer?.name ||
-      layer?.label ||
-      `Layer ${index + 1}`
-    );
-
-  }
-
-
-  function layerIsVisible(
-    layer
-  ) {
-
-    if (!layer) {
+    if (!canvas) {
 
       return false;
 
     }
 
 
+    const safeWidth =
+      Math.max(
+        1,
+        Math.round(
+          width
+        )
+      );
+
+
+    const safeHeight =
+      Math.max(
+        1,
+        Math.round(
+          height
+        )
+      );
+
+
     if (
-      layer.visible ===
-      false ||
-      layer.hidden ===
-      true
+      canvas.width !==
+      safeWidth
     ) {
 
-      return false;
+      canvas.width =
+        safeWidth;
+
+    }
+
+
+    if (
+      canvas.height !==
+      safeHeight
+    ) {
+
+      canvas.height =
+        safeHeight;
 
     }
 
@@ -535,11 +474,167 @@
   }
 
 
+  function clearContext(
+    context,
+    width,
+    height
+  ) {
+
+    if (!context) {
+
+      return;
+
+    }
+
+
+    context.save();
+
+
+    context.setTransform(
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    );
+
+
+    context.globalAlpha =
+      1;
+
+
+    context.globalCompositeOperation =
+      "source-over";
+
+
+    context.clearRect(
+      0,
+      0,
+      width,
+      height
+    );
+
+
+    context.restore();
+
+  }
+
+
+  /* =======================================================
+     7. DOCUMENT AND LAYER ACCESS
+  ======================================================= */
+
+  function getDocumentSize() {
+
+    const layersApi =
+      getLayersApi();
+
+
+    const size =
+      layersApi
+        ?.getDocumentSize?.();
+
+
+    return {
+
+      width:
+        Math.max(
+          1,
+          Math.round(
+            Number(
+              size?.width
+            ) ||
+            dom.editorCanvas?.width ||
+            1
+          )
+        ),
+
+      height:
+        Math.max(
+          1,
+          Math.round(
+            Number(
+              size?.height
+            ) ||
+            dom.editorCanvas?.height ||
+            1
+          )
+        )
+
+    };
+
+  }
+
+
+  function getLayers() {
+
+    const layersApi =
+      getLayersApi();
+
+
+    if (
+      Array.isArray(
+        layersApi?.layers
+      )
+    ) {
+
+      return layersApi.layers;
+
+    }
+
+
+    if (
+      typeof layersApi?.getLayers ===
+      "function"
+    ) {
+
+      const result =
+        layersApi.getLayers();
+
+
+      if (
+        Array.isArray(
+          result
+        )
+      ) {
+
+        return result;
+
+      }
+
+    }
+
+
+    return [];
+
+  }
+
+
+  function layerIsVisible(
+    layer
+  ) {
+
+    return Boolean(
+      layer &&
+      layer.visible !==
+        false &&
+      layer.hidden !==
+        true &&
+      getLayerOpacity(
+        layer
+      ) >
+        0
+    );
+
+  }
+
+
   function getLayerOpacity(
     layer
   ) {
 
-    const opacity =
+    const value =
       Number(
         layer?.opacity
       );
@@ -547,7 +642,7 @@
 
     if (
       !Number.isFinite(
-        opacity
+        value
       )
     ) {
 
@@ -556,20 +651,16 @@
     }
 
 
-    /*
-     * Accept either 0–1 or 0–100 layer opacity values.
-     */
-
-    return opacity >
+    return value >
       1
       ? clamp(
-          opacity /
+          value /
           100,
           0,
           1
         )
       : clamp(
-          opacity,
+          value,
           0,
           1
         );
@@ -584,7 +675,6 @@
     const mode =
       String(
         layer?.blendMode ||
-        layer?.compositeOperation ||
         "source-over"
       );
 
@@ -608,8 +698,8 @@
           "saturation",
           "color",
           "luminosity",
-          "copy",
-          "lighter"
+          "lighter",
+          "copy"
         ]
       );
 
@@ -637,78 +727,7 @@
     }
 
 
-    if (
-      layer?.image instanceof
-      HTMLImageElement ||
-      layer?.image instanceof
-      ImageBitmap
-    ) {
-
-      return layer.image;
-
-    }
-
-
     return null;
-
-  }
-
-
-  /* =======================================================
-     7. LAYER COLLECTION
-  ======================================================= */
-
-  function getLayers() {
-
-    const layersApi =
-      getLayersApi();
-
-
-    if (
-      typeof layersApi?.getLayers ===
-      "function"
-    ) {
-
-      const layers =
-        layersApi.getLayers();
-
-
-      if (
-        Array.isArray(
-          layers
-        )
-      ) {
-
-        return layers;
-
-      }
-
-    }
-
-
-    if (
-      Array.isArray(
-        layersApi?.layers
-      )
-    ) {
-
-      return layersApi.layers;
-
-    }
-
-
-    if (
-      Array.isArray(
-        layersApi?.state?.layers
-      )
-    ) {
-
-      return layersApi.state.layers;
-
-    }
-
-
-    return [];
 
   }
 
@@ -731,29 +750,35 @@
   }
 
 
+  function layerStereoIsEnabled(
+    layer
+  ) {
+
+    return Boolean(
+      layer?.stereo3dEnabled
+    );
+
+  }
+
+
   function getLayerDepth(
     layer
   ) {
 
     if (
-      typeof getDepthApi()
-        ?.getLayerDepth ===
-      "function"
+      !layerStereoIsEnabled(
+        layer
+      )
     ) {
 
-      return getDepthApi()
-        .getLayerDepth(
-          layer
-        );
+      return 0;
 
     }
 
 
     const depth =
       Number(
-        layer?.depth3d ??
-        layer?.depth ??
-        0
+        layer?.depth3d
       );
 
 
@@ -827,6 +852,17 @@
     width
   ) {
 
+    if (
+      !layerStereoIsEnabled(
+        layer
+      )
+    ) {
+
+      return 0;
+
+    }
+
+
     const depth =
       getLayerDepth(
         layer
@@ -836,14 +872,6 @@
     const settings =
       getStereoSettings();
 
-
-    /*
-     * Strength represents the maximum separation as a
-     * percentage of approximately 8% of the document width.
-
-     * At the default strength of 12, maximum layer separation
-     * remains comfortable rather than extreme.
-     */
 
     const maximumComfortableOffset =
       Math.max(
@@ -858,23 +886,21 @@
       100;
 
 
+    const convergenceDepth =
+      depth -
+      settings.convergence;
+
+
     const depthRatio =
-      (
-        depth -
-        settings.convergence
-      ) /
+      convergenceDepth /
       100;
 
 
-    const separation =
+    return clamp(
       maximumComfortableOffset *
       strengthRatio *
       depthRatio *
-      rendererState.depthScale;
-
-
-    return clamp(
-      separation,
+      rendererState.depthScale,
       -maximumComfortableOffset,
       maximumComfortableOffset
     );
@@ -894,14 +920,6 @@
       );
 
 
-    const settings =
-      getStereoSettings();
-
-
-    /*
-     * Each eye receives half of the total separation.
-     */
-
     let leftOffset =
       -separation /
       2;
@@ -913,7 +931,8 @@
 
 
     if (
-      settings.swapEyes
+      getStereoSettings()
+        .swapEyes
     ) {
 
       const temporaryOffset =
@@ -992,13 +1011,12 @@
     if (
       rendererState.stylesInstalled ||
       document.getElementById(
-        "paintless3d-renderer-styles"
+        "paintless3d-live-renderer-styles"
       )
     ) {
 
       rendererState.stylesInstalled =
         true;
-
 
       return true;
 
@@ -1012,51 +1030,81 @@
 
 
     style.id =
-      "paintless3d-renderer-styles";
+      "paintless3d-live-renderer-styles";
 
 
     style.textContent = `
+      #canvas-stage,
+      .canvas-stage {
+        position: relative;
+        isolation: isolate;
+      }
+
+      #editor-canvas {
+        position: relative;
+        z-index: 2;
+      }
+
       #paintless3d-preview-canvas {
         position: absolute;
         left: 0;
         top: 0;
         display: none;
-        width: 100%;
-        height: 100%;
         margin: 0;
         padding: 0;
         border: 0;
         opacity: 1;
-        pointer-events: none;
+        pointer-events: none !important;
+        touch-action: none;
+        user-select: none;
         image-rendering: auto;
-        z-index: 7;
+        z-index: 6;
       }
 
-      body.paintless3d-preview-active
+      #overlay-canvas {
+        position: absolute;
+        z-index: 20 !important;
+        pointer-events: auto;
+        touch-action: none;
+      }
+
+      html[data-paintless-mode="3d"]
+      #paintless3d-preview-canvas,
+      body.paintless-3d-mode
+      #paintless3d-preview-canvas,
+      body.paintless3d-editor-active
       #paintless3d-preview-canvas {
         display: block;
       }
 
-      body.paintless3d-preview-active
-      #editor-canvas.paintless3d-original-hidden {
-        visibility: hidden;
+      html[data-paintless-mode="3d"]
+      #editor-canvas,
+      body.paintless-3d-mode
+      #editor-canvas,
+      body.paintless3d-editor-active
+      #editor-canvas {
+        opacity: 0;
+        visibility: visible;
+        pointer-events: auto;
       }
 
-      body.paintless3d-preview-active
+      html[data-paintless-mode="2d"]
+      #editor-canvas,
+      body:not(.paintless-3d-mode)
+      #editor-canvas {
+        opacity: 1;
+      }
+
+      html[data-paintless-mode="3d"]
       #paintless3d-preview-canvas {
         box-shadow:
-          -4px 0 18px rgba(255, 49, 92, 0.12),
-          4px 0 18px rgba(37, 230, 255, 0.12);
-      }
-
-      #canvas-stage,
-      .canvas-stage {
-        isolation: isolate;
+          -4px 0 18px rgba(255, 49, 92, 0.13),
+          4px 0 18px rgba(37, 230, 255, 0.13);
       }
 
       body.paintless3d-rendering
       #paintless3d-preview-canvas {
-        filter: brightness(0.985);
+        filter: brightness(0.99);
       }
     `;
 
@@ -1100,7 +1148,7 @@
 
 
     canvas.dataset.paintless3dRenderer =
-      "anaglyph";
+      "live-anaglyph";
 
 
     return canvas;
@@ -1147,11 +1195,6 @@
     const previewCanvas =
       createPreviewCanvas();
 
-
-    /*
-     * Place the preview canvas above the editor image but below
-     * the normal interactive overlay canvas.
-     */
 
     if (
       dom.overlayCanvas &&
@@ -1201,46 +1244,12 @@
     }
 
 
-    const width =
-      Math.max(
-        1,
-        dom.editorCanvas.width
-      );
+    resizeCanvas(
+      dom.previewCanvas,
+      dom.editorCanvas.width,
+      dom.editorCanvas.height
+    );
 
-
-    const height =
-      Math.max(
-        1,
-        dom.editorCanvas.height
-      );
-
-
-    if (
-      dom.previewCanvas.width !==
-      width
-    ) {
-
-      dom.previewCanvas.width =
-        width;
-
-    }
-
-
-    if (
-      dom.previewCanvas.height !==
-      height
-    ) {
-
-      dom.previewCanvas.height =
-        height;
-
-    }
-
-
-    /*
-     * Match any inline dimensions or transforms used by the
-     * existing Paintless canvas.
-     */
 
     const editorStyle =
       window.getComputedStyle(
@@ -1277,54 +1286,26 @@
       );
 
 
+    if (dom.overlayCanvas) {
+
+      dom.overlayCanvas.style.zIndex =
+        "20";
+
+
+      dom.overlayCanvas.style.pointerEvents =
+        "auto";
+
+    }
+
+
     return true;
 
   }
 
 
   /* =======================================================
-     12. INTERNAL RENDER TARGETS
+     12. INTERNAL CANVASES
   ======================================================= */
-
-  function resizeCanvas(
-    canvas,
-    width,
-    height
-  ) {
-
-    if (!canvas) {
-
-      return false;
-
-    }
-
-
-    if (
-      canvas.width !==
-      width
-    ) {
-
-      canvas.width =
-        width;
-
-    }
-
-
-    if (
-      canvas.height !==
-      height
-    ) {
-
-      canvas.height =
-        height;
-
-    }
-
-
-    return true;
-
-  }
-
 
   function ensureInternalCanvases(
     width,
@@ -1394,94 +1375,62 @@
     }
 
 
-    if (!internal.temporaryCanvas) {
-
-      internal.temporaryCanvas =
-        createCanvas(
-          width,
-          height
-        );
-
-
-      internal.temporaryContext =
-        getCanvasContext(
-          internal.temporaryCanvas
-        );
-
-    }
-
-
-    [
+    resizeCanvas(
       internal.leftCanvas,
-      internal.rightCanvas,
-      internal.combinedCanvas,
-      internal.temporaryCanvas
-    ].forEach(
-      (canvas) => {
-
-        resizeCanvas(
-          canvas,
-          width,
-          height
-        );
-
-      }
-    );
-
-
-    return Boolean(
-      internal.leftContext &&
-      internal.rightContext &&
-      internal.combinedContext &&
-      internal.temporaryContext
-    );
-
-  }
-
-
-  function clearContext(
-    context,
-    width,
-    height
-  ) {
-
-    if (!context) {
-
-      return;
-
-    }
-
-
-    context.save();
-
-
-    context.setTransform(
-      1,
-      0,
-      0,
-      1,
-      0,
-      0
-    );
-
-
-    context.globalAlpha =
-      1;
-
-
-    context.globalCompositeOperation =
-      "source-over";
-
-
-    context.clearRect(
-      0,
-      0,
       width,
       height
     );
 
 
-    context.restore();
+    resizeCanvas(
+      internal.rightCanvas,
+      width,
+      height
+    );
+
+
+    resizeCanvas(
+      internal.combinedCanvas,
+      width,
+      height
+    );
+
+
+    internal.leftContext =
+      getCanvasContext(
+        internal.leftCanvas,
+        {
+          willReadFrequently:
+            true
+        }
+      );
+
+
+    internal.rightContext =
+      getCanvasContext(
+        internal.rightCanvas,
+        {
+          willReadFrequently:
+            true
+        }
+      );
+
+
+    internal.combinedContext =
+      getCanvasContext(
+        internal.combinedCanvas,
+        {
+          willReadFrequently:
+            true
+        }
+      );
+
+
+    return Boolean(
+      internal.leftContext &&
+      internal.rightContext &&
+      internal.combinedContext
+    );
 
   }
 
@@ -1530,12 +1479,6 @@
     }
 
 
-    const blendMode =
-      getLayerBlendMode(
-        layer
-      );
-
-
     context.save();
 
 
@@ -1544,14 +1487,10 @@
 
 
     context.globalCompositeOperation =
-      blendMode;
+      getLayerBlendMode(
+        layer
+      );
 
-
-    /*
-     * Paintless layers normally use document-sized canvases.
-     * Scaling here also supports imported layers whose backing
-     * canvas dimensions differ from the current document.
-     */
 
     context.drawImage(
       layerCanvas,
@@ -1733,16 +1672,12 @@
       100;
 
 
-    const contamination =
-      opposingValue *
-      reduction *
-      0.28;
-
-
     return clamp(
       Math.round(
         value -
-        contamination
+        opposingValue *
+        reduction *
+        0.28
       ),
       0,
       255
@@ -1761,67 +1696,37 @@
 
     const leftLuminance =
       (
-        left[
-          index
-        ] *
+        left[index] *
           0.299 +
-        left[
-          index +
-          1
-        ] *
+        left[index + 1] *
           0.587 +
-        left[
-          index +
-          2
-        ] *
+        left[index + 2] *
           0.114
       );
 
 
-    output[
-      index
-    ] =
+    output[index] =
       reduceGhosting(
         Math.round(
           leftLuminance
         ),
-        right[
-          index
-        ],
+        right[index],
         ghostReduction
       );
 
 
-    output[
-      index +
-      1
-    ] =
+    output[index + 1] =
       reduceGhosting(
-        right[
-          index +
-          1
-        ],
-        left[
-          index +
-          1
-        ],
+        right[index + 1],
+        left[index + 1],
         ghostReduction
       );
 
 
-    output[
-      index +
-      2
-    ] =
+    output[index + 2] =
       reduceGhosting(
-        right[
-          index +
-          2
-        ],
-        left[
-          index +
-          2
-        ],
+        right[index + 2],
+        left[index + 2],
         ghostReduction
       );
 
@@ -1838,75 +1743,46 @@
 
     const leftLuminance =
       (
-        left[
-          index
-        ] *
+        left[index] *
           0.299 +
-        left[
-          index +
-          1
-        ] *
+        left[index + 1] *
           0.587 +
-        left[
-          index +
-          2
-        ] *
+        left[index + 2] *
           0.114
       );
 
 
     const rightLuminance =
       (
-        right[
-          index
-        ] *
+        right[index] *
           0.299 +
-        right[
-          index +
-          1
-        ] *
+        right[index + 1] *
           0.587 +
-        right[
-          index +
-          2
-        ] *
+        right[index + 2] *
           0.114
       );
 
 
-    output[
-      index
-    ] =
+    output[index] =
       reduceGhosting(
         Math.round(
           leftLuminance
         ),
-        right[
-          index
-        ],
+        right[index],
         ghostReduction
       );
 
 
-    output[
-      index +
-      1
-    ] =
+    output[index + 1] =
       0;
 
 
-    output[
-      index +
-      2
-    ] =
+    output[index + 2] =
       reduceGhosting(
         Math.round(
           rightLuminance
         ),
-        left[
-          index +
-          2
-        ],
+        left[index + 2],
         ghostReduction
       );
 
@@ -1921,50 +1797,26 @@
     ghostReduction
   ) {
 
-    output[
-      index
-    ] =
+    output[index] =
       reduceGhosting(
-        right[
-          index
-        ],
-        left[
-          index
-        ],
+        right[index],
+        left[index],
         ghostReduction
       );
 
 
-    output[
-      index +
-      1
-    ] =
+    output[index + 1] =
       reduceGhosting(
-        left[
-          index +
-          1
-        ],
-        right[
-          index +
-          1
-        ],
+        left[index + 1],
+        right[index + 1],
         ghostReduction
       );
 
 
-    output[
-      index +
-      2
-    ] =
+    output[index + 2] =
       reduceGhosting(
-        right[
-          index +
-          2
-        ],
-        left[
-          index +
-          2
-        ],
+        right[index + 2],
+        left[index + 2],
         ghostReduction
       );
 
@@ -1980,38 +1832,24 @@
       getStereoSettings();
 
 
-    let leftImageData;
-    let rightImageData;
+    const leftImageData =
+      internal.leftContext
+        .getImageData(
+          0,
+          0,
+          width,
+          height
+        );
 
 
-    try {
-
-      leftImageData =
-        internal.leftContext
-          .getImageData(
-            0,
-            0,
-            width,
-            height
-          );
-
-
-      rightImageData =
-        internal.rightContext
-          .getImageData(
-            0,
-            0,
-            width,
-            height
-          );
-
-    } catch (error) {
-
-      throw new Error(
-        `Paintless3D could not read canvas pixels: ${error.message}`
-      );
-
-    }
+    const rightImageData =
+      internal.rightContext
+        .getImageData(
+          0,
+          0,
+          width,
+          height
+        );
 
 
     const outputImageData =
@@ -2079,19 +1917,10 @@
       }
 
 
-      output[
-        index +
-        3
-      ] =
+      output[index + 3] =
         getCombinedAlpha(
-          left[
-            index +
-            3
-          ],
-          right[
-            index +
-            3
-          ]
+          left[index + 3],
+          right[index + 3]
         );
 
     }
@@ -2111,51 +1940,15 @@
 
 
   /* =======================================================
-     15. COMPLETE RENDER
+     15. FULL RENDER
   ======================================================= */
 
-  function validateRenderSize(
-    width,
-    height
-  ) {
-
-    const pixelCount =
-      width *
-      height;
-
-
-    if (
-      pixelCount >
-      rendererState.maximumPreviewPixels
-    ) {
-
-      console.warn(
-        `Paintless3D is rendering a large document: ${width} × ${height}`
-      );
-
-    }
-
-
-    return true;
-
-  }
-
-
-  function renderToCanvas(
-    {
-      width =
-        null,
-
-      height =
-        null,
-
-      targetCanvas =
-        null,
-
-      reason =
-        "manual"
-    } = {}
-  ) {
+  function renderToCanvas({
+    width = null,
+    height = null,
+    targetCanvas = null,
+    reason = "manual"
+  } = {}) {
 
     const documentSize =
       getDocumentSize();
@@ -2181,10 +1974,21 @@
       );
 
 
-    validateRenderSize(
-      renderWidth,
-      renderHeight
-    );
+    const pixelCount =
+      renderWidth *
+      renderHeight;
+
+
+    if (
+      pixelCount >
+      rendererState.maximumPreviewPixels
+    ) {
+
+      console.warn(
+        `Paintless3D is rendering a large image: ${renderWidth} × ${renderHeight}`
+      );
+
+    }
 
 
     const layers =
@@ -2209,6 +2013,10 @@
         renderWidth,
         renderHeight
       );
+
+
+    rendererState.lastRenderReason =
+      reason;
 
 
     if (!targetCanvas) {
@@ -2247,18 +2055,13 @@
     );
 
 
-    rendererState.lastRenderReason =
-      reason;
-
-
     return targetCanvas;
 
   }
 
 
-  function renderPreview(
-    reason =
-      "manual"
+  function renderLive(
+    reason = "live-render"
   ) {
 
     if (
@@ -2278,7 +2081,6 @@
 
       rendererState.renderQueued =
         true;
-
 
       return false;
 
@@ -2349,6 +2151,10 @@
         startedAt;
 
 
+      rendererState.lastRenderReason =
+        reason;
+
+
       dispatch(
         "paintless3d:render-completed",
         {
@@ -2384,7 +2190,7 @@
 
 
       console.error(
-        "Paintless3D render failed:",
+        "Paintless3D live render failed:",
         error
       );
 
@@ -2396,11 +2202,6 @@
 
           error
         }
-      );
-
-
-      sendStatusMessage(
-        "Paintless3D could not render this preview."
       );
 
 
@@ -2438,8 +2239,7 @@
 
 
   function requestRender(
-    reason =
-      "requested"
+    reason = "requested"
   ) {
 
     rendererState.lastRenderReason =
@@ -2448,7 +2248,8 @@
 
     if (
       !rendererState.automaticRendering ||
-      !rendererState.enabled
+      !rendererState.enabled ||
+      !paintless3d.is3DMode?.()
     ) {
 
       return false;
@@ -2457,26 +2258,26 @@
 
 
     if (
-      rendererState.renderFrame !==
+      rendererState.animationFrame !==
       null
     ) {
 
       window.cancelAnimationFrame(
-        rendererState.renderFrame
+        rendererState.animationFrame
       );
 
     }
 
 
-    rendererState.renderFrame =
+    rendererState.animationFrame =
       window.requestAnimationFrame(
         () => {
 
-          rendererState.renderFrame =
+          rendererState.animationFrame =
             null;
 
 
-          renderPreview(
+          renderLive(
             reason
           );
 
@@ -2490,19 +2291,12 @@
 
 
   /* =======================================================
-     16. PREVIEW ENABLE / DISABLE
+     16. ENABLE AND DISABLE
   ======================================================= */
 
-  function showPreview() {
-
-    if (
-      !dom.previewCanvas
-    ) {
-
-      return false;
-
-    }
-
+  function enableLiveRendering({
+    announce = false
+  } = {}) {
 
     rendererState.enabled =
       true;
@@ -2510,27 +2304,33 @@
 
     document.body
       ?.classList.add(
-        "paintless3d-preview-active"
+        "paintless3d-live-rendering"
       );
-
-
-    if (
-      rendererState.hideOriginalDuringPreview
-    ) {
-
-      dom.editorCanvas
-        ?.classList.add(
-          "paintless3d-original-hidden"
-        );
-
-    }
 
 
     synchronisePreviewCanvas();
 
 
     requestRender(
-      "preview-enabled"
+      "3d-mode-enabled"
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        "Live Paintless3D rendering enabled."
+      );
+
+    }
+
+
+    dispatch(
+      "paintless3d:live-rendering-changed",
+      {
+        enabled:
+          true
+      }
     );
 
 
@@ -2539,7 +2339,9 @@
   }
 
 
-  function hidePreview() {
+  function disableLiveRendering({
+    announce = false
+  } = {}) {
 
     rendererState.enabled =
       false;
@@ -2547,30 +2349,43 @@
 
     document.body
       ?.classList.remove(
-        "paintless3d-preview-active"
-      );
-
-
-    dom.editorCanvas
-      ?.classList.remove(
-        "paintless3d-original-hidden"
+        "paintless3d-live-rendering",
+        "paintless3d-rendering"
       );
 
 
     if (
-      rendererState.renderFrame !==
+      rendererState.animationFrame !==
       null
     ) {
 
       window.cancelAnimationFrame(
-        rendererState.renderFrame
+        rendererState.animationFrame
       );
 
 
-      rendererState.renderFrame =
+      rendererState.animationFrame =
         null;
 
     }
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        "Paintless returned to normal 2D rendering."
+      );
+
+    }
+
+
+    dispatch(
+      "paintless3d:live-rendering-changed",
+      {
+        enabled:
+          false
+      }
+    );
 
 
     return true;
@@ -2582,11 +2397,37 @@
     enabled
   ) {
 
-    return Boolean(
-      enabled
-    )
-      ? showPreview()
-      : hidePreview();
+    return enabled
+      ? enableLiveRendering()
+      : disableLiveRendering();
+
+  }
+
+
+  function showPreview() {
+
+    return enableLiveRendering();
+
+  }
+
+
+  function hidePreview() {
+
+    /*
+     * The old Preview button must no longer disable the
+     * renderer while Paintless remains in 3D mode.
+     */
+
+    if (
+      paintless3d.is3DMode?.()
+    ) {
+
+      return true;
+
+    }
+
+
+    return disableLiveRendering();
 
   }
 
@@ -2601,7 +2442,7 @@
       rendererState.resizeObserverInstalled ||
       typeof ResizeObserver !==
         "function" ||
-      !dom.editorCanvas
+      !dom.canvasStage
     ) {
 
       return false;
@@ -2625,16 +2466,14 @@
 
 
     internal.resizeObserver.observe(
-      dom.editorCanvas
+      dom.canvasStage
     );
 
 
-    if (
-      dom.canvasStage
-    ) {
+    if (dom.editorCanvas) {
 
       internal.resizeObserver.observe(
-        dom.canvasStage
+        dom.editorCanvas
       );
 
     }
@@ -2731,40 +2570,44 @@
      18. EVENT HANDLERS
   ======================================================= */
 
-  function handlePreviewChanged(
-    event
-  ) {
-
-    setEnabled(
-      event.detail?.enabled
-    );
-
-  }
-
-
   function handleModeChanged(
     event
   ) {
 
     if (
-      event.detail?.mode !==
+      event.detail?.mode ===
       "3d"
     ) {
 
-      hidePreview();
+      enableLiveRendering({
+        announce:
+          false
+      });
 
+    } else {
 
-      return;
+      disableLiveRendering({
+        announce:
+          false
+      });
 
     }
 
+  }
+
+
+  function handlePreviewChanged() {
+
+    /*
+     * Preview is now permanently live in 3D mode.
+     * The Preview control will later become a settings button.
+     */
 
     if (
-      getCoreApi()
-        ?.isPreviewEnabled?.()
+      paintless3d.is3DMode?.()
     ) {
 
-      showPreview();
+      enableLiveRendering();
 
     }
 
@@ -2777,16 +2620,18 @@
 
     requestRender(
       event.detail?.reason ||
-      "external-request"
+      "external-render-request"
     );
 
   }
 
 
-  function handleDepthChanged() {
+  function handleArtworkChanged(
+    event
+  ) {
 
     requestRender(
-      "depth-changed"
+      event.type
     );
 
   }
@@ -2803,42 +2648,17 @@
   }
 
 
-  function handleLayerChanged(
-    event
-  ) {
-
-    requestRender(
-      event.type
-    );
-
-  }
-
-
-  function handleDocumentChanged(
-    event
-  ) {
-
-    synchronisePreviewCanvas();
-
-
-    requestRender(
-      event.type
-    );
-
-  }
-
-
   function connectEvents() {
-
-    document.addEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
-    );
-
 
     document.addEventListener(
       "paintless3d:mode-changed",
       handleModeChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:preview-changed",
+      handlePreviewChanged
     );
 
 
@@ -2848,13 +2668,9 @@
     );
 
 
-    document.addEventListener(
-      "paintless3d:layer-depth-changed",
-      handleDepthChanged
-    );
-
-
     [
+      "paintless3d:layer-stereo-changed",
+      "paintless3d:layer-depth-changed",
       "paintless3d:strength-changed",
       "paintless3d:convergence-changed",
       "paintless3d:channel-mode-changed",
@@ -2873,44 +2689,34 @@
 
 
     [
+      "paintless:layers-rendered",
       "paintless:layer-created",
-      "paintless:layer-added",
-      "paintless:layer-removed",
+      "paintless:image-layer-created",
       "paintless:layer-deleted",
       "paintless:layer-duplicated",
-      "paintless:layer-reordered",
+      "paintless:layer-order-changed",
       "paintless:layer-visibility-changed",
       "paintless:layer-opacity-changed",
-      "paintless:layer-blend-mode-changed",
-      "paintless:history-saved"
-    ].forEach(
-      (eventName) => {
-
-        document.addEventListener(
-          eventName,
-          handleLayerChanged
-        );
-
-      }
-    );
-
-
-    [
-      "paintless:history-restored",
+      "paintless:layer-blend-changed",
+      "paintless:layer-cleared",
+      "paintless:layers-merged",
+      "paintless:image-flattened",
+      "paintless:layers-restored",
       "paintless:document-reset",
       "paintless:document-resized",
-      "paintless:canvas-rendered",
-      "paintless:artwork-changed",
       "paintless:stroke-completed",
-      "paintless:text-committed",
       "paintless:shape-committed",
-      "paintless:fill-completed"
+      "paintless:text-committed",
+      "paintless:fill-completed",
+      "paintless:artwork-changed",
+      "paintless:canvas-rendered",
+      "paintless:history-restored"
     ].forEach(
       (eventName) => {
 
         document.addEventListener(
           eventName,
-          handleDocumentChanged
+          handleArtworkChanged
         );
 
       }
@@ -2922,14 +2728,14 @@
   function disconnectEvents() {
 
     document.removeEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
+      "paintless3d:mode-changed",
+      handleModeChanged
     );
 
 
     document.removeEventListener(
-      "paintless3d:mode-changed",
-      handleModeChanged
+      "paintless3d:preview-changed",
+      handlePreviewChanged
     );
 
 
@@ -2939,13 +2745,9 @@
     );
 
 
-    document.removeEventListener(
-      "paintless3d:layer-depth-changed",
-      handleDepthChanged
-    );
-
-
     [
+      "paintless3d:layer-stereo-changed",
+      "paintless3d:layer-depth-changed",
       "paintless3d:strength-changed",
       "paintless3d:convergence-changed",
       "paintless3d:channel-mode-changed",
@@ -2964,44 +2766,34 @@
 
 
     [
+      "paintless:layers-rendered",
       "paintless:layer-created",
-      "paintless:layer-added",
-      "paintless:layer-removed",
+      "paintless:image-layer-created",
       "paintless:layer-deleted",
       "paintless:layer-duplicated",
-      "paintless:layer-reordered",
+      "paintless:layer-order-changed",
       "paintless:layer-visibility-changed",
       "paintless:layer-opacity-changed",
-      "paintless:layer-blend-mode-changed",
-      "paintless:history-saved"
-    ].forEach(
-      (eventName) => {
-
-        document.removeEventListener(
-          eventName,
-          handleLayerChanged
-        );
-
-      }
-    );
-
-
-    [
-      "paintless:history-restored",
+      "paintless:layer-blend-changed",
+      "paintless:layer-cleared",
+      "paintless:layers-merged",
+      "paintless:image-flattened",
+      "paintless:layers-restored",
       "paintless:document-reset",
       "paintless:document-resized",
-      "paintless:canvas-rendered",
-      "paintless:artwork-changed",
       "paintless:stroke-completed",
-      "paintless:text-committed",
       "paintless:shape-committed",
-      "paintless:fill-completed"
+      "paintless:text-committed",
+      "paintless:fill-completed",
+      "paintless:artwork-changed",
+      "paintless:canvas-rendered",
+      "paintless:history-restored"
     ].forEach(
       (eventName) => {
 
         document.removeEventListener(
           eventName,
-          handleDocumentChanged
+          handleArtworkChanged
         );
 
       }
@@ -3011,7 +2803,7 @@
 
 
   /* =======================================================
-     19. INITIALISATION
+     19. INITIALISE
   ======================================================= */
 
   async function initialise() {
@@ -3043,22 +2835,24 @@
     installStyles();
 
 
-    const previewInstalled =
-      installPreviewCanvas();
-
-
-    if (!previewInstalled) {
+    if (
+      !installPreviewCanvas()
+    ) {
 
       throw new Error(
-        "Paintless3D Renderer could not install its preview canvas."
+        "Paintless3D Renderer could not install its live canvas."
       );
 
     }
 
 
+    const size =
+      getDocumentSize();
+
+
     ensureInternalCanvases(
-      dom.editorCanvas.width,
-      dom.editorCanvas.height
+      size.width,
+      size.height
     );
 
 
@@ -3085,6 +2879,15 @@
       );
 
 
+    if (
+      paintless3d.is3DMode?.()
+    ) {
+
+      enableLiveRendering();
+
+    }
+
+
     dispatch(
       "paintless3d:renderer-ready",
       {
@@ -3095,7 +2898,7 @@
 
 
     console.log(
-      "%cPaintless3D Renderer ready.",
+      "%cPaintless3D Live Renderer ready.",
       [
         "color:#ff315c",
         "font-weight:bold",
@@ -3116,7 +2919,7 @@
 
   async function destroy() {
 
-    hidePreview();
+    disableLiveRendering();
 
 
     disconnectEvents();
@@ -3154,14 +2957,6 @@
 
 
     internal.combinedContext =
-      null;
-
-
-    internal.temporaryCanvas =
-      null;
-
-
-    internal.temporaryContext =
       null;
 
 
@@ -3217,11 +3012,19 @@
     destroy,
 
 
-    renderPreview,
+    renderPreview:
+      renderLive,
+
+    renderLive,
 
     requestRender,
 
     renderToCanvas,
+
+
+    enableLiveRendering,
+
+    disableLiveRendering,
 
 
     showPreview,
@@ -3232,6 +3035,7 @@
 
 
     synchronisePreviewCanvas,
+
 
     calculateLayerSeparation,
 
@@ -3287,37 +3091,6 @@
 
       return rendererState
         .automaticRendering;
-
-    },
-
-
-    setHideOriginalDuringPreview(
-      enabled
-    ) {
-
-      rendererState
-        .hideOriginalDuringPreview =
-        Boolean(
-          enabled
-        );
-
-
-      if (
-        rendererState.enabled
-      ) {
-
-        dom.editorCanvas
-          ?.classList.toggle(
-            "paintless3d-original-hidden",
-            rendererState
-              .hideOriginalDuringPreview
-          );
-
-      }
-
-
-      return rendererState
-        .hideOriginalDuringPreview;
 
     },
 
@@ -3387,8 +3160,7 @@
       );
 
 
-      return rendererState
-        .backgroundColour;
+      return rendererState.backgroundColour;
 
     },
 
@@ -3430,6 +3202,18 @@
 
 
       return rendererState.alphaMode;
+
+    },
+
+
+    setHideOriginalDuringPreview() {
+
+      /*
+       * Kept for backwards compatibility.
+       * The original canvas now remains interactive.
+       */
+
+      return false;
 
     },
 
@@ -3503,7 +3287,7 @@
     {
 
       label:
-        "Paintless3D Anaglyph Renderer",
+        "Paintless3D Live Anaglyph Renderer",
 
       initialised:
         false,
