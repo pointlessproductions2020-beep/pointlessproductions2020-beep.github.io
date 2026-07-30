@@ -2,36 +2,28 @@
 
 /* =========================================================
    PAINTLESS3D
-   LAYER DEPTH MODULE — v0.1
+   LIVE LAYER DEPTH MODULE — v0.2
 
    File:
    js/paintless3d/depth.js
 
-   Features:
-   - Gives every Paintless layer a stereoscopic depth value
-   - Depth range: -100 to +100
-   - Negative values appear behind the screen
-   - Positive values appear in front of the screen
-   - Zero sits on the screen plane
-   - Adds a live depth control beneath the Layers panel
-   - Slider, number input and preset buttons
-   - Updates immediately when the active layer changes
-   - Persists depth directly on each layer as layer.depth3d
-   - Dispatches renderer-ready events whenever depth changes
-   - Resets safely when documents or layers change
-   - Keyboard shortcut D focuses the depth slider
-   - No index.html or CSS editing required
-
-   The actual red/cyan movement will be performed by
-   renderer.js, which listens for:
-
-   paintless3d:layer-depth-changed
+   New behaviour:
+   - Uses the real Paintless layer properties:
+       layer.stereo3dEnabled
+       layer.depth3d
+   - The depth control is disabled until the active layer's
+     red/blue 3D toggle is enabled
+   - Enabling a layer sends it to depth -100 by default
+   - Depth changes update the live renderer immediately
+   - Existing layers, duplicated layers and restored layers
+     retain their depth values
+   - Uses the new PaintlessLayers 3D API directly
 ========================================================= */
 
 (() => {
 
   /* =======================================================
-     1. PAINTLESS3D CHECK
+     1. SYSTEM CHECK
   ======================================================= */
 
   const paintless3d =
@@ -54,7 +46,7 @@
 
 
   /* =======================================================
-     2. DEPTH STATE
+     2. STATE
   ======================================================= */
 
   const depthState = {
@@ -77,6 +69,9 @@
     defaultDepth:
       0,
 
+    activationDepth:
+      -100,
+
     step:
       1,
 
@@ -85,6 +80,9 @@
 
     currentDepth:
       0,
+
+    currentStereoEnabled:
+      false,
 
     updatingControls:
       false,
@@ -97,20 +95,20 @@
 
     presets: {
 
-      farBehind:
-        -60,
+      deepest:
+        -100,
 
       behind:
-        -25,
+        -50,
 
       screen:
         0,
 
       forward:
-        25,
+        35,
 
-      farForward:
-        60
+      closest:
+        75
 
     }
 
@@ -141,6 +139,12 @@
     layerName:
       null,
 
+    stereoStatus:
+      null,
+
+    stereoToggleButton:
+      null,
+
     slider:
       null,
 
@@ -158,6 +162,9 @@
 
     presetButtons:
       [],
+
+    disabledMessage:
+      null,
 
     styles:
       null
@@ -188,6 +195,19 @@
       window.Paintless3DCore ||
       paintless3d.getModule?.(
         "core"
+      )?.api ||
+      null
+    );
+
+  }
+
+
+  function getRendererApi() {
+
+    return (
+      window.Paintless3DRenderer ||
+      paintless3d.getModule?.(
+        "renderer"
       )?.api ||
       null
     );
@@ -287,7 +307,6 @@
           message
         );
 
-
       return;
 
     }
@@ -345,6 +364,26 @@
   }
 
 
+  function formatDepth(
+    depth
+  ) {
+
+    const safeDepth =
+      clamp(
+        depth
+      );
+
+
+    return `${
+      safeDepth >
+      0
+        ? "+"
+        : ""
+    }${safeDepth}`;
+
+  }
+
+
   function getDepthDirection(
     depth
   ) {
@@ -357,10 +396,20 @@
 
     if (
       safeDepth <=
-      -60
+      -90
     ) {
 
-      return "Far behind";
+      return "Deep inside screen";
+
+    }
+
+
+    if (
+      safeDepth <=
+      -50
+    ) {
+
+      return "Far behind screen";
 
     }
 
@@ -387,35 +436,25 @@
 
     if (
       safeDepth >=
-      60
+      75
     ) {
 
-      return "Far forward";
+      return "Closest forward";
 
     }
 
 
-    return "In front";
+    if (
+      safeDepth >=
+      40
+    ) {
 
-  }
+      return "Far in front";
 
-
-  function formatDepth(
-    depth
-  ) {
-
-    const safeDepth =
-      clamp(
-        depth
-      );
+    }
 
 
-    return `${
-      safeDepth >
-      0
-        ? "+"
-        : ""
-    }${safeDepth}`;
+    return "In front of screen";
 
   }
 
@@ -427,11 +466,11 @@
   function getActiveLayer() {
 
     return (
-      getToolCore()
-        ?.getActiveLayer?.() ||
       getLayersApi()
         ?.getActiveLayer?.() ||
       getModeApi()
+        ?.getActiveLayer?.() ||
+      getToolCore()
         ?.getActiveLayer?.() ||
       null
     );
@@ -483,10 +522,20 @@
   }
 
 
-  function ensureLayerDepth(
-    layer,
-    defaultValue =
-      depthState.defaultDepth
+  function layerStereoIsEnabled(
+    layer =
+      getActiveLayer()
+  ) {
+
+    return Boolean(
+      layer?.stereo3dEnabled
+    );
+
+  }
+
+
+  function ensureLayer3DProperties(
+    layer
   ) {
 
     if (!layer) {
@@ -496,41 +545,43 @@
     }
 
 
-    const existingValue =
-      Number(
-        layer.depth3d
-      );
+    if (
+      typeof layer.stereo3dEnabled !==
+      "boolean"
+    ) {
+
+      layer.stereo3dEnabled =
+        false;
+
+    }
 
 
     if (
-      Number.isFinite(
-        existingValue
+      !Number.isFinite(
+        Number(
+          layer.depth3d
+        )
       )
     ) {
 
       layer.depth3d =
-        clamp(
-          existingValue
-        );
-
-
-      return layer.depth3d;
+        depthState.defaultDepth;
 
     }
 
 
     layer.depth3d =
       clamp(
-        defaultValue
+        layer.depth3d
       );
 
 
-    return layer.depth3d;
+    return true;
 
   }
 
 
-  function ensureAllLayerDepths() {
+  function ensureAllLayer3DProperties() {
 
     const layers =
       getLayers();
@@ -539,7 +590,7 @@
     layers.forEach(
       (layer) => {
 
-        ensureLayerDepth(
+        ensureLayer3DProperties(
           layer
         );
 
@@ -572,8 +623,13 @@
     }
 
 
-    return ensureLayerDepth(
+    ensureLayer3DProperties(
       layer
+    );
+
+
+    return clamp(
+      layer.depth3d
     );
 
   }
@@ -590,7 +646,7 @@
         true,
 
       source =
-        "api"
+        "depth-module"
     } = {}
   ) {
 
@@ -601,10 +657,36 @@
     }
 
 
-    const previousDepth =
-      getLayerDepth(
+    ensureLayer3DProperties(
+      layer
+    );
+
+
+    if (
+      !layerStereoIsEnabled(
+        layer
+      )
+    ) {
+
+      if (announce) {
+
+        sendStatusMessage(
+          `Enable 3D for ${getLayerName(
+            layer
+          )} before changing its depth.`
+        );
+
+      }
+
+
+      updateDepthControls(
         layer
       );
+
+
+      return false;
+
+    }
 
 
     const nextDepth =
@@ -617,66 +699,94 @@
       );
 
 
-    layer.depth3d =
-      nextDepth;
+    const layersApi =
+      getLayersApi();
+
+
+    let result;
 
 
     if (
-      layer ===
-      getActiveLayer()
+      typeof layersApi
+        ?.setLayerDepth3D ===
+      "function"
     ) {
 
-      depthState.currentLayer =
-        layer;
+      result =
+        layersApi.setLayerDepth3D(
+          layer.id,
+          nextDepth
+        );
 
+    } else {
 
-      depthState.currentDepth =
-        nextDepth;
-
-
-      if (updateControls) {
-
-        updateDepthControls(
+      const previousDepth =
+        getLayerDepth(
           layer
         );
 
-      }
+
+      layer.depth3d =
+        nextDepth;
+
+
+      dispatch(
+        "paintless3d:layer-depth-changed",
+        {
+          layer,
+
+          depth:
+            nextDepth,
+
+          previousDepth,
+
+          source
+        }
+      );
+
+
+      dispatch(
+        "paintless3d:render-requested",
+        {
+          reason:
+            "layer-depth-changed",
+
+          layer
+        }
+      );
+
+
+      result =
+        nextDepth;
 
     }
 
 
-    dispatch(
-      "paintless3d:layer-depth-changed",
-      {
-        layer,
-
-        depth:
-          nextDepth,
-
-        previousDepth,
-
-        source,
-
-        direction:
-          getDepthDirection(
-            nextDepth
-          )
-      }
-    );
+    depthState.currentLayer =
+      layer;
 
 
-    dispatch(
-      "paintless3d:render-requested",
-      {
-        reason:
-          "layer-depth-changed",
+    depthState.currentDepth =
+      nextDepth;
 
-        layer,
 
-        depth:
-          nextDepth
-      }
-    );
+    depthState.currentStereoEnabled =
+      true;
+
+
+    if (updateControls) {
+
+      updateDepthControls(
+        layer
+      );
+
+    }
+
+
+    getRendererApi()
+      ?.requestRender?.(
+        "depth-control-changed"
+      );
 
 
     if (announce) {
@@ -692,7 +802,7 @@
     }
 
 
-    return nextDepth;
+    return result;
 
   }
 
@@ -727,6 +837,175 @@
   }
 
 
+  function setLayerStereoEnabled(
+    layer,
+    enabled,
+    {
+      announce =
+        true
+    } = {}
+  ) {
+
+    if (!layer) {
+
+      return false;
+
+    }
+
+
+    ensureLayer3DProperties(
+      layer
+    );
+
+
+    const layersApi =
+      getLayersApi();
+
+
+    const nextEnabled =
+      Boolean(
+        enabled
+      );
+
+
+    let result;
+
+
+    if (
+      typeof layersApi
+        ?.setLayerStereo3D ===
+      "function"
+    ) {
+
+      result =
+        layersApi.setLayerStereo3D(
+          layer.id,
+          nextEnabled,
+          {
+            initialDepth:
+              depthState.activationDepth
+          }
+        );
+
+    } else {
+
+      const wasEnabled =
+        layer.stereo3dEnabled;
+
+
+      layer.stereo3dEnabled =
+        nextEnabled;
+
+
+      if (
+        nextEnabled &&
+        !wasEnabled &&
+        Number(
+          layer.depth3d
+        ) ===
+          0
+      ) {
+
+        layer.depth3d =
+          depthState.activationDepth;
+
+      }
+
+
+      dispatch(
+        "paintless3d:layer-stereo-changed",
+        {
+          layer,
+
+          enabled:
+            nextEnabled,
+
+          depth:
+            layer.depth3d
+        }
+      );
+
+
+      dispatch(
+        "paintless3d:render-requested",
+        {
+          reason:
+            "layer-stereo-changed",
+
+          layer
+        }
+      );
+
+
+      result =
+        true;
+
+    }
+
+
+    updateDepthControls(
+      layer
+    );
+
+
+    getRendererApi()
+      ?.requestRender?.(
+        "layer-stereo-toggle"
+      );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        nextEnabled
+          ? `${getLayerName(
+              layer
+            )} is now in 3D at depth ${formatDepth(
+              getLayerDepth(
+                layer
+              )
+            )}.`
+          : `${getLayerName(
+              layer
+            )} returned to the flat screen plane.`
+      );
+
+    }
+
+
+    return result;
+
+  }
+
+
+  function toggleActiveLayerStereo() {
+
+    const layer =
+      getActiveLayer();
+
+
+    if (!layer) {
+
+      sendStatusMessage(
+        "Select a layer before enabling 3D."
+      );
+
+
+      return false;
+
+    }
+
+
+    return setLayerStereoEnabled(
+      layer,
+      !layerStereoIsEnabled(
+        layer
+      )
+    );
+
+  }
+
+
   function resetLayerDepth(
     layer =
       getActiveLayer(),
@@ -745,7 +1024,7 @@
 
     return setLayerDepth(
       layer,
-      depthState.defaultDepth,
+      depthState.activationDepth,
       {
         announce,
 
@@ -762,7 +1041,7 @@
     amount,
     {
       announce =
-        true
+        false
     } = {}
   ) {
 
@@ -823,6 +1102,9 @@
 
 
     dom.layersList =
+      document.getElementById(
+        "layer-list"
+      ) ||
       findFirst(
         [
           "#layers-list",
@@ -849,7 +1131,8 @@
       dom.layersList?.parentElement
     ) {
 
-      return dom.layersList.parentElement;
+      return dom.layersList
+        .parentElement;
 
     }
 
@@ -868,7 +1151,7 @@
     if (
       depthState.stylesInstalled ||
       document.getElementById(
-        "paintless3d-depth-styles"
+        "paintless3d-live-depth-styles"
       )
     ) {
 
@@ -888,7 +1171,7 @@
 
 
     style.id =
-      "paintless3d-depth-styles";
+      "paintless3d-live-depth-styles";
 
 
     style.textContent = `
@@ -898,27 +1181,32 @@
         padding: 12px;
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 13px;
+        color: #ffffff;
         background:
           radial-gradient(
-            circle at 5% 30%,
-            rgba(255, 49, 92, 0.11),
-            transparent 35%
+            circle at 5% 20%,
+            rgba(255, 49, 92, 0.12),
+            transparent 36%
           ),
           radial-gradient(
-            circle at 95% 30%,
-            rgba(37, 230, 255, 0.11),
-            transparent 35%
+            circle at 95% 20%,
+            rgba(37, 230, 255, 0.12),
+            transparent 36%
           ),
           linear-gradient(
             145deg,
-            rgba(29, 18, 45, 0.93),
-            rgba(11, 7, 18, 0.95)
+            rgba(29, 18, 45, 0.94),
+            rgba(11, 7, 18, 0.97)
           );
         box-shadow:
           inset 0 0 0 1px rgba(168, 76, 255, 0.06);
       }
 
       body.paintless3d-editor-active
+      .paintless3d-depth-control,
+      body.paintless-3d-mode
+      .paintless3d-depth-control,
+      html[data-paintless-mode="3d"]
       .paintless3d-depth-control {
         display: block;
       }
@@ -967,7 +1255,7 @@
       .paintless3d-depth-value {
         display: inline-grid;
         place-items: center;
-        min-width: 46px;
+        min-width: 48px;
         height: 29px;
         padding: 0 7px;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -986,12 +1274,98 @@
           sans-serif;
       }
 
+      .paintless3d-depth-stereo-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 9px;
+        margin-top: 10px;
+        padding: 7px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .paintless3d-depth-stereo-copy {
+        min-width: 0;
+      }
+
+      .paintless3d-depth-stereo-title {
+        display: block;
+        color: rgba(255, 255, 255, 0.75);
+        font:
+          800 9px/1.2
+          "Segoe UI",
+          Arial,
+          sans-serif;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .paintless3d-depth-stereo-status {
+        display: block;
+        margin-top: 3px;
+        color: rgba(255, 255, 255, 0.4);
+        font:
+          500 8px/1.25
+          "Segoe UI",
+          Arial,
+          sans-serif;
+      }
+
+      .paintless3d-depth-stereo-toggle {
+        position: relative;
+        flex: 0 0 auto;
+        width: 46px;
+        height: 25px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        cursor: pointer;
+      }
+
+      .paintless3d-depth-stereo-toggle::before {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.42);
+        transition:
+          transform 150ms ease,
+          background 150ms ease;
+      }
+
+      .paintless3d-depth-stereo-toggle.is-enabled {
+        border-color: rgba(37, 230, 255, 0.5);
+        background:
+          linear-gradient(
+            90deg,
+            rgba(255, 49, 92, 0.22),
+            rgba(37, 230, 255, 0.23)
+          );
+      }
+
+      .paintless3d-depth-stereo-toggle.is-enabled::before {
+        transform: translateX(21px);
+        background:
+          linear-gradient(
+            90deg,
+            #ff315c,
+            #25e6ff
+          );
+      }
+
       .paintless3d-depth-direction {
         display: block;
         margin-top: 10px;
-        color: rgba(255, 255, 255, 0.52);
+        color: rgba(255, 255, 255, 0.53);
         font:
-          700 9px/1
+          800 9px/1
           "Segoe UI",
           Arial,
           sans-serif;
@@ -1010,10 +1384,10 @@
         content: "";
         position: absolute;
         left: 50%;
-        top: 2px;
-        bottom: 2px;
+        top: 1px;
+        bottom: 1px;
         width: 1px;
-        background: rgba(255, 255, 255, 0.29);
+        background: rgba(255, 255, 255, 0.3);
         pointer-events: none;
         z-index: 1;
       }
@@ -1028,11 +1402,11 @@
         background:
           linear-gradient(
             90deg,
-            rgba(255, 49, 92, 0.92) 0%,
-            rgba(168, 76, 255, 0.88) 48%,
+            rgba(255, 49, 92, 0.94) 0%,
+            rgba(168, 76, 255, 0.86) 48%,
             rgba(255, 255, 255, 0.78) 50%,
             rgba(92, 154, 255, 0.9) 52%,
-            rgba(37, 230, 255, 0.94) 100%
+            rgba(37, 230, 255, 0.95) 100%
           );
         box-shadow:
           inset 0 1px 4px rgba(0, 0, 0, 0.5);
@@ -1055,10 +1429,6 @@
         box-shadow:
           0 2px 7px rgba(0, 0, 0, 0.55);
         cursor: grab;
-      }
-
-      .paintless3d-depth-slider::-webkit-slider-thumb:active {
-        cursor: grabbing;
       }
 
       .paintless3d-depth-slider::-moz-range-thumb {
@@ -1124,7 +1494,7 @@
       }
 
       .paintless3d-depth-reset {
-        min-width: 59px;
+        min-width: 67px;
         height: 32px;
         padding: 0 9px;
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1141,7 +1511,7 @@
         cursor: pointer;
       }
 
-      .paintless3d-depth-reset:hover {
+      .paintless3d-depth-reset:hover:not(:disabled) {
         color: #ffffff;
         border-color: rgba(255, 255, 255, 0.25);
         background: rgba(255, 255, 255, 0.08);
@@ -1156,21 +1526,21 @@
 
       .paintless3d-depth-preset {
         min-width: 0;
-        height: 28px;
+        height: 29px;
         padding: 0 3px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
         color: rgba(255, 255, 255, 0.63);
         background: rgba(255, 255, 255, 0.035);
         font:
-          800 8px/1
+          800 7px/1
           "Segoe UI",
           Arial,
           sans-serif;
         cursor: pointer;
       }
 
-      .paintless3d-depth-preset:hover {
+      .paintless3d-depth-preset:hover:not(:disabled) {
         color: #ffffff;
         border-color: rgba(168, 76, 255, 0.55);
         background: rgba(168, 76, 255, 0.11);
@@ -1187,15 +1557,47 @@
           );
       }
 
-      .paintless3d-depth-control.is-disabled {
-        opacity: 0.48;
+      .paintless3d-depth-disabled-message {
+        display: none;
+        margin-top: 10px;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.48);
+        background: rgba(255, 255, 255, 0.025);
+        font:
+          600 9px/1.4
+          "Segoe UI",
+          Arial,
+          sans-serif;
+        text-align: center;
       }
 
-      .paintless3d-depth-control.is-disabled
-      input,
-      .paintless3d-depth-control.is-disabled
-      button {
-        pointer-events: none;
+      .paintless3d-depth-control.is-flat
+      .paintless3d-depth-disabled-message {
+        display: block;
+      }
+
+      .paintless3d-depth-control.is-flat
+      .paintless3d-depth-direction,
+      .paintless3d-depth-control.is-flat
+      .paintless3d-depth-track-wrap,
+      .paintless3d-depth-control.is-flat
+      .paintless3d-depth-labels,
+      .paintless3d-depth-control.is-flat
+      .paintless3d-depth-input-row,
+      .paintless3d-depth-control.is-flat
+      .paintless3d-depth-presets {
+        opacity: 0.32;
+      }
+
+      .paintless3d-depth-control.is-no-layer {
+        opacity: 0.55;
+      }
+
+      .paintless3d-depth-control input:disabled,
+      .paintless3d-depth-control button:disabled {
+        cursor: not-allowed;
       }
 
       @media (max-width: 620px) {
@@ -1208,7 +1610,7 @@
         }
 
         .paintless3d-depth-preset {
-          font-size: 7px;
+          font-size: 6px;
         }
       }
     `;
@@ -1366,6 +1768,98 @@
     );
 
 
+    const stereoRow =
+      document.createElement(
+        "div"
+      );
+
+
+    stereoRow.className =
+      "paintless3d-depth-stereo-row";
+
+
+    const stereoCopy =
+      document.createElement(
+        "span"
+      );
+
+
+    stereoCopy.className =
+      "paintless3d-depth-stereo-copy";
+
+
+    const stereoTitle =
+      document.createElement(
+        "strong"
+      );
+
+
+    stereoTitle.className =
+      "paintless3d-depth-stereo-title";
+
+
+    stereoTitle.textContent =
+      "3D Layer";
+
+
+    const stereoStatus =
+      document.createElement(
+        "span"
+      );
+
+
+    stereoStatus.className =
+      "paintless3d-depth-stereo-status";
+
+
+    stereoStatus.textContent =
+      "Flat on the screen plane";
+
+
+    stereoCopy.append(
+      stereoTitle,
+      stereoStatus
+    );
+
+
+    const stereoToggleButton =
+      document.createElement(
+        "button"
+      );
+
+
+    stereoToggleButton.type =
+      "button";
+
+
+    stereoToggleButton.className =
+      "paintless3d-depth-stereo-toggle";
+
+
+    stereoToggleButton.setAttribute(
+      "role",
+      "switch"
+    );
+
+
+    stereoToggleButton.setAttribute(
+      "aria-label",
+      "Enable 3D depth for the active layer"
+    );
+
+
+    stereoToggleButton.setAttribute(
+      "aria-checked",
+      "false"
+    );
+
+
+    stereoRow.append(
+      stereoCopy,
+      stereoToggleButton
+    );
+
+
     const directionLabel =
       document.createElement(
         "span"
@@ -1453,14 +1947,14 @@
       "paintless3d-depth-labels";
 
 
-    const behindLabel =
+    const insideLabel =
       document.createElement(
         "span"
       );
 
 
-    behindLabel.textContent =
-      "Behind";
+    insideLabel.textContent =
+      "Inside";
 
 
     const screenLabel =
@@ -1484,7 +1978,7 @@
 
 
     labels.append(
-      behindLabel,
+      insideLabel,
       screenLabel,
       forwardLabel
     );
@@ -1559,7 +2053,11 @@
 
 
     resetButton.textContent =
-      "Reset";
+      "Deepest";
+
+
+    resetButton.title =
+      "Return this layer to the deepest behind-screen position";
 
 
     inputRow.append(
@@ -1581,12 +2079,12 @@
     const presetDefinitions = [
 
       [
-        "Far −",
-        depthState.presets.farBehind
+        "Deep",
+        depthState.presets.deepest
       ],
 
       [
-        "Back",
+        "Behind",
         depthState.presets.behind
       ],
 
@@ -1601,8 +2099,8 @@
       ],
 
       [
-        "Far +",
-        depthState.presets.farForward
+        "Closest",
+        depthState.presets.closest
       ]
 
     ];
@@ -1627,13 +2125,29 @@
     );
 
 
+    const disabledMessage =
+      document.createElement(
+        "div"
+      );
+
+
+    disabledMessage.className =
+      "paintless3d-depth-disabled-message";
+
+
+    disabledMessage.textContent =
+      "Enable this layer's red/blue 3D toggle to adjust its depth.";
+
+
     control.append(
       headingRow,
+      stereoRow,
       directionLabel,
       trackWrap,
       labels,
       inputRow,
-      presets
+      presets,
+      disabledMessage
     );
 
 
@@ -1647,6 +2161,14 @@
 
     dom.layerName =
       layerName;
+
+
+    dom.stereoStatus =
+      stereoStatus;
+
+
+    dom.stereoToggleButton =
+      stereoToggleButton;
 
 
     dom.slider =
@@ -1677,6 +2199,10 @@
       );
 
 
+    dom.disabledMessage =
+      disabledMessage;
+
+
     return control;
 
   }
@@ -1692,65 +2218,7 @@
 
     if (existingControl) {
 
-      dom.control =
-        existingControl;
-
-
-      dom.heading =
-        existingControl.querySelector(
-          ".paintless3d-depth-heading"
-        );
-
-
-      dom.layerName =
-        existingControl.querySelector(
-          ".paintless3d-depth-layer-name"
-        );
-
-
-      dom.slider =
-        existingControl.querySelector(
-          ".paintless3d-depth-slider"
-        );
-
-
-      dom.numberInput =
-        existingControl.querySelector(
-          ".paintless3d-depth-number"
-        );
-
-
-      dom.valueBadge =
-        existingControl.querySelector(
-          ".paintless3d-depth-value"
-        );
-
-
-      dom.directionLabel =
-        existingControl.querySelector(
-          ".paintless3d-depth-direction"
-        );
-
-
-      dom.resetButton =
-        existingControl.querySelector(
-          ".paintless3d-depth-reset"
-        );
-
-
-      dom.presetButtons =
-        Array.from(
-          existingControl.querySelectorAll(
-            ".paintless3d-depth-preset"
-          )
-        );
-
-
-      depthState.controlInstalled =
-        true;
-
-
-      return true;
+      existingControl.remove();
 
     }
 
@@ -1789,7 +2257,8 @@
   ======================================================= */
 
   function updatePresetButtons(
-    depth
+    depth,
+    enabled
   ) {
 
     dom.presetButtons.forEach(
@@ -1803,6 +2272,7 @@
 
         button.classList.toggle(
           "is-active",
+          enabled &&
           presetDepth ===
             depth
         );
@@ -1839,6 +2309,22 @@
         );
 
 
+      if (layer) {
+
+        ensureLayer3DProperties(
+          layer
+        );
+
+      }
+
+
+      const stereoEnabled =
+        hasLayer &&
+        layerStereoIsEnabled(
+          layer
+        );
+
+
       const depth =
         hasLayer
           ? getLayerDepth(
@@ -1855,10 +2341,22 @@
         depth;
 
 
+      depthState.currentStereoEnabled =
+        stereoEnabled;
+
+
       dom.control
         ?.classList.toggle(
-          "is-disabled",
+          "is-no-layer",
           !hasLayer
+        );
+
+
+      dom.control
+        ?.classList.toggle(
+          "is-flat",
+          hasLayer &&
+          !stereoEnabled
         );
 
 
@@ -1874,10 +2372,57 @@
       }
 
 
+      if (dom.stereoStatus) {
+
+        dom.stereoStatus.textContent =
+          !hasLayer
+            ? "Select a layer"
+            : stereoEnabled
+              ? `3D enabled at ${formatDepth(
+                  depth
+                )}`
+              : "Flat on the screen plane";
+
+      }
+
+
+      if (dom.stereoToggleButton) {
+
+        dom.stereoToggleButton.disabled =
+          !hasLayer;
+
+
+        dom.stereoToggleButton.classList.toggle(
+          "is-enabled",
+          stereoEnabled
+        );
+
+
+        dom.stereoToggleButton.setAttribute(
+          "aria-checked",
+          String(
+            stereoEnabled
+          )
+        );
+
+
+        dom.stereoToggleButton.title =
+          stereoEnabled
+            ? "Disable 3D depth for this layer"
+            : "Enable 3D depth for this layer";
+
+      }
+
+
+      const controlsDisabled =
+        !hasLayer ||
+        !stereoEnabled;
+
+
       if (dom.slider) {
 
         dom.slider.disabled =
-          !hasLayer;
+          controlsDisabled;
 
 
         dom.slider.value =
@@ -1891,7 +2436,7 @@
       if (dom.numberInput) {
 
         dom.numberInput.disabled =
-          !hasLayer;
+          controlsDisabled;
 
 
         dom.numberInput.value =
@@ -1905,7 +2450,7 @@
       if (dom.resetButton) {
 
         dom.resetButton.disabled =
-          !hasLayer;
+          controlsDisabled;
 
       }
 
@@ -1914,7 +2459,7 @@
         (button) => {
 
           button.disabled =
-            !hasLayer;
+            controlsDisabled;
 
         }
       );
@@ -1923,9 +2468,11 @@
       if (dom.valueBadge) {
 
         dom.valueBadge.textContent =
-          formatDepth(
-            depth
-          );
+          stereoEnabled
+            ? formatDepth(
+                depth
+              )
+            : "Flat";
 
       }
 
@@ -1933,25 +2480,32 @@
       if (dom.directionLabel) {
 
         dom.directionLabel.textContent =
-          getDepthDirection(
-            depth
-          );
+          stereoEnabled
+            ? getDepthDirection(
+                depth
+              )
+            : "Screen plane";
 
       }
 
 
       updatePresetButtons(
-        depth
+        depth,
+        stereoEnabled
       );
 
 
       getModeApi()
         ?.setInformationMessage?.(
-          hasLayer
-            ? `${getLayerName(
-                layer
-              )} is ready for stereoscopic depth.`
-            : "Select a layer to assign its 3D depth.",
+          !hasLayer
+            ? "Select a layer to control its 3D depth."
+            : stereoEnabled
+              ? `${getLayerName(
+                  layer
+                )} is live in stereoscopic depth.`
+              : `${getLayerName(
+                  layer
+                )} is currently flat.`,
           {
             title:
               "Paintless3D mode",
@@ -1959,7 +2513,10 @@
             icon:
               "👓",
 
-            depth
+            depth:
+              stereoEnabled
+                ? depth
+                : 0
           }
         );
 
@@ -1971,7 +2528,9 @@
 
           depth,
 
-          hasLayer
+          hasLayer,
+
+          stereoEnabled
         }
       );
 
@@ -2042,8 +2601,26 @@
     showDepthControl();
 
 
-    dom.slider
-      ?.focus();
+    const layer =
+      getActiveLayer();
+
+
+    if (
+      layer &&
+      !layerStereoIsEnabled(
+        layer
+      )
+    ) {
+
+      dom.stereoToggleButton
+        ?.focus();
+
+    } else {
+
+      dom.slider
+        ?.focus();
+
+    }
 
 
     return true;
@@ -2054,6 +2631,13 @@
   /* =======================================================
      11. CONTROL EVENTS
   ======================================================= */
+
+  function handleStereoToggleClick() {
+
+    toggleActiveLayerStereo();
+
+  }
+
 
   function handleSliderInput(
     event
@@ -2132,7 +2716,7 @@
     event
   ) {
 
-    const depth =
+    const result =
       setActiveLayerDepth(
         event.target.value,
         {
@@ -2146,13 +2730,13 @@
 
 
     if (
-      depth !==
+      result !==
       false
     ) {
 
       event.target.value =
         String(
-          depth
+          result
         );
 
     }
@@ -2164,15 +2748,11 @@
     event
   ) {
 
-    const value =
+    setActiveLayerDepth(
       Number(
         event.currentTarget
           .dataset.depth
-      );
-
-
-    setActiveLayerDepth(
-      value,
+      ),
       {
         announce:
           true,
@@ -2206,12 +2786,8 @@
     event
   ) {
 
-    const mode =
-      event.detail?.mode;
-
-
     if (
-      mode ===
+      event.detail?.mode ===
       "3d"
     ) {
 
@@ -2228,21 +2804,8 @@
 
   function handleActiveLayerChanged() {
 
-    const layer =
-      getActiveLayer();
-
-
-    if (layer) {
-
-      ensureLayerDepth(
-        layer
-      );
-
-    }
-
-
     updateDepthControls(
-      layer
+      getActiveLayer()
     );
 
   }
@@ -2259,7 +2822,7 @@
 
     if (layer) {
 
-      ensureLayerDepth(
+      ensureLayer3DProperties(
         layer
       );
 
@@ -2275,63 +2838,85 @@
     event
   ) {
 
-    const sourceLayer =
-      event.detail?.sourceLayer ||
-      event.detail?.source ||
-      null;
-
-
-    const duplicatedLayer =
+    const duplicate =
+      event.detail?.duplicateLayer ||
       event.detail?.layer ||
-      event.detail?.duplicatedLayer ||
       getActiveLayer();
 
 
-    if (!duplicatedLayer) {
+    if (duplicate) {
+
+      ensureLayer3DProperties(
+        duplicate
+      );
+
+    }
+
+
+    updateDepthControls(
+      duplicate
+    );
+
+  }
+
+
+  function handleLayerStereoChanged(
+    event
+  ) {
+
+    const changedLayer =
+      event.detail?.layer;
+
+
+    const activeLayer =
+      getActiveLayer();
+
+
+    if (
+      changedLayer &&
+      activeLayer &&
+      changedLayer.id !==
+        activeLayer.id
+    ) {
 
       return;
 
     }
 
 
-    const inheritedDepth =
-      sourceLayer
-        ? getLayerDepth(
-            sourceLayer
-          )
-        : depthState.defaultDepth;
-
-
-    ensureLayerDepth(
-      duplicatedLayer,
-      inheritedDepth
+    updateDepthControls(
+      activeLayer
     );
 
+  }
 
-    duplicatedLayer.depth3d =
-      inheritedDepth;
+
+  function handleLayerDepthChanged(
+    event
+  ) {
+
+    const changedLayer =
+      event.detail?.layer;
+
+
+    const activeLayer =
+      getActiveLayer();
+
+
+    if (
+      changedLayer &&
+      activeLayer &&
+      changedLayer.id !==
+        activeLayer.id
+    ) {
+
+      return;
+
+    }
 
 
     updateDepthControls(
-      duplicatedLayer
-    );
-
-
-    dispatch(
-      "paintless3d:layer-depth-changed",
-      {
-        layer:
-          duplicatedLayer,
-
-        depth:
-          inheritedDepth,
-
-        previousDepth:
-          depthState.defaultDepth,
-
-        source:
-          "duplicate"
-      }
+      activeLayer
     );
 
   }
@@ -2342,7 +2927,7 @@
     window.setTimeout(
       () => {
 
-        ensureAllLayerDepths();
+        ensureAllLayer3DProperties();
 
         updateDepthControls();
 
@@ -2353,20 +2938,17 @@
   }
 
 
-  function handleHistoryRestored() {
+  function handleLayersRestored() {
 
-    ensureAllLayerDepths();
+    ensureAllLayer3DProperties();
 
     updateDepthControls();
 
 
-    dispatch(
-      "paintless3d:render-requested",
-      {
-        reason:
-          "history-restored"
-      }
-    );
+    getRendererApi()
+      ?.requestRender?.(
+        "layers-restored"
+      );
 
   }
 
@@ -2430,6 +3012,38 @@
 
 
     if (
+      event.key.toLowerCase() ===
+      "t"
+    ) {
+
+      event.preventDefault();
+
+
+      toggleActiveLayerStereo();
+
+
+      return;
+
+    }
+
+
+    const layer =
+      getActiveLayer();
+
+
+    if (
+      !layer ||
+      !layerStereoIsEnabled(
+        layer
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    if (
       event.key ===
       "ArrowUp"
     ) {
@@ -2438,14 +3052,10 @@
 
 
       offsetLayerDepth(
-        getActiveLayer(),
+        layer,
         event.shiftKey
           ? 10
-          : 1,
-        {
-          announce:
-            false
-        }
+          : 1
       );
 
     }
@@ -2460,14 +3070,10 @@
 
 
       offsetLayerDepth(
-        getActiveLayer(),
+        layer,
         event.shiftKey
           ? -10
-          : -1,
-        {
-          announce:
-            false
-        }
+          : -1
       );
 
     }
@@ -2475,7 +3081,18 @@
   }
 
 
+  /* =======================================================
+     13. CONNECT EVENTS
+  ======================================================= */
+
   function connectEvents() {
+
+    dom.stereoToggleButton
+      ?.addEventListener(
+        "click",
+        handleStereoToggleClick
+      );
+
 
     dom.slider
       ?.addEventListener(
@@ -2549,7 +3166,7 @@
 
 
     document.addEventListener(
-      "paintless:layer-added",
+      "paintless:image-layer-created",
       handleLayerCreated
     );
 
@@ -2561,14 +3178,32 @@
 
 
     document.addEventListener(
+      "paintless3d:layer-stereo-changed",
+      handleLayerStereoChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:layer-depth-changed",
+      handleLayerDepthChanged
+    );
+
+
+    document.addEventListener(
       "paintless:document-reset",
       handleDocumentReset
     );
 
 
     document.addEventListener(
+      "paintless:layers-restored",
+      handleLayersRestored
+    );
+
+
+    document.addEventListener(
       "paintless:history-restored",
-      handleHistoryRestored
+      handleLayersRestored
     );
 
 
@@ -2587,6 +3222,13 @@
 
 
   function disconnectEvents() {
+
+    dom.stereoToggleButton
+      ?.removeEventListener(
+        "click",
+        handleStereoToggleClick
+      );
+
 
     dom.slider
       ?.removeEventListener(
@@ -2660,7 +3302,7 @@
 
 
     document.removeEventListener(
-      "paintless:layer-added",
+      "paintless:image-layer-created",
       handleLayerCreated
     );
 
@@ -2672,14 +3314,32 @@
 
 
     document.removeEventListener(
+      "paintless3d:layer-stereo-changed",
+      handleLayerStereoChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:layer-depth-changed",
+      handleLayerDepthChanged
+    );
+
+
+    document.removeEventListener(
       "paintless:document-reset",
       handleDocumentReset
     );
 
 
     document.removeEventListener(
+      "paintless:layers-restored",
+      handleLayersRestored
+    );
+
+
+    document.removeEventListener(
       "paintless:history-restored",
-      handleHistoryRestored
+      handleLayersRestored
     );
 
 
@@ -2698,7 +3358,7 @@
 
 
   /* =======================================================
-     13. INITIALISATION
+     14. INITIALISE
   ======================================================= */
 
   async function initialise() {
@@ -2718,11 +3378,9 @@
     installStyles();
 
 
-    const installed =
-      installDepthControl();
-
-
-    if (!installed) {
+    if (
+      !installDepthControl()
+    ) {
 
       throw new Error(
         "Paintless3D Depth could not find the Layers panel."
@@ -2734,7 +3392,7 @@
     connectEvents();
 
 
-    ensureAllLayerDepths();
+    ensureAllLayer3DProperties();
 
 
     updateDepthControls();
@@ -2770,7 +3428,7 @@
 
 
     console.log(
-      "%cPaintless3D Depth ready.",
+      "%cPaintless3D Live Depth ready.",
       [
         "color:#25e6ff",
         "font-weight:bold",
@@ -2786,7 +3444,7 @@
 
 
   /* =======================================================
-     14. DESTROY
+     15. DESTROY
   ======================================================= */
 
   async function destroy() {
@@ -2840,7 +3498,7 @@
 
 
   /* =======================================================
-     15. PUBLIC API
+     16. PUBLIC API
   ======================================================= */
 
   const publicApi = {
@@ -2856,9 +3514,9 @@
     destroy,
 
 
-    ensureLayerDepth,
+    ensureLayer3DProperties,
 
-    ensureAllLayerDepths,
+    ensureAllLayer3DProperties,
 
 
     getLayerDepth,
@@ -2866,6 +3524,14 @@
     setLayerDepth,
 
     setActiveLayerDepth,
+
+
+    layerStereoIsEnabled,
+
+    setLayerStereoEnabled,
+
+    toggleActiveLayerStereo,
+
 
     resetLayerDepth,
 
@@ -2900,7 +3566,10 @@
           depthState.step,
 
         defaultDepth:
-          depthState.defaultDepth
+          depthState.defaultDepth,
+
+        activationDepth:
+          depthState.activationDepth
       };
 
     },
@@ -2909,6 +3578,15 @@
     getActiveLayerDepth() {
 
       return getLayerDepth(
+        getActiveLayer()
+      );
+
+    },
+
+
+    activeLayerStereoIsEnabled() {
+
+      return layerStereoIsEnabled(
         getActiveLayer()
       );
 
@@ -2924,6 +3602,11 @@
 
           name:
             getLayerName(
+              layer
+            ),
+
+          enabled:
+            layerStereoIsEnabled(
               layer
             ),
 
@@ -2952,7 +3635,7 @@
 
 
   /* =======================================================
-     16. REGISTER MODULE
+     17. REGISTER MODULE
   ======================================================= */
 
   paintless3d.registerModule(
@@ -2960,7 +3643,7 @@
     {
 
       label:
-        "Paintless3D Layer Depth",
+        "Paintless3D Live Layer Depth",
 
       initialised:
         false,
