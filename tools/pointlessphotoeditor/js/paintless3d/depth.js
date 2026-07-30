@@ -2210,47 +2210,21 @@
 
   function installDepthControl() {
 
-    const existingControl =
-      document.getElementById(
-        "paintless3d-depth-control"
-      );
+  /*
+   * Paintless3D v1.0
+   *
+   * Layer depth is now controlled directly
+   * from the Layers panel.
+   *
+   * The old floating Layer Depth card has
+   * been retired.
+   */
 
+  depthState.controlInstalled = true;
 
-    if (existingControl) {
+  return true;
 
-      existingControl.remove();
-
-    }
-
-
-    const parent =
-      getControlParent();
-
-
-    if (!parent) {
-
-      return false;
-
-    }
-
-
-    const control =
-      createDepthControl();
-
-
-    parent.appendChild(
-      control
-    );
-
-
-    depthState.controlInstalled =
-      true;
-
-
-    return true;
-
-  }
-
+}
 
   /* =======================================================
      10. CONTROL DISPLAY
@@ -2586,46 +2560,9 @@
 
   function focusDepthControl() {
 
-    if (
-      !paintless3d.is3DMode?.()
-    ) {
+  return true;
 
-      getCoreApi()
-        ?.requestMode?.(
-          "3d"
-        );
-
-    }
-
-
-    showDepthControl();
-
-
-    const layer =
-      getActiveLayer();
-
-
-    if (
-      layer &&
-      !layerStereoIsEnabled(
-        layer
-      )
-    ) {
-
-      dom.stereoToggleButton
-        ?.focus();
-
-    } else {
-
-      dom.slider
-        ?.focus();
-
-    }
-
-
-    return true;
-
-  }
+}
 
 
   /* =======================================================
@@ -2786,18 +2723,7 @@
     event
   ) {
 
-    if (
-      event.detail?.mode ===
-      "3d"
-    ) {
-
-      showDepthControl();
-
-    } else {
-
-      hideDepthControl();
-
-    }
+    return;
 
   }
 
@@ -3085,60 +3011,7 @@
      13. CONNECT EVENTS
   ======================================================= */
 
-  function connectEvents() {
-
-    dom.stereoToggleButton
-      ?.addEventListener(
-        "click",
-        handleStereoToggleClick
-      );
-
-
-    dom.slider
-      ?.addEventListener(
-        "input",
-        handleSliderInput
-      );
-
-
-    dom.slider
-      ?.addEventListener(
-        "change",
-        handleSliderChange
-      );
-
-
-    dom.numberInput
-      ?.addEventListener(
-        "input",
-        handleNumberInput
-      );
-
-
-    dom.numberInput
-      ?.addEventListener(
-        "change",
-        handleNumberChange
-      );
-
-
-    dom.resetButton
-      ?.addEventListener(
-        "click",
-        handleResetClick
-      );
-
-
-    dom.presetButtons.forEach(
-      (button) => {
-
-        button.addEventListener(
-          "click",
-          handlePresetClick
-        );
-
-      }
-    );
+  
 
 
     document.addEventListener(
