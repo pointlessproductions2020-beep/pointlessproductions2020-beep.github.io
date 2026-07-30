@@ -1179,13 +1179,15 @@
 
 
     const insertionTarget =
-      importButton?.parentElement ===
-        dom.toolbarParent
-        ? importButton
-        : normalExportButton?.parentElement ===
-            dom.toolbarParent
-          ? normalExportButton
-          : null;
+     importButton?.parentElement ===
+       dom.toolbarParent
+       ? importButton
+       : normalExportButton?.parentElement ===
+           dom.toolbarParent
+           ? normalExportButton
+           : importButton ||
+           normalExportButton ||
+           null;
 
 
     if (insertionTarget) {
