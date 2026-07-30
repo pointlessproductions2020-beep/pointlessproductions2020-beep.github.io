@@ -54,22 +54,23 @@
      next file we are about to build.
   ======================================================= */
 
-  const moduleFiles = [
+const moduleFiles = [
 
-    "core.js"
+  "core.js",
 
-    /*
-     * These will be enabled as we create them:
-     *
-     * "mode.js",
-     * "depth.js",
-     * "renderer.js",
-     * "preview.js",
-     * "export.js",
-     * "ui.js"
-     */
+  "mode.js",
 
-  ];
+  "depth.js",
+
+  "renderer.js",
+
+  "preview.js",
+
+  "export.js",
+
+  "ui.js"
+
+];
 
 
   /* =======================================================
