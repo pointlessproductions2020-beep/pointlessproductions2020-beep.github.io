@@ -242,6 +242,17 @@
 
   }
 
+   function getDepthApi() {
+
+  return (
+    window.Paintless3DDepth ||
+    paintless3d.getModule?.(
+      "depth"
+    )?.api ||
+    null
+  );
+
+}
 
   /* =======================================================
      5. GENERAL HELPERS
@@ -1495,23 +1506,26 @@
     }
 
 
-    layersApi.renderLayerList?.();
+layersApi.renderLayerList?.();
 
+getDepthApi()
+  ?.updateDepthControls?.(
+    getActiveLayer()
+  );
 
-    document.dispatchEvent(
-      new CustomEvent(
-        "paintless3d:render-requested",
-        {
-          detail: {
-            reason:
-              "automatic-3d-layer-preparation"
-          }
-        }
-      )
-    );
+document.dispatchEvent(
+  new CustomEvent(
+    "paintless3d:render-requested",
+    {
+      detail: {
+        reason:
+          "automatic-3d-layer-preparation"
+      }
+    }
+  )
+);
 
-
-    return true;
+return true;
 
   }
 
