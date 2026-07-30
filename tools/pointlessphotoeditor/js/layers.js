@@ -209,8 +209,8 @@
       this.depth3d =
         clamp(
           depth3d,
-          -100,
-          100
+          -300,
+          300
         );
 
 
@@ -1199,8 +1199,8 @@
       layer.depth3d =
         clamp(
           initialDepth,
-          -100,
-          100
+          -300,
+          300
         );
 
     }
@@ -1286,8 +1286,8 @@
         Math.round(
           Number(depth)
         ),
-        -100,
-        100
+        -300,
+        300
       );
 
 
