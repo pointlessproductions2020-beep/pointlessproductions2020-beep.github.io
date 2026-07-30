@@ -178,7 +178,9 @@
       visible = true,
       opacity = 1,
       blendMode = "source-over",
-      locked = false
+      locked = false,
+      stereo3dEnabled = false,
+      depth3d = 0
     } = {}) {
 
       this.id = id;
@@ -200,6 +202,16 @@
 
       this.locked =
         Boolean(locked);
+
+      this.stereo3dEnabled =
+        Boolean(stereo3dEnabled);
+
+      this.depth3d =
+        clamp(
+          depth3d,
+          -100,
+          100
+        );
 
 
       this.canvas =
@@ -361,7 +373,11 @@
           blendMode:
             this.blendMode,
           locked:
-            false
+            false,
+          stereo3dEnabled:
+            this.stereo3dEnabled,
+          depth3d:
+            this.depth3d
         });
 
 
@@ -397,6 +413,12 @@
 
         locked:
           this.locked,
+
+        stereo3dEnabled:
+          this.stereo3dEnabled,
+
+        depth3d:
+          this.depth3d,
 
         width:
           this.canvas.width,
@@ -1132,7 +1154,176 @@
 
 
   /* =======================================================
-     12. OPACITY
+     12. PAINTLESS3D LAYER STATE
+  ======================================================= */
+
+  function setLayerStereo3D(
+    layerId,
+    enabled,
+    {
+      initialDepth = -100
+    } = {}
+  ) {
+
+    const layer =
+      getLayerById(
+        layerId
+      );
+
+
+    if (!layer) {
+      return false;
+    }
+
+
+    const nextEnabled =
+      Boolean(enabled);
+
+
+    const wasEnabled =
+      Boolean(
+        layer.stereo3dEnabled
+      );
+
+
+    layer.stereo3dEnabled =
+      nextEnabled;
+
+
+    if (
+      nextEnabled &&
+      !wasEnabled &&
+      Number(layer.depth3d) === 0
+    ) {
+
+      layer.depth3d =
+        clamp(
+          initialDepth,
+          -100,
+          100
+        );
+
+    }
+
+
+    renderLayerList();
+
+    renderLayers();
+
+
+    dispatchLayerEvent(
+      "paintless3d:layer-stereo-changed",
+      {
+        layer,
+        enabled:
+          layer.stereo3dEnabled,
+        depth:
+          layer.depth3d
+      }
+    );
+
+
+    dispatchLayerEvent(
+      "paintless3d:render-requested",
+      {
+        reason:
+          "layer-stereo-changed",
+        layer
+      }
+    );
+
+
+    return true;
+
+  }
+
+
+  function toggleLayerStereo3D(
+    layerId
+  ) {
+
+    const layer =
+      getLayerById(
+        layerId
+      );
+
+
+    if (!layer) {
+      return false;
+    }
+
+
+    return setLayerStereo3D(
+      layerId,
+      !layer.stereo3dEnabled
+    );
+
+  }
+
+
+  function setLayerDepth3D(
+    layerId,
+    depth
+  ) {
+
+    const layer =
+      getLayerById(
+        layerId
+      );
+
+
+    if (!layer) {
+      return false;
+    }
+
+
+    const previousDepth =
+      Number(layer.depth3d) || 0;
+
+
+    layer.depth3d =
+      clamp(
+        Math.round(
+          Number(depth)
+        ),
+        -100,
+        100
+      );
+
+
+    renderLayerList();
+
+
+    dispatchLayerEvent(
+      "paintless3d:layer-depth-changed",
+      {
+        layer,
+        depth:
+          layer.depth3d,
+        previousDepth,
+        source:
+          "layers"
+      }
+    );
+
+
+    dispatchLayerEvent(
+      "paintless3d:render-requested",
+      {
+        reason:
+          "layer-depth-changed",
+        layer
+      }
+    );
+
+
+    return layer.depth3d;
+
+  }
+
+
+  /* =======================================================
+     13. OPACITY
   ======================================================= */
 
   function setLayerOpacity(
@@ -1184,7 +1375,7 @@
 
 
   /* =======================================================
-     13. BLEND MODE
+     14. BLEND MODE
   ======================================================= */
 
   function setLayerBlendMode(
@@ -1251,7 +1442,7 @@
 
 
   /* =======================================================
-     14. RENAME
+     15. RENAME
   ======================================================= */
 
   function renameLayer(
@@ -1305,7 +1496,7 @@
 
 
   /* =======================================================
-     15. LOCKING
+     16. LOCKING
   ======================================================= */
 
   function setLayerLocked(
@@ -1345,7 +1536,7 @@
 
 
   /* =======================================================
-     16. CLEAR ACTIVE LAYER
+     17. CLEAR ACTIVE LAYER
   ======================================================= */
 
   function clearActiveLayer() {
@@ -1381,7 +1572,7 @@
 
 
   /* =======================================================
-     17. MERGE DOWN
+     18. MERGE DOWN
   ======================================================= */
 
   function mergeLayerDown(
@@ -1464,7 +1655,7 @@
 
 
   /* =======================================================
-     18. FLATTEN IMAGE
+     19. FLATTEN IMAGE
   ======================================================= */
 
   function flattenImage() {
@@ -1554,7 +1745,7 @@
 
 
   /* =======================================================
-     19. DOCUMENT SIZE
+     20. DOCUMENT SIZE
   ======================================================= */
 
   function resizeDocument(
@@ -1747,7 +1938,7 @@
 
 
   /* =======================================================
-     20. LAYER THUMBNAILS
+     21. LAYER THUMBNAILS
   ======================================================= */
 
   function createThumbnailDataUrl(
@@ -1896,7 +2087,7 @@
 
 
   /* =======================================================
-     21. LAYER LIST UI
+     22. LAYER LIST UI
   ======================================================= */
 
   function renderLayerList() {
@@ -1977,6 +2168,35 @@
             </button>
 
             <button
+              class="layer-stereo3d${
+                layer.stereo3dEnabled
+                  ? " is-enabled"
+                  : ""
+              }"
+              type="button"
+              data-layer-stereo3d="${layer.id}"
+              aria-pressed="${String(
+                Boolean(layer.stereo3dEnabled)
+              )}"
+              aria-label="${
+                layer.stereo3dEnabled
+                  ? "Disable"
+                  : "Enable"
+              } 3D depth for ${escapeHtml(layer.name)}"
+              title="${
+                layer.stereo3dEnabled
+                  ? `3D enabled · depth ${
+                      Number(layer.depth3d) > 0
+                        ? "+"
+                        : ""
+                    }${Number(layer.depth3d) || 0}`
+                  : "Enable layer in Paintless3D"
+              }"
+            >
+              <span aria-hidden="true">🟥🟦</span>
+            </button>
+
+            <button
               class="layer-thumbnail"
               type="button"
               data-layer-thumbnail="${layer.id}"
@@ -2013,6 +2233,35 @@
 
                 toggleLayerVisibility(
                   layer.id
+                );
+
+                return;
+
+              }
+
+
+              const stereoButton =
+                event.target.closest(
+                  "[data-layer-stereo3d]"
+                );
+
+
+              if (stereoButton) {
+
+                toggleLayerStereo3D(
+                  layer.id
+                );
+
+                selectLayer(
+                  layer.id
+                );
+
+                dispatchLayerEvent(
+                  "paintless:history-requested",
+                  {
+                    reason:
+                      "Toggle layer 3D"
+                  }
                 );
 
                 return;
@@ -2100,7 +2349,7 @@
 
 
   /* =======================================================
-     22. PROPERTY CONTROLS
+     23. PROPERTY CONTROLS
   ======================================================= */
 
   function updateLayerControls() {
@@ -2176,7 +2425,7 @@
 
 
   /* =======================================================
-     23. SNAPSHOTS
+     24. SNAPSHOTS
   ======================================================= */
 
   function createLayersSnapshot() {
@@ -2268,7 +2517,13 @@
               savedLayer.blendMode,
 
             locked:
-              savedLayer.locked
+              savedLayer.locked,
+
+            stereo3dEnabled:
+              savedLayer.stereo3dEnabled ?? false,
+
+            depth3d:
+              savedLayer.depth3d ?? 0
           });
 
 
@@ -2325,8 +2580,18 @@
 
 
   /* =======================================================
-     24. EVENT LISTENERS
+     25. EVENT LISTENERS
   ======================================================= */
+
+  document.addEventListener(
+    "paintless3d:mode-changed",
+    () => {
+
+      renderLayerList();
+
+    }
+  );
+
 
   addLayerButton?.addEventListener(
     "click",
@@ -2434,7 +2699,93 @@
 
 
   /* =======================================================
-     25. PUBLIC API
+     26. PAINTLESS3D LAYER BUTTON STYLES
+  ======================================================= */
+
+  function installPaintless3DLayerStyles() {
+
+    if (
+      document.getElementById(
+        "paintless-layer-stereo3d-styles"
+      )
+    ) {
+      return;
+    }
+
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+
+    style.id =
+      "paintless-layer-stereo3d-styles";
+
+
+    style.textContent = `
+      .layer-stereo3d {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 31px;
+        height: 31px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.035);
+        font-size: 10px;
+        line-height: 1;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      html[data-paintless-mode="3d"] .layer-stereo3d,
+      body.paintless-3d-mode .layer-stereo3d,
+      body.paintless3d-editor-active .layer-stereo3d {
+        display: inline-flex;
+      }
+
+      .layer-stereo3d:hover {
+        border-color: rgba(255, 255, 255, 0.28);
+        color: #ffffff;
+      }
+
+      .layer-stereo3d.is-enabled {
+        color: #ffffff;
+        border-color: rgba(37, 230, 255, 0.55);
+        background:
+          linear-gradient(
+            90deg,
+            rgba(255, 49, 92, 0.18),
+            rgba(37, 230, 255, 0.19)
+          );
+        box-shadow:
+          -2px 0 7px rgba(255, 49, 92, 0.12),
+          2px 0 7px rgba(37, 230, 255, 0.13);
+      }
+
+      .layer-stereo3d:focus-visible {
+        outline: 2px solid #25e6ff;
+        outline-offset: 2px;
+      }
+    `;
+
+
+    document.head.appendChild(
+      style
+    );
+
+  }
+
+
+  installPaintless3DLayerStyles();
+
+
+  /* =======================================================
+     27. PUBLIC API
   ======================================================= */
 
   window.PaintlessLayers = {
@@ -2468,6 +2819,12 @@
     setLayerVisibility,
 
     toggleLayerVisibility,
+
+    setLayerStereo3D,
+
+    toggleLayerStereo3D,
+
+    setLayerDepth3D,
 
     setLayerOpacity,
 
@@ -2513,7 +2870,7 @@
 
 
   /* =======================================================
-     26. INITIAL UI
+     28. INITIAL UI
   ======================================================= */
 
   renderLayerList();
