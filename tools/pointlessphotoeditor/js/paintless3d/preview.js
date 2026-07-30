@@ -2,41 +2,26 @@
 
 /* =========================================================
    PAINTLESS3D
-   PREVIEW CONTROLS MODULE — v0.1
+   LIVE 3D SETTINGS PANEL — v0.2
 
    File:
    js/paintless3d/preview.js
 
-   Purpose:
-   - Controls the live anaglyph preview experience
-   - Adds stereo strength and convergence controls
-   - Adds colour-channel selection
-   - Adds eye swapping and ghost reduction
+   New behaviour:
+   - This is no longer an on/off Preview system
+   - 3D rendering stays permanently live in 3D mode
+   - The glasses button opens and closes this settings panel
+   - Controls depth strength, convergence, glasses colours,
+     eye swapping and ghost reduction
    - Shows live renderer information
-   - Keeps controls hidden outside Paintless3D mode
-   - Works with renderer.js without altering original artwork
-   - Remembers settings through Paintless3D Core
-   - Mobile-friendly
-   - Requires no index.html or CSS changes
-
-   Connected APIs:
-   - Paintless3DCore
-   - Paintless3DMode
-   - Paintless3DRenderer
-   - Paintless3DDepth
-
-   Connected events:
-   - paintless3d:preview-changed
-   - paintless3d:mode-changed
-   - paintless3d:render-completed
-   - paintless3d:render-failed
-   - paintless3d:layer-depth-changed
+   - Works with the new live core and renderer
+   - Keeps backwards-compatible API names where useful
 ========================================================= */
 
 (() => {
 
   /* =======================================================
-     1. PAINTLESS3D CHECK
+     1. SYSTEM CHECK
   ======================================================= */
 
   const paintless3d =
@@ -50,9 +35,8 @@
   ) {
 
     console.error(
-      "Paintless3D Preview could not start because paintless3d.js has not loaded."
+      "Paintless3D Settings could not start because paintless3d.js has not loaded."
     );
-
 
     return;
 
@@ -60,7 +44,7 @@
 
 
   /* =======================================================
-     2. PREVIEW STATE
+     2. STATE
   ======================================================= */
 
   const previewState = {
@@ -86,6 +70,9 @@
     updatingControls:
       false,
 
+    renderStatus:
+      "idle",
+
     lastRenderDuration:
       0,
 
@@ -103,9 +90,6 @@
 
     lastRenderError:
       null,
-
-    renderStatus:
-      "idle",
 
     strengthMinimum:
       0,
@@ -125,17 +109,8 @@
     ghostMaximum:
       100,
 
-    closePanelWhenLeaving3D:
-      true,
-
-    openPanelWhenPreviewStarts:
-      true,
-
-    autoRenderOnControlInput:
-      true,
-
     transitionDuration:
-      160
+      150
 
   };
 
@@ -155,22 +130,16 @@
     panel:
       null,
 
-    panelHeader:
-      null,
-
-    panelTitle:
-      null,
-
     closeButton:
+      null,
+
+    status:
       null,
 
     statusDot:
       null,
 
     statusText:
-      null,
-
-    glassesIndicator:
       null,
 
     strengthSlider:
@@ -194,9 +163,6 @@
     channelSelect:
       null,
 
-    swapEyesInput:
-      null,
-
     swapEyesButton:
       null,
 
@@ -215,9 +181,6 @@
     renderButton:
       null,
 
-    statistics:
-      null,
-
     statisticsResolution:
       null,
 
@@ -231,6 +194,9 @@
       null,
 
     activeLayerDepth:
+      null,
+
+    activeLayerState:
       null,
 
     styles:
@@ -289,6 +255,16 @@
       paintless3d.getModule?.(
         "depth"
       )?.api ||
+      null
+    );
+
+  }
+
+
+  function getLayersApi() {
+
+    return (
+      window.PaintlessLayers ||
       null
     );
 
@@ -420,19 +396,78 @@
   }
 
 
-  function formatMilliseconds(
-    value
+  function createElement(
+    tagName,
+    className =
+      null,
+    textContent =
+      null
   ) {
 
-    const number =
+    const element =
+      document.createElement(
+        tagName
+      );
+
+
+    if (className) {
+
+      element.className =
+        className;
+
+    }
+
+
+    if (
+      textContent !==
+      null
+    ) {
+
+      element.textContent =
+        textContent;
+
+    }
+
+
+    return element;
+
+  }
+
+
+  function formatDepth(
+    depth
+  ) {
+
+    const value =
       Number(
-        value
+        depth
+      ) ||
+      0;
+
+
+    return `${
+      value >
+      0
+        ? "+"
+        : ""
+    }${value}`;
+
+  }
+
+
+  function formatDuration(
+    milliseconds
+  ) {
+
+    const value =
+      Number(
+        milliseconds
       );
 
 
     if (
       !Number.isFinite(
-        number
+        value
       )
     ) {
 
@@ -442,7 +477,7 @@
 
 
     if (
-      number <
+      value <
       1
     ) {
 
@@ -452,44 +487,23 @@
 
 
     if (
-      number <
+      value <
       1000
     ) {
 
       return `${Math.round(
-        number
+        value
       )} ms`;
 
     }
 
 
     return `${(
-      number /
+      value /
       1000
     ).toFixed(
       2
     )} s`;
-
-  }
-
-
-  function formatDepth(
-    depth
-  ) {
-
-    const numericDepth =
-      Number(
-        depth
-      ) ||
-      0;
-
-
-    return `${
-      numericDepth >
-      0
-        ? "+"
-        : ""
-    }${numericDepth}`;
 
   }
 
@@ -524,7 +538,7 @@
 
 
   /* =======================================================
-     6. SETTINGS ACCESS
+     6. CURRENT SETTINGS
   ======================================================= */
 
   function getStereoSettings() {
@@ -533,7 +547,6 @@
       getCoreApi()
         ?.getStereoSettings?.() ||
       {
-
         strength:
           12,
 
@@ -548,18 +561,33 @@
 
         ghostReduction:
           0
-
       }
     );
 
   }
 
 
-  function getPreviewEnabled() {
+  function getActiveLayer() {
+
+    return (
+      getLayersApi()
+        ?.getActiveLayer?.() ||
+      getModeApi()
+        ?.getActiveLayer?.() ||
+      null
+    );
+
+  }
+
+
+  function activeLayerStereoIsEnabled() {
+
+    const layer =
+      getActiveLayer();
+
 
     return Boolean(
-      getCoreApi()
-        ?.isPreviewEnabled?.()
+      layer?.stereo3dEnabled
     );
 
   }
@@ -567,11 +595,20 @@
 
   function getActiveLayerDepth() {
 
-    return (
-      getDepthApi()
-        ?.getActiveLayerDepth?.() ||
-      0
-    );
+    const layer =
+      getActiveLayer();
+
+
+    if (!layer) {
+
+      return 0;
+
+    }
+
+
+    return Number(
+      layer.depth3d
+    ) || 0;
 
   }
 
@@ -613,7 +650,7 @@
     if (
       previewState.stylesInstalled ||
       document.getElementById(
-        "paintless3d-preview-styles"
+        "paintless3d-live-settings-styles"
       )
     ) {
 
@@ -633,7 +670,7 @@
 
 
     style.id =
-      "paintless3d-preview-styles";
+      "paintless3d-live-settings-styles";
 
 
     style.textContent = `
@@ -665,6 +702,10 @@
       }
 
       body.paintless3d-editor-active
+      .paintless3d-preview-panel.is-open,
+      body.paintless-3d-mode
+      .paintless3d-preview-panel.is-open,
+      html[data-paintless-mode="3d"]
       .paintless3d-preview-panel.is-open {
         display: block;
       }
@@ -674,10 +715,6 @@
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-      }
-
-      .paintless3d-preview-panel-title-wrap {
-        min-width: 0;
       }
 
       .paintless3d-preview-panel-title {
@@ -756,7 +793,6 @@
         flex: 0 0 auto;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.32);
-        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
       }
 
       .paintless3d-preview-status.is-ready
@@ -769,7 +805,9 @@
       .paintless3d-preview-status-dot {
         background: #ffd75a;
         box-shadow: 0 0 9px rgba(255, 215, 90, 0.55);
-        animation: paintless3d-preview-pulse 850ms ease-in-out infinite;
+        animation:
+          paintless3d-live-settings-pulse
+          850ms ease-in-out infinite;
       }
 
       .paintless3d-preview-status.is-error
@@ -781,7 +819,7 @@
       .paintless3d-preview-status-text {
         min-width: 0;
         overflow: hidden;
-        color: rgba(255, 255, 255, 0.65);
+        color: rgba(255, 255, 255, 0.66);
         font:
           700 9px/1.25
           "Segoe UI",
@@ -791,7 +829,7 @@
         white-space: nowrap;
       }
 
-      @keyframes paintless3d-preview-pulse {
+      @keyframes paintless3d-live-settings-pulse {
         0%,
         100% {
           opacity: 0.55;
@@ -802,6 +840,70 @@
           opacity: 1;
           transform: scale(1.15);
         }
+      }
+
+      .paintless3d-preview-layer-state {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 7px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.027);
+      }
+
+      .paintless3d-preview-layer-state-copy {
+        min-width: 0;
+      }
+
+      .paintless3d-preview-layer-state-label {
+        display: block;
+        color: rgba(255, 255, 255, 0.36);
+        font:
+          700 7px/1
+          "Segoe UI",
+          Arial,
+          sans-serif;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .paintless3d-preview-layer-state-value {
+        display: block;
+        margin-top: 4px;
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.7);
+        font:
+          700 9px/1.2
+          "Segoe UI",
+          Arial,
+          sans-serif;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .paintless3d-preview-layer-depth {
+        display: inline-grid;
+        place-items: center;
+        min-width: 48px;
+        height: 29px;
+        padding: 0 7px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 9px;
+        color: #ffffff;
+        background:
+          linear-gradient(
+            90deg,
+            rgba(255, 49, 92, 0.11),
+            rgba(37, 230, 255, 0.12)
+          );
+        font:
+          900 10px/1
+          "Segoe UI",
+          Arial,
+          sans-serif;
       }
 
       .paintless3d-preview-control-group {
@@ -1122,31 +1224,6 @@
         white-space: nowrap;
       }
 
-      .paintless3d-preview-active-depth {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-top: 9px;
-        padding: 7px 8px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        color: rgba(255, 255, 255, 0.5);
-        background: rgba(255, 255, 255, 0.026);
-        font:
-          700 8px/1
-          "Segoe UI",
-          Arial,
-          sans-serif;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-      }
-
-      .paintless3d-preview-active-depth strong {
-        color: #ffffff;
-        font-size: 10px;
-      }
-
       @media (max-width: 620px) {
         .paintless3d-preview-panel {
           padding: 10px;
@@ -1178,46 +1255,8 @@
 
 
   /* =======================================================
-     9. DOM BUILDING HELPERS
+     9. PANEL BUILDING HELPERS
   ======================================================= */
-
-  function createElement(
-    tagName,
-    className =
-      null,
-    textContent =
-      null
-  ) {
-
-    const element =
-      document.createElement(
-        tagName
-      );
-
-
-    if (className) {
-
-      element.className =
-        className;
-
-    }
-
-
-    if (
-      textContent !==
-      null
-    ) {
-
-      element.textContent =
-        textContent;
-
-    }
-
-
-    return element;
-
-  }
-
 
   function createControlHeading(
     labelText
@@ -1253,28 +1292,21 @@
 
 
     return {
-
       heading,
-
-      label,
-
       value
-
     };
 
   }
 
 
-  function createSliderControl(
-    {
-      label,
-      minimum,
-      maximum,
-      step,
-      value,
-      ariaLabel
-    }
-  ) {
+  function createSliderControl({
+    label,
+    minimum,
+    maximum,
+    step,
+    value,
+    ariaLabel
+  }) {
 
     const group =
       createElement(
@@ -1283,7 +1315,7 @@
       );
 
 
-    const headingElements =
+    const heading =
       createControlHeading(
         label
       );
@@ -1391,22 +1423,17 @@
 
 
     group.append(
-      headingElements.heading,
+      heading.heading,
       row
     );
 
 
     return {
-
       group,
-
       slider,
-
       numberInput,
-
       value:
-        headingElements.value
-
+        heading.value
     };
 
   }
@@ -1446,11 +1473,8 @@
 
 
     return {
-
       statistic,
-
       value
-
     };
 
   }
@@ -1479,7 +1503,7 @@
 
     panel.setAttribute(
       "aria-label",
-      "Paintless3D preview controls"
+      "Paintless3D live settings"
     );
 
 
@@ -1492,8 +1516,7 @@
 
     const titleWrap =
       createElement(
-        "div",
-        "paintless3d-preview-panel-title-wrap"
+        "div"
       );
 
 
@@ -1512,17 +1535,11 @@
       );
 
 
-    glasses.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
     const titleText =
       createElement(
         "span",
         null,
-        "Glasses Preview"
+        "Live 3D Settings"
       );
 
 
@@ -1536,7 +1553,7 @@
       createElement(
         "span",
         "paintless3d-preview-panel-subtitle",
-        "Tune the stereoscopic image for your glasses."
+        "Fine-tune the always-live stereoscopic workspace."
       );
 
 
@@ -1560,7 +1577,7 @@
 
     closeButton.setAttribute(
       "aria-label",
-      "Close Paintless3D preview controls"
+      "Close live 3D settings"
     );
 
 
@@ -1584,23 +1601,67 @@
       );
 
 
-    statusDot.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
     const statusText =
       createElement(
         "span",
         "paintless3d-preview-status-text",
-        "Preview is off."
+        "Live 3D renderer ready."
       );
 
 
     status.append(
       statusDot,
       statusText
+    );
+
+
+    const layerState =
+      createElement(
+        "div",
+        "paintless3d-preview-layer-state"
+      );
+
+
+    const layerStateCopy =
+      createElement(
+        "span",
+        "paintless3d-preview-layer-state-copy"
+      );
+
+
+    const layerStateLabel =
+      createElement(
+        "span",
+        "paintless3d-preview-layer-state-label",
+        "Active layer"
+      );
+
+
+    const layerStateValue =
+      createElement(
+        "strong",
+        "paintless3d-preview-layer-state-value",
+        "No layer selected"
+      );
+
+
+    layerStateCopy.append(
+      layerStateLabel,
+      layerStateValue
+    );
+
+
+    const layerDepth =
+      createElement(
+        "span",
+        "paintless3d-preview-layer-depth",
+        "Flat"
+      );
+
+
+    layerState.append(
+      layerStateCopy,
+      layerDepth
     );
 
 
@@ -1700,12 +1761,10 @@
         "red-cyan",
         "Red / Cyan"
       ],
-
       [
         "red-blue",
         "Red / Blue"
       ],
-
       [
         "green-magenta",
         "Green / Magenta"
@@ -1776,7 +1835,7 @@
       createElement(
         "span",
         "paintless3d-preview-toggle-description",
-        "Reverse depth direction if the image feels inside-out."
+        "Reverse depth if the image feels inside-out."
       );
 
 
@@ -1806,20 +1865,6 @@
     swapButton.setAttribute(
       "aria-label",
       "Swap left and right stereoscopic eyes"
-    );
-
-
-    swapButton.setAttribute(
-      "aria-checked",
-      String(
-        settings.swapEyes
-      )
-    );
-
-
-    swapButton.classList.toggle(
-      "is-enabled",
-      settings.swapEyes
     );
 
 
@@ -1853,37 +1898,6 @@
       );
 
 
-    const activeDepth =
-      createElement(
-        "div",
-        "paintless3d-preview-active-depth"
-      );
-
-
-    const activeDepthLabel =
-      createElement(
-        "span",
-        null,
-        "Active layer depth"
-      );
-
-
-    const activeDepthValue =
-      createElement(
-        "strong",
-        null,
-        formatDepth(
-          getActiveLayerDepth()
-        )
-      );
-
-
-    activeDepth.append(
-      activeDepthLabel,
-      activeDepthValue
-    );
-
-
     const actions =
       createElement(
         "div",
@@ -1907,7 +1921,7 @@
       createElement(
         "button",
         "paintless3d-preview-action is-primary",
-        "Render Now"
+        "Refresh 3D"
       );
 
 
@@ -1963,12 +1977,12 @@
     panel.append(
       header,
       status,
+      layerState,
       strengthControl.group,
       convergenceControl.group,
       channelGroup,
       swapRow,
       ghostControl.group,
-      activeDepth,
       actions,
       statistics
     );
@@ -1978,16 +1992,12 @@
       panel;
 
 
-    dom.panelHeader =
-      header;
-
-
-    dom.panelTitle =
-      title;
-
-
     dom.closeButton =
       closeButton;
+
+
+    dom.status =
+      status;
 
 
     dom.statusDot =
@@ -1996,10 +2006,6 @@
 
     dom.statusText =
       statusText;
-
-
-    dom.glassesIndicator =
-      glasses;
 
 
     dom.strengthSlider =
@@ -2054,10 +2060,6 @@
       renderButton;
 
 
-    dom.statistics =
-      statistics;
-
-
     dom.statisticsResolution =
       resolutionStatistic.value;
 
@@ -2074,8 +2076,12 @@
       reasonStatistic.value;
 
 
+    dom.activeLayerState =
+      layerStateValue;
+
+
     dom.activeLayerDepth =
-      activeDepthValue;
+      layerDepth;
 
 
     return panel;
@@ -2093,101 +2099,7 @@
 
     if (existingPanel) {
 
-      dom.panel =
-        existingPanel;
-
-
-      dom.closeButton =
-        existingPanel.querySelector(
-          ".paintless3d-preview-panel-close"
-        );
-
-
-      dom.statusText =
-        existingPanel.querySelector(
-          ".paintless3d-preview-status-text"
-        );
-
-
-      dom.strengthSlider =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-slider"
-        )[0] ||
-        null;
-
-
-      dom.convergenceSlider =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-slider"
-        )[1] ||
-        null;
-
-
-      dom.ghostSlider =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-slider"
-        )[2] ||
-        null;
-
-
-      dom.strengthNumber =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-number"
-        )[0] ||
-        null;
-
-
-      dom.convergenceNumber =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-number"
-        )[1] ||
-        null;
-
-
-      dom.ghostNumber =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-number"
-        )[2] ||
-        null;
-
-
-      dom.channelSelect =
-        existingPanel.querySelector(
-          ".paintless3d-preview-select"
-        );
-
-
-      dom.swapEyesButton =
-        existingPanel.querySelector(
-          ".paintless3d-preview-toggle-button"
-        );
-
-
-      dom.resetButton =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-action"
-        )[0] ||
-        null;
-
-
-      dom.renderButton =
-        existingPanel.querySelectorAll(
-          ".paintless3d-preview-action"
-        )[1] ||
-        null;
-
-
-      dom.activeLayerDepth =
-        existingPanel.querySelector(
-          ".paintless3d-preview-active-depth strong"
-        );
-
-
-      previewState.panelInstalled =
-        true;
-
-
-      return true;
+      existingPanel.remove();
 
     }
 
@@ -2199,12 +2111,8 @@
     }
 
 
-    const panel =
-      createPreviewPanel();
-
-
     dom.controlParent.appendChild(
-      panel
+      createPreviewPanel()
     );
 
 
@@ -2218,7 +2126,7 @@
 
 
   /* =======================================================
-     11. PANEL DISPLAY
+     11. PANEL STATE
   ======================================================= */
 
   function openPanel() {
@@ -2230,7 +2138,23 @@
     }
 
 
+    if (
+      !paintless3d.is3DMode?.()
+    ) {
+
+      getCoreApi()
+        ?.requestMode?.(
+          "3d"
+        );
+
+    }
+
+
     previewState.panelOpen =
+      true;
+
+
+    previewState.active =
       true;
 
 
@@ -2239,8 +2163,20 @@
     );
 
 
+    updateControls();
+
+
     dispatch(
       "paintless3d:preview-panel-opened"
+    );
+
+
+    dispatch(
+      "paintless3d:settings-panel-changed",
+      {
+        open:
+          true
+      }
     );
 
 
@@ -2272,6 +2208,15 @@
     );
 
 
+    dispatch(
+      "paintless3d:settings-panel-changed",
+      {
+        open:
+          false
+      }
+    );
+
+
     return true;
 
   }
@@ -2299,12 +2244,7 @@
       status;
 
 
-    const statusContainer =
-      dom.statusText
-        ?.parentElement;
-
-
-    statusContainer
+    dom.status
       ?.classList.remove(
         "is-ready",
         "is-rendering",
@@ -2317,7 +2257,7 @@
       "ready"
     ) {
 
-      statusContainer
+      dom.status
         ?.classList.add(
           "is-ready"
         );
@@ -2330,7 +2270,7 @@
       "rendering"
     ) {
 
-      statusContainer
+      dom.status
         ?.classList.add(
           "is-rendering"
         );
@@ -2343,7 +2283,7 @@
       "error"
     ) {
 
-      statusContainer
+      dom.status
         ?.classList.add(
           "is-error"
         );
@@ -2364,7 +2304,7 @@
   }
 
 
-  function updatePreviewStatus() {
+  function updateLiveStatus() {
 
     if (
       !paintless3d.is3DMode?.()
@@ -2372,22 +2312,7 @@
 
       updateStatus(
         "idle",
-        "Switch to 3D mode to use Glasses Preview."
-      );
-
-
-      return;
-
-    }
-
-
-    if (
-      !getPreviewEnabled()
-    ) {
-
-      updateStatus(
-        "idle",
-        "Preview is off."
+        "Switch to 3D mode to activate live rendering."
       );
 
 
@@ -2403,7 +2328,7 @@
 
       updateStatus(
         "rendering",
-        "Rendering stereoscopic image…"
+        "Refreshing live stereoscopic image…"
       );
 
 
@@ -2418,7 +2343,7 @@
 
       updateStatus(
         "error",
-        "The previous preview render failed."
+        "The previous live 3D render failed."
       );
 
 
@@ -2432,7 +2357,7 @@
       `${getChannelLabel(
         getStereoSettings()
           .channelMode
-      )} preview is active.`
+      )} live rendering is active.`
     );
 
   }
@@ -2441,6 +2366,46 @@
   /* =======================================================
      13. CONTROL SYNCHRONISATION
   ======================================================= */
+
+  function updateActiveLayerDisplay() {
+
+    const layer =
+      getActiveLayer();
+
+
+    const enabled =
+      activeLayerStereoIsEnabled();
+
+
+    const depth =
+      getActiveLayerDepth();
+
+
+    if (dom.activeLayerState) {
+
+      dom.activeLayerState.textContent =
+        !layer
+          ? "No layer selected"
+          : enabled
+            ? `${layer.name || "Active layer"} · 3D enabled`
+            : `${layer.name || "Active layer"} · flat`;
+
+    }
+
+
+    if (dom.activeLayerDepth) {
+
+      dom.activeLayerDepth.textContent =
+        enabled
+          ? formatDepth(
+              depth
+            )
+          : "Flat";
+
+    }
+
+  }
+
 
   function updateControls() {
 
@@ -2575,17 +2540,9 @@
       }
 
 
-      if (dom.activeLayerDepth) {
+      updateActiveLayerDisplay();
 
-        dom.activeLayerDepth.textContent =
-          formatDepth(
-            getActiveLayerDepth()
-          );
-
-      }
-
-
-      updatePreviewStatus();
+      updateLiveStatus();
 
 
       return true;
@@ -2600,24 +2557,22 @@
   }
 
 
-  function updateStatistics(
-    {
-      width =
-        previewState.lastRenderWidth,
+  function updateStatistics({
+    width =
+      previewState.lastRenderWidth,
 
-      height =
-        previewState.lastRenderHeight,
+    height =
+      previewState.lastRenderHeight,
 
-      layers =
-        previewState.lastRenderLayers,
+    layers =
+      previewState.lastRenderLayers,
 
-      duration =
-        previewState.lastRenderDuration,
+    duration =
+      previewState.lastRenderDuration,
 
-      reason =
-        previewState.lastRenderReason
-    } = {}
-  ) {
+    reason =
+      previewState.lastRenderReason
+  } = {}) {
 
     if (dom.statisticsResolution) {
 
@@ -2649,7 +2604,7 @@
     if (dom.statisticsTime) {
 
       dom.statisticsTime.textContent =
-        formatMilliseconds(
+        formatDuration(
           duration
         );
 
@@ -2677,8 +2632,8 @@
   function setStrength(
     value,
     {
-      render =
-        true
+      announce =
+        false
     } = {}
   ) {
 
@@ -2694,29 +2649,23 @@
       );
 
 
-    getCoreApi()
-      ?.setStrength?.(
-        nextValue
-      );
+    const result =
+      getCoreApi()
+        ?.setStrength?.(
+          nextValue,
+          {
+            announce,
+            source:
+              "live-settings"
+          }
+        );
 
 
     updateControls();
 
 
-    if (
-      render &&
-      previewState.autoRenderOnControlInput
-    ) {
-
-      getRendererApi()
-        ?.requestRender?.(
-          "preview-strength-input"
-        );
-
-    }
-
-
-    return nextValue;
+    return result ??
+      nextValue;
 
   }
 
@@ -2724,8 +2673,8 @@
   function setConvergence(
     value,
     {
-      render =
-        true
+      announce =
+        false
     } = {}
   ) {
 
@@ -2741,51 +2690,48 @@
       );
 
 
-    getCoreApi()
-      ?.setConvergence?.(
-        nextValue
-      );
+    const result =
+      getCoreApi()
+        ?.setConvergence?.(
+          nextValue,
+          {
+            announce,
+            source:
+              "live-settings"
+          }
+        );
 
 
     updateControls();
 
 
-    if (
-      render &&
-      previewState.autoRenderOnControlInput
-    ) {
-
-      getRendererApi()
-        ?.requestRender?.(
-          "preview-convergence-input"
-        );
-
-    }
-
-
-    return nextValue;
+    return result ??
+      nextValue;
 
   }
 
 
   function setChannelMode(
-    value
+    value,
+    {
+      announce =
+        false
+    } = {}
   ) {
 
     const result =
       getCoreApi()
         ?.setChannelMode?.(
-          value
+          value,
+          {
+            announce,
+            source:
+              "live-settings"
+          }
         );
 
 
     updateControls();
-
-
-    getRendererApi()
-      ?.requestRender?.(
-        "preview-channel-mode-input"
-      );
 
 
     return result;
@@ -2794,23 +2740,26 @@
 
 
   function setSwapEyes(
-    enabled
+    enabled,
+    {
+      announce =
+        false
+    } = {}
   ) {
 
     const result =
       getCoreApi()
         ?.setSwapEyes?.(
-          enabled
+          enabled,
+          {
+            announce,
+            source:
+              "live-settings"
+          }
         );
 
 
     updateControls();
-
-
-    getRendererApi()
-      ?.requestRender?.(
-        "preview-swap-eyes-input"
-      );
 
 
     return result;
@@ -2822,7 +2771,11 @@
 
     return setSwapEyes(
       !getStereoSettings()
-        .swapEyes
+        .swapEyes,
+      {
+        announce:
+          true
+      }
     );
 
   }
@@ -2831,8 +2784,8 @@
   function setGhostReduction(
     value,
     {
-      render =
-        true
+      announce =
+        false
     } = {}
   ) {
 
@@ -2848,70 +2801,40 @@
       );
 
 
-    getCoreApi()
-      ?.setGhostReduction?.(
-        nextValue
-      );
+    const result =
+      getCoreApi()
+        ?.setGhostReduction?.(
+          nextValue,
+          {
+            announce,
+            source:
+              "live-settings"
+          }
+        );
 
 
     updateControls();
 
 
-    if (
-      render &&
-      previewState.autoRenderOnControlInput
-    ) {
-
-      getRendererApi()
-        ?.requestRender?.(
-          "preview-ghost-reduction-input"
-        );
-
-    }
-
-
-    return nextValue;
+    return result ??
+      nextValue;
 
   }
 
 
   function resetStereoSettings() {
 
-    setStrength(
-      12,
-      {
-        render:
-          false
-      }
-    );
+    const result =
+      getCoreApi()
+        ?.resetStereoSettings?.(
+          {
+            announce:
+              true,
 
-
-    setConvergence(
-      0,
-      {
-        render:
-          false
-      }
-    );
-
-
-    setChannelMode(
-      "red-cyan"
-    );
-
-
-    setSwapEyes(
-      false
-    );
-
-
-    setGhostReduction(
-      0,
-      {
-        render:
-          false
-      }
-    );
+            source:
+              "live-settings"
+          }
+        );
 
 
     updateControls();
@@ -2919,17 +2842,11 @@
 
     getRendererApi()
       ?.requestRender?.(
-        "preview-settings-reset"
+        "live-settings-reset"
       );
 
 
-    sendStatusMessage(
-      "Paintless3D stereo settings reset."
-    );
-
-
-    return true;
-
+    return result;
   }
 
 
@@ -2961,14 +2878,12 @@
     event
   ) {
 
-    const value =
-      setStrength(
-        event.target.value
-      );
-
-
-    sendStatusMessage(
-      `Paintless3D strength set to ${value}.`
+    setStrength(
+      event.target.value,
+      {
+        announce:
+          true
+      }
     );
 
   }
@@ -2998,16 +2913,12 @@
     event
   ) {
 
-    const value =
-      setConvergence(
-        event.target.value
-      );
-
-
-    sendStatusMessage(
-      `Paintless3D convergence set to ${formatDepth(
-        value
-      )}.`
+    setConvergence(
+      event.target.value,
+      {
+        announce:
+          true
+      }
     );
 
   }
@@ -3037,14 +2948,12 @@
     event
   ) {
 
-    const value =
-      setGhostReduction(
-        event.target.value
-      );
-
-
-    sendStatusMessage(
-      `Ghost reduction set to ${value}%.`
+    setGhostReduction(
+      event.target.value,
+      {
+        announce:
+          true
+      }
     );
 
   }
@@ -3054,94 +2963,53 @@
     event
   ) {
 
-    const result =
-      setChannelMode(
-        event.target.value
-      );
-
-
-    if (result) {
-
-      sendStatusMessage(
-        `${getChannelLabel(
-          result
-        )} glasses mode selected.`
-      );
-
-    }
+    setChannelMode(
+      event.target.value,
+      {
+        announce:
+          true
+      }
+    );
 
   }
 
 
   function handleRenderButton() {
 
-    if (
-      !getPreviewEnabled()
-    ) {
-
-      getCoreApi()
-        ?.setPreviewEnabled?.(
-          true
-        );
-
-    }
-
-
     updateStatus(
       "rendering",
-      "Rendering stereoscopic image…"
+      "Refreshing live stereoscopic image…"
     );
 
 
     getRendererApi()
       ?.requestRender?.(
-        "manual-preview-render"
+        "manual-live-refresh"
       );
+
+
+    sendStatusMessage(
+      "Paintless3D live view refreshed."
+    );
 
   }
 
 
   /* =======================================================
-     16. DOCUMENT EVENT HANDLERS
+     16. DOCUMENT EVENTS
   ======================================================= */
-
-  function handlePreviewChanged(
-    event
-  ) {
-
-    previewState.active =
-      Boolean(
-        event.detail?.enabled
-      );
-
-
-    if (
-      previewState.active &&
-      previewState.openPanelWhenPreviewStarts
-    ) {
-
-      openPanel();
-
-    }
-
-
-    updateControls();
-
-  }
-
 
   function handleModeChanged(
     event
   ) {
 
-    const is3D =
+    previewState.active =
       event.detail?.mode ===
       "3d";
 
 
     if (
-      !is3D &&
-      previewState.closePanelWhenLeaving3D
+      !previewState.active
     ) {
 
       closePanel();
@@ -3157,12 +3025,12 @@
   function handleRenderRequested() {
 
     if (
-      getPreviewEnabled()
+      paintless3d.is3DMode?.()
     ) {
 
       updateStatus(
         "rendering",
-        "Rendering stereoscopic image…"
+        "Refreshing live stereoscopic image…"
       );
 
     }
@@ -3204,7 +3072,7 @@
 
     previewState.lastRenderReason =
       event.detail?.reason ||
-      "render";
+      "live-render";
 
 
     previewState.lastRenderError =
@@ -3219,7 +3087,7 @@
       `${getChannelLabel(
         getStereoSettings()
           .channelMode
-      )} preview rendered in ${formatMilliseconds(
+      )} live view updated in ${formatDuration(
         previewState.lastRenderDuration
       )}.`
     );
@@ -3228,6 +3096,9 @@
     dispatch(
       "paintless3d:preview-updated",
       {
+        live:
+          true,
+
         canvas:
           event.detail?.canvas,
 
@@ -3258,52 +3129,33 @@
     previewState.lastRenderError =
       event.detail?.error ||
       new Error(
-        "Unknown Paintless3D render error."
+        "Unknown Paintless3D rendering error."
       );
 
 
     updateStatus(
       "error",
-      "Preview rendering failed. Check the browser console."
+      "Live 3D rendering failed. Check the console."
     );
 
   }
 
 
-  function handleDepthChanged() {
+  function handleLayerChanged() {
 
-    if (dom.activeLayerDepth) {
-
-      dom.activeLayerDepth.textContent =
-        formatDepth(
-          getActiveLayerDepth()
-        );
-
-    }
+    updateActiveLayerDisplay();
 
   }
 
 
-  function handleStereoSettingChanged() {
+  function handleSettingsChanged() {
 
     updateControls();
 
   }
 
 
-  function handleActiveLayerChanged() {
-
-    handleDepthChanged();
-
-  }
-
-
-  function handleExternalPreviewButtonDoubleClick(
-    event
-  ) {
-
-    event.preventDefault();
-
+  function handleExternalOpenRequest() {
 
     openPanel();
 
@@ -3435,19 +3287,6 @@
       );
 
 
-    dom.previewButton
-      ?.addEventListener(
-        "dblclick",
-        handleExternalPreviewButtonDoubleClick
-      );
-
-
-    document.addEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
-    );
-
-
     document.addEventListener(
       "paintless3d:mode-changed",
       handleModeChanged
@@ -3473,38 +3312,44 @@
 
 
     document.addEventListener(
-      "paintless3d:layer-depth-changed",
-      handleDepthChanged
-    );
-
-
-    document.addEventListener(
       "paintless:active-layer-changed",
-      handleActiveLayerChanged
+      handleLayerChanged
     );
 
 
     document.addEventListener(
       "paintless:layer-selected",
-      handleActiveLayerChanged
+      handleLayerChanged
     );
 
 
-    [
-      "paintless3d:strength-changed",
-      "paintless3d:convergence-changed",
-      "paintless3d:channel-mode-changed",
-      "paintless3d:swap-eyes-changed",
-      "paintless3d:ghost-reduction-changed"
-    ].forEach(
-      (eventName) => {
+    document.addEventListener(
+      "paintless3d:layer-stereo-changed",
+      handleLayerChanged
+    );
 
-        document.addEventListener(
-          eventName,
-          handleStereoSettingChanged
-        );
 
-      }
+    document.addEventListener(
+      "paintless3d:layer-depth-changed",
+      handleLayerChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:settings-changed",
+      handleSettingsChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:settings-reset",
+      handleSettingsChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:open-settings-requested",
+      handleExternalOpenRequest
     );
 
   }
@@ -3631,19 +3476,6 @@
       );
 
 
-    dom.previewButton
-      ?.removeEventListener(
-        "dblclick",
-        handleExternalPreviewButtonDoubleClick
-      );
-
-
-    document.removeEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
-    );
-
-
     document.removeEventListener(
       "paintless3d:mode-changed",
       handleModeChanged
@@ -3669,45 +3501,51 @@
 
 
     document.removeEventListener(
-      "paintless3d:layer-depth-changed",
-      handleDepthChanged
-    );
-
-
-    document.removeEventListener(
       "paintless:active-layer-changed",
-      handleActiveLayerChanged
+      handleLayerChanged
     );
 
 
     document.removeEventListener(
       "paintless:layer-selected",
-      handleActiveLayerChanged
+      handleLayerChanged
     );
 
 
-    [
-      "paintless3d:strength-changed",
-      "paintless3d:convergence-changed",
-      "paintless3d:channel-mode-changed",
-      "paintless3d:swap-eyes-changed",
-      "paintless3d:ghost-reduction-changed"
-    ].forEach(
-      (eventName) => {
+    document.removeEventListener(
+      "paintless3d:layer-stereo-changed",
+      handleLayerChanged
+    );
 
-        document.removeEventListener(
-          eventName,
-          handleStereoSettingChanged
-        );
 
-      }
+    document.removeEventListener(
+      "paintless3d:layer-depth-changed",
+      handleLayerChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:settings-changed",
+      handleSettingsChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:settings-reset",
+      handleSettingsChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:open-settings-requested",
+      handleExternalOpenRequest
     );
 
   }
 
 
   /* =======================================================
-     18. INITIALISATION
+     18. INITIALISE
   ======================================================= */
 
   async function initialise() {
@@ -3727,14 +3565,12 @@
     installStyles();
 
 
-    const installed =
-      installPreviewPanel();
-
-
-    if (!installed) {
+    if (
+      !installPreviewPanel()
+    ) {
 
       throw new Error(
-        "Paintless3D Preview could not find the right-side controls area."
+        "Paintless3D Settings could not find the right-side controls area."
       );
 
     }
@@ -3743,13 +3579,9 @@
     connectEvents();
 
 
-    updateControls();
-
-    updateStatistics();
-
-
     previewState.active =
-      getPreviewEnabled();
+      paintless3d.is3DMode?.() ||
+      false;
 
 
     previewState.initialised =
@@ -3758,6 +3590,11 @@
 
     previewState.destroyed =
       false;
+
+
+    updateControls();
+
+    updateStatistics();
 
 
     getModeApi()
@@ -3771,13 +3608,25 @@
       "paintless3d:preview-ready",
       {
         preview:
+          publicApi,
+
+        live:
+          true
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:settings-ready",
+      {
+        settings:
           publicApi
       }
     );
 
 
     console.log(
-      "%cPaintless3D Preview ready.",
+      "%cPaintless3D Live Settings ready.",
       [
         "color:#25e6ff",
         "font-weight:bold",
@@ -3844,6 +3693,11 @@
     );
 
 
+    dispatch(
+      "paintless3d:settings-destroyed"
+    );
+
+
     return true;
 
   }
@@ -3879,6 +3733,8 @@
 
     updateStatistics,
 
+    updateActiveLayerDisplay,
+
 
     setStrength,
 
@@ -3897,12 +3753,10 @@
 
     getStereoSettings,
 
-    getPreviewEnabled,
-
 
     requestRender(
       reason =
-        "preview-api-request"
+        "live-settings-api-request"
     ) {
 
       return getRendererApi()
@@ -3916,28 +3770,60 @@
 
     enablePreview() {
 
-      return getCoreApi()
-        ?.setPreviewEnabled?.(
-          true
-        );
+      /*
+       * Backwards-compatible name.
+       * Live rendering is already enabled in 3D mode.
+       */
+
+      if (
+        !paintless3d.is3DMode?.()
+      ) {
+
+        getCoreApi()
+          ?.requestMode?.(
+            "3d"
+          );
+
+      }
+
+
+      return true;
 
     },
 
 
     disablePreview() {
 
-      return getCoreApi()
-        ?.setPreviewEnabled?.(
-          false
-        );
+      /*
+       * Backwards-compatible name.
+       * This now closes the settings panel only.
+       */
+
+      closePanel();
+
+
+      return true;
 
     },
 
 
     togglePreview() {
 
-      return getCoreApi()
-        ?.togglePreview?.();
+      /*
+       * Backwards-compatible name.
+       * This now toggles the settings panel.
+       */
+
+      return togglePanel();
+
+    },
+
+
+    getPreviewEnabled() {
+
+      return Boolean(
+        paintless3d.is3DMode?.()
+      );
 
     },
 
@@ -3959,7 +3845,6 @@
     getLastRenderInformation() {
 
       return {
-
         duration:
           previewState.lastRenderDuration,
 
@@ -3980,7 +3865,6 @@
 
         status:
           previewState.renderStatus
-
       };
 
     }
@@ -3989,6 +3873,10 @@
 
 
   window.Paintless3DPreview =
+    publicApi;
+
+
+  window.Paintless3DSettings =
     publicApi;
 
 
@@ -4001,7 +3889,7 @@
     {
 
       label:
-        "Paintless3D Preview Controls",
+        "Paintless3D Live Settings",
 
       initialised:
         false,
