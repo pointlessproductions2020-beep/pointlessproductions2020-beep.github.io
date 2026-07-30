@@ -2558,7 +2558,12 @@
   }
 
 
-  function focusDepthControl() {
+ function focusDepthControl() {
+
+  /*
+   * The old floating depth panel
+   * has been removed.
+   */
 
   return true;
 
