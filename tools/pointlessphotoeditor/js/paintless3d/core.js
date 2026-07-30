@@ -2,36 +2,25 @@
 
 /* =========================================================
    PAINTLESS3D
-   CORE MODULE — v0.1
+   LIVE CORE SYSTEM — v0.2
 
    File:
    js/paintless3d/core.js
 
-   First working Paintless3D module.
-
-   Features:
-   - Creates the 2D / 3D mode switch
-   - Adds a Glasses Preview button
-   - Adds Paintless3D styling without changing existing CSS
-   - Keeps normal Paintless untouched in 2D mode
-   - Synchronises with Paintless3D.setMode()
-   - Stores basic stereo settings
-   - Provides the shared foundation for future 3D modules
-   - Mobile-friendly controls
-   - No changes to index.html required
-
-   Future modules will use this core for:
-   - Layer depth
-   - Anaglyph rendering
-   - Live preview
-   - Stereo convergence
-   - Export
+   New behaviour:
+   - Paintless3D is permanently live while 3D mode is active
+   - The old Preview button no longer turns rendering off
+   - The glasses button now opens/closes stereo settings
+   - Stereo settings are stored locally in the browser
+   - Keeps backwards compatibility with preview.js,
+     renderer.js, export.js and ui.js
+   - Provides one central API for all Paintless3D settings
 ========================================================= */
 
 (() => {
 
   /* =======================================================
-     1. PAINTLESS3D CHECK
+     1. SYSTEM CHECK
   ======================================================= */
 
   const paintless3d =
@@ -48,33 +37,20 @@
       "Paintless3D Core could not start because paintless3d.js has not loaded."
     );
 
-
     return;
 
   }
 
 
   /* =======================================================
-     2. CORE STATE
+     2. CONSTANTS
   ======================================================= */
 
-  const coreState = {
+  const STORAGE_KEY =
+    "paintless3d-settings-v2";
 
-    initialised:
-      false,
 
-    destroyed:
-      false,
-
-    mode:
-      paintless3d.getMode?.() ||
-      "2d",
-
-    previewEnabled:
-      false,
-
-    first3DActivation:
-      true,
+  const DEFAULT_SETTINGS = {
 
     strength:
       12,
@@ -89,90 +65,83 @@
       false,
 
     ghostReduction:
-      0,
+      0
 
-    maximumDepth:
-      100,
+  };
 
-    minimumDepth:
-      -100,
 
-    storageKey:
-      "paintless3d-settings-v1",
+  const VALID_CHANNEL_MODES =
+    new Set(
+      [
+        "red-cyan",
+        "red-blue",
+        "green-magenta"
+      ]
+    );
 
-    modeSwitchInstalled:
+
+  /* =======================================================
+     3. CORE STATE
+  ======================================================= */
+
+  const coreState = {
+
+    initialised:
+      false,
+
+    destroyed:
+      false,
+
+    liveRendering:
+      false,
+
+    settingsPanelOpen:
+      false,
+
+    settingsLoaded:
+      false,
+
+    controlsInstalled:
       false,
 
     stylesInstalled:
       false,
 
-    welcomeShown:
-      false
+    storageAvailable:
+      true,
+
+    lastMode:
+      "2d",
+
+    lastSettingsChange:
+      null,
+
+    settings: {
+      ...DEFAULT_SETTINGS
+    }
 
   };
 
 
   /* =======================================================
-     3. DOM REFERENCES
+     4. DOM REFERENCES
   ======================================================= */
 
   const dom = {
 
-    header:
-      null,
-
-    menuBar:
-      null,
-
-    topBar:
-      null,
-
-    zoomControls:
-      null,
-
-    importButton:
-      null,
-
-    exportButton:
-      null,
-
-    modeContainer:
-      null,
-
-    modeLabel:
-      null,
-
-    switchButton:
-      null,
-
-    switchTrack:
-      null,
-
-    switchThumb:
-      null,
-
-    twoDLabel:
-      null,
-
-    threeDLabel:
+    modeSwitch:
       null,
 
     previewButton:
       null,
 
-    previewIcon:
+    previewButtonIcon:
       null,
 
-    previewLabel:
+    previewButtonLabel:
       null,
 
-    welcomeDialog:
-      null,
-
-    welcomeBackdrop:
-      null,
-
-    continueButton:
+    previewPanel:
       null,
 
     styles:
@@ -182,13 +151,68 @@
 
 
   /* =======================================================
-     4. GENERAL HELPERS
+     5. SHARED APIS
+  ======================================================= */
+
+  function getModeApi() {
+
+    return (
+      window.Paintless3DMode ||
+      paintless3d.getModule?.(
+        "mode"
+      )?.api ||
+      null
+    );
+
+  }
+
+
+  function getRendererApi() {
+
+    return (
+      window.Paintless3DRenderer ||
+      paintless3d.getModule?.(
+        "renderer"
+      )?.api ||
+      null
+    );
+
+  }
+
+
+  function getPreviewApi() {
+
+    return (
+      window.Paintless3DPreview ||
+      paintless3d.getModule?.(
+        "preview"
+      )?.api ||
+      null
+    );
+
+  }
+
+
+  function getToolCore() {
+
+    return (
+      window.PaintlessToolCore ||
+      null
+    );
+
+  }
+
+
+  /* =======================================================
+     6. GENERAL HELPERS
   ======================================================= */
 
   function clamp(
     value,
     minimum,
-    maximum
+    maximum,
+    fallback =
+      minimum
   ) {
 
     const numericValue =
@@ -203,7 +227,7 @@
       )
     ) {
 
-      return minimum;
+      return fallback;
 
     }
 
@@ -213,40 +237,6 @@
       Math.max(
         minimum,
         numericValue
-      )
-    );
-
-  }
-
-
-  function sendStatusMessage(
-    message
-  ) {
-
-    if (
-      typeof window.PaintlessToolCore
-        ?.sendStatusMessage ===
-      "function"
-    ) {
-
-      window.PaintlessToolCore
-        .sendStatusMessage(
-          message
-        );
-
-
-      return;
-    }
-
-
-    document.dispatchEvent(
-      new CustomEvent(
-        "paintless:status-message",
-        {
-          detail: {
-            message
-          }
-        }
       )
     );
 
@@ -270,199 +260,36 @@
   }
 
 
-  function isTypingElement(
-    element =
-      document.activeElement
+  function sendStatusMessage(
+    message
   ) {
 
-    if (!element) {
+    if (
+      typeof getToolCore()
+        ?.sendStatusMessage ===
+      "function"
+    ) {
 
-      return false;
+      getToolCore()
+        .sendStatusMessage(
+          message
+        );
+
+
+      return;
+
     }
 
 
-    return Boolean(
-      element.tagName ===
-        "INPUT" ||
-      element.tagName ===
-        "TEXTAREA" ||
-      element.tagName ===
-        "SELECT" ||
-      element.isContentEditable
+    dispatch(
+      "paintless:status-message",
+      {
+        message
+      }
     );
 
   }
 
-
-  function normaliseMode(
-    mode
-  ) {
-
-    return String(
-      mode ||
-      ""
-    ).toLowerCase() ===
-      "3d"
-      ? "3d"
-      : "2d";
-
-  }
-
-
-  /* =======================================================
-     5. SETTINGS STORAGE
-  ======================================================= */
-
-  function getSerializableSettings() {
-
-    return {
-
-      strength:
-        coreState.strength,
-
-      convergence:
-        coreState.convergence,
-
-      channelMode:
-        coreState.channelMode,
-
-      swapEyes:
-        coreState.swapEyes,
-
-      ghostReduction:
-        coreState.ghostReduction
-
-    };
-
-  }
-
-
-  function saveSettings() {
-
-    try {
-
-      window.localStorage.setItem(
-        coreState.storageKey,
-        JSON.stringify(
-          getSerializableSettings()
-        )
-      );
-
-
-      return true;
-
-    } catch (error) {
-
-      return false;
-    }
-
-  }
-
-
-  function loadSettings() {
-
-    try {
-
-      const storedValue =
-        window.localStorage.getItem(
-          coreState.storageKey
-        );
-
-
-      if (!storedValue) {
-
-        return false;
-      }
-
-
-      const settings =
-        JSON.parse(
-          storedValue
-        );
-
-
-      if (
-        Number.isFinite(
-          Number(
-            settings.strength
-          )
-        )
-      ) {
-
-        coreState.strength =
-          clamp(
-            settings.strength,
-            0,
-            100
-          );
-      }
-
-
-      if (
-        Number.isFinite(
-          Number(
-            settings.convergence
-          )
-        )
-      ) {
-
-        coreState.convergence =
-          clamp(
-            settings.convergence,
-            -100,
-            100
-          );
-      }
-
-
-      if (
-        [
-          "red-cyan",
-          "red-blue",
-          "green-magenta"
-        ].includes(
-          settings.channelMode
-        )
-      ) {
-
-        coreState.channelMode =
-          settings.channelMode;
-      }
-
-
-      coreState.swapEyes =
-        Boolean(
-          settings.swapEyes
-        );
-
-
-      coreState.ghostReduction =
-        clamp(
-          settings.ghostReduction,
-          0,
-          100
-        );
-
-
-      return true;
-
-    } catch (error) {
-
-      console.warn(
-        "Paintless3D could not load saved settings:",
-        error
-      );
-
-
-      return false;
-    }
-
-  }
-
-
-  /* =======================================================
-     6. FIND PAINTLESS HEADER
-  ======================================================= */
 
   function findFirst(
     selectors
@@ -482,117 +309,1354 @@
       if (element) {
 
         return element;
+
       }
+
     }
 
 
     return null;
-  }
-
-
-  function collectDomReferences() {
-
-    dom.header =
-      findFirst(
-        [
-          "#app-header",
-          ".app-header",
-          ".top-header",
-          "header"
-        ]
-      );
-
-
-    dom.menuBar =
-      findFirst(
-        [
-          "#menu-bar",
-          ".menu-bar",
-          ".main-menu",
-          "nav"
-        ]
-      );
-
-
-    dom.topBar =
-      findFirst(
-        [
-          "#top-toolbar",
-          ".top-toolbar",
-          ".toolbar-top",
-          ".header-actions",
-          ".top-actions"
-        ]
-      );
-
-
-    dom.zoomControls =
-      findFirst(
-        [
-          "#zoom-controls",
-          ".zoom-controls",
-          "[data-zoom-controls]"
-        ]
-      );
-
-
-    dom.importButton =
-      document.getElementById(
-        "import-button"
-      ) ||
-      findFirst(
-        [
-          '[data-action="import"]',
-          ".import-button"
-        ]
-      );
-
-
-    dom.exportButton =
-      document.getElementById(
-        "export-button"
-      ) ||
-      findFirst(
-        [
-          '[data-action="export"]',
-          ".export-button"
-        ]
-      );
 
   }
 
 
-  function getPreferredControlParent() {
+  function normaliseMode(
+    mode
+  ) {
+
+    return String(
+      mode ||
+      ""
+    ).toLowerCase() ===
+      "3d"
+      ? "3d"
+      : "2d";
+
+  }
+
+
+  function is3DMode() {
 
     if (
-      dom.importButton?.parentElement
+      typeof paintless3d.is3DMode ===
+      "function"
     ) {
 
-      return dom.importButton
-        .parentElement;
+      return Boolean(
+        paintless3d.is3DMode()
+      );
+
     }
 
 
     if (
-      dom.zoomControls?.parentElement
+      typeof paintless3d.getMode ===
+      "function"
     ) {
 
-      return dom.zoomControls
-        .parentElement;
+      return paintless3d.getMode() ===
+        "3d";
+
     }
 
 
     return (
-      dom.topBar ||
-      dom.menuBar ||
-      dom.header ||
+      document.documentElement
+        .dataset.paintlessMode ===
+        "3d" ||
       document.body
+        ?.classList.contains(
+          "paintless-3d-mode"
+        ) ||
+      document.body
+        ?.classList.contains(
+          "paintless3d-editor-active"
+        )
     );
+
+  }
+
+
+  function getCurrentMode() {
+
+    return is3DMode()
+      ? "3d"
+      : "2d";
+
   }
 
 
   /* =======================================================
-     7. CORE STYLES
+     7. SETTINGS STORAGE
+  ======================================================= */
+
+  function sanitiseSettings(
+    settings
+  ) {
+
+    const source =
+      settings &&
+      typeof settings ===
+        "object"
+        ? settings
+        : {};
+
+
+    return {
+
+      strength:
+        clamp(
+          source.strength,
+          0,
+          100,
+          DEFAULT_SETTINGS.strength
+        ),
+
+      convergence:
+        clamp(
+          source.convergence,
+          -100,
+          100,
+          DEFAULT_SETTINGS.convergence
+        ),
+
+      channelMode:
+        VALID_CHANNEL_MODES.has(
+          source.channelMode
+        )
+          ? source.channelMode
+          : DEFAULT_SETTINGS.channelMode,
+
+      swapEyes:
+        Boolean(
+          source.swapEyes
+        ),
+
+      ghostReduction:
+        clamp(
+          source.ghostReduction,
+          0,
+          100,
+          DEFAULT_SETTINGS.ghostReduction
+        )
+
+    };
+
+  }
+
+
+  function loadSettings() {
+
+    if (
+      coreState.settingsLoaded
+    ) {
+
+      return {
+        ...coreState.settings
+      };
+
+    }
+
+
+    try {
+
+      const storedValue =
+        window.localStorage.getItem(
+          STORAGE_KEY
+        );
+
+
+      if (storedValue) {
+
+        const parsedValue =
+          JSON.parse(
+            storedValue
+          );
+
+
+        coreState.settings =
+          sanitiseSettings(
+            parsedValue
+          );
+
+      } else {
+
+        coreState.settings =
+          {
+            ...DEFAULT_SETTINGS
+          };
+
+      }
+
+    } catch (error) {
+
+      coreState.storageAvailable =
+        false;
+
+
+      coreState.settings =
+        {
+          ...DEFAULT_SETTINGS
+        };
+
+
+      console.warn(
+        "Paintless3D could not load saved settings:",
+        error
+      );
+
+    }
+
+
+    coreState.settingsLoaded =
+      true;
+
+
+    return {
+      ...coreState.settings
+    };
+
+  }
+
+
+  function saveSettings() {
+
+    if (
+      !coreState.storageAvailable
+    ) {
+
+      return false;
+
+    }
+
+
+    try {
+
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(
+          coreState.settings
+        )
+      );
+
+
+      return true;
+
+    } catch (error) {
+
+      coreState.storageAvailable =
+        false;
+
+
+      console.warn(
+        "Paintless3D could not save settings:",
+        error
+      );
+
+
+      return false;
+
+    }
+
+  }
+
+
+  /* =======================================================
+     8. SETTINGS EVENTS
+  ======================================================= */
+
+  function dispatchSettingChange(
+    eventName,
+    settingName,
+    value,
+    previousValue,
+    source =
+      "core"
+  ) {
+
+    coreState.lastSettingsChange = {
+
+      setting:
+        settingName,
+
+      value,
+
+      previousValue,
+
+      source,
+
+      timestamp:
+        Date.now()
+
+    };
+
+
+    dispatch(
+      eventName,
+      {
+        setting:
+          settingName,
+
+        value,
+
+        previousValue,
+
+        source,
+
+        settings:
+          getStereoSettings()
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:settings-changed",
+      {
+        setting:
+          settingName,
+
+        value,
+
+        previousValue,
+
+        source,
+
+        settings:
+          getStereoSettings()
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:render-requested",
+      {
+        reason:
+          `${settingName}-changed`,
+
+        setting:
+          settingName,
+
+        value
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     9. SETTINGS GETTERS AND SETTERS
+  ======================================================= */
+
+  function getStereoSettings() {
+
+    loadSettings();
+
+
+    return {
+      ...coreState.settings
+    };
+
+  }
+
+
+  function setStrength(
+    value,
+    {
+      announce =
+        false,
+
+      source =
+        "core"
+    } = {}
+  ) {
+
+    loadSettings();
+
+
+    const previousValue =
+      coreState.settings.strength;
+
+
+    const nextValue =
+      clamp(
+        Math.round(
+          Number(
+            value
+          )
+        ),
+        0,
+        100,
+        DEFAULT_SETTINGS.strength
+      );
+
+
+    coreState.settings.strength =
+      nextValue;
+
+
+    saveSettings();
+
+
+    dispatchSettingChange(
+      "paintless3d:strength-changed",
+      "strength",
+      nextValue,
+      previousValue,
+      source
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        `Paintless3D strength set to ${nextValue}.`
+      );
+
+    }
+
+
+    return nextValue;
+
+  }
+
+
+  function setConvergence(
+    value,
+    {
+      announce =
+        false,
+
+      source =
+        "core"
+    } = {}
+  ) {
+
+    loadSettings();
+
+
+    const previousValue =
+      coreState.settings.convergence;
+
+
+    const nextValue =
+      clamp(
+        Math.round(
+          Number(
+            value
+          )
+        ),
+        -100,
+        100,
+        DEFAULT_SETTINGS.convergence
+      );
+
+
+    coreState.settings.convergence =
+      nextValue;
+
+
+    saveSettings();
+
+
+    dispatchSettingChange(
+      "paintless3d:convergence-changed",
+      "convergence",
+      nextValue,
+      previousValue,
+      source
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        `Paintless3D convergence set to ${
+          nextValue > 0
+            ? "+"
+            : ""
+        }${nextValue}.`
+      );
+
+    }
+
+
+    return nextValue;
+
+  }
+
+
+  function setChannelMode(
+    channelMode,
+    {
+      announce =
+        false,
+
+      source =
+        "core"
+    } = {}
+  ) {
+
+    loadSettings();
+
+
+    const safeMode =
+      VALID_CHANNEL_MODES.has(
+        channelMode
+      )
+        ? channelMode
+        : DEFAULT_SETTINGS.channelMode;
+
+
+    const previousValue =
+      coreState.settings.channelMode;
+
+
+    coreState.settings.channelMode =
+      safeMode;
+
+
+    saveSettings();
+
+
+    dispatchSettingChange(
+      "paintless3d:channel-mode-changed",
+      "channelMode",
+      safeMode,
+      previousValue,
+      source
+    );
+
+
+    if (announce) {
+
+      const label =
+        safeMode ===
+          "red-blue"
+          ? "Red and blue"
+          : safeMode ===
+              "green-magenta"
+            ? "Green and magenta"
+            : "Red and cyan";
+
+
+      sendStatusMessage(
+        `${label} glasses mode selected.`
+      );
+
+    }
+
+
+    return safeMode;
+
+  }
+
+
+  function setSwapEyes(
+    enabled,
+    {
+      announce =
+        false,
+
+      source =
+        "core"
+    } = {}
+  ) {
+
+    loadSettings();
+
+
+    const previousValue =
+      coreState.settings.swapEyes;
+
+
+    const nextValue =
+      Boolean(
+        enabled
+      );
+
+
+    coreState.settings.swapEyes =
+      nextValue;
+
+
+    saveSettings();
+
+
+    dispatchSettingChange(
+      "paintless3d:swap-eyes-changed",
+      "swapEyes",
+      nextValue,
+      previousValue,
+      source
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        nextValue
+          ? "Paintless3D eyes swapped."
+          : "Paintless3D eye order restored."
+      );
+
+    }
+
+
+    return nextValue;
+
+  }
+
+
+  function toggleSwapEyes(
+    options = {}
+  ) {
+
+    return setSwapEyes(
+      !getStereoSettings()
+        .swapEyes,
+      options
+    );
+
+  }
+
+
+  function setGhostReduction(
+    value,
+    {
+      announce =
+        false,
+
+      source =
+        "core"
+    } = {}
+  ) {
+
+    loadSettings();
+
+
+    const previousValue =
+      coreState.settings.ghostReduction;
+
+
+    const nextValue =
+      clamp(
+        Math.round(
+          Number(
+            value
+          )
+        ),
+        0,
+        100,
+        DEFAULT_SETTINGS.ghostReduction
+      );
+
+
+    coreState.settings.ghostReduction =
+      nextValue;
+
+
+    saveSettings();
+
+
+    dispatchSettingChange(
+      "paintless3d:ghost-reduction-changed",
+      "ghostReduction",
+      nextValue,
+      previousValue,
+      source
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        `Ghost reduction set to ${nextValue}%.`
+      );
+
+    }
+
+
+    return nextValue;
+
+  }
+
+
+  function resetStereoSettings({
+    announce =
+      true,
+
+    source =
+      "reset"
+  } = {}) {
+
+    const previousSettings =
+      getStereoSettings();
+
+
+    coreState.settings =
+      {
+        ...DEFAULT_SETTINGS
+      };
+
+
+    saveSettings();
+
+
+    dispatch(
+      "paintless3d:settings-reset",
+      {
+        previousSettings,
+
+        settings:
+          getStereoSettings(),
+
+        source
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:strength-changed",
+      {
+        value:
+          coreState.settings.strength,
+
+        previousValue:
+          previousSettings.strength,
+
+        settings:
+          getStereoSettings(),
+
+        source
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:convergence-changed",
+      {
+        value:
+          coreState.settings.convergence,
+
+        previousValue:
+          previousSettings.convergence,
+
+        settings:
+          getStereoSettings(),
+
+        source
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:channel-mode-changed",
+      {
+        value:
+          coreState.settings.channelMode,
+
+        previousValue:
+          previousSettings.channelMode,
+
+        settings:
+          getStereoSettings(),
+
+        source
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:swap-eyes-changed",
+      {
+        value:
+          coreState.settings.swapEyes,
+
+        previousValue:
+          previousSettings.swapEyes,
+
+        settings:
+          getStereoSettings(),
+
+        source
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:ghost-reduction-changed",
+      {
+        value:
+          coreState.settings.ghostReduction,
+
+        previousValue:
+          previousSettings.ghostReduction,
+
+        settings:
+          getStereoSettings(),
+
+        source
+      }
+    );
+
+
+    dispatch(
+      "paintless3d:render-requested",
+      {
+        reason:
+          "stereo-settings-reset"
+      }
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        "Paintless3D stereo settings reset."
+      );
+
+    }
+
+
+    return getStereoSettings();
+
+  }
+
+
+  /* =======================================================
+     10. MODE CONTROL
+  ======================================================= */
+
+  function requestMode(
+    mode,
+    {
+      announce =
+        false
+    } = {}
+  ) {
+
+    const safeMode =
+      normaliseMode(
+        mode
+      );
+
+
+    const modeApi =
+      getModeApi();
+
+
+    let result =
+      false;
+
+
+    if (
+      typeof modeApi?.requestMode ===
+      "function"
+    ) {
+
+      result =
+        modeApi.requestMode(
+          safeMode
+        );
+
+    } else if (
+      typeof modeApi?.setMode ===
+      "function"
+    ) {
+
+      result =
+        modeApi.setMode(
+          safeMode
+        );
+
+    } else if (
+      typeof paintless3d.setMode ===
+      "function"
+    ) {
+
+      result =
+        paintless3d.setMode(
+          safeMode
+        );
+
+    } else if (
+      typeof paintless3d.requestMode ===
+      "function"
+    ) {
+
+      result =
+        paintless3d.requestMode(
+          safeMode
+        );
+
+    } else {
+
+      dispatch(
+        "paintless3d:mode-requested",
+        {
+          mode:
+            safeMode
+        }
+      );
+
+
+      result =
+        safeMode;
+
+    }
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        safeMode ===
+          "3d"
+          ? "Paintless3D mode enabled."
+          : "Paintless returned to 2D mode."
+      );
+
+    }
+
+
+    return result;
+
+  }
+
+
+  function enter3DMode(
+    options = {}
+  ) {
+
+    return requestMode(
+      "3d",
+      options
+    );
+
+  }
+
+
+  function enter2DMode(
+    options = {}
+  ) {
+
+    return requestMode(
+      "2d",
+      options
+    );
+
+  }
+
+
+  function toggleMode() {
+
+    return requestMode(
+      is3DMode()
+        ? "2d"
+        : "3d"
+    );
+
+  }
+
+
+  /* =======================================================
+     11. LIVE RENDERING COMPATIBILITY
+  ======================================================= */
+
+  function isPreviewEnabled() {
+
+    /*
+     * Preview is no longer an optional effect.
+     * In 3D mode the live renderer is always enabled.
+     */
+
+    return is3DMode();
+
+  }
+
+
+  function setPreviewEnabled(
+    enabled,
+    {
+      openSettings =
+        false,
+
+      announce =
+        false
+    } = {}
+  ) {
+
+    if (
+      Boolean(
+        enabled
+      )
+    ) {
+
+      if (
+        !is3DMode()
+      ) {
+
+        requestMode(
+          "3d"
+        );
+
+      }
+
+
+      coreState.liveRendering =
+        true;
+
+
+      getRendererApi()
+        ?.enableLiveRendering?.();
+
+
+      if (openSettings) {
+
+        openSettingsPanel();
+
+      }
+
+
+      dispatch(
+        "paintless3d:preview-changed",
+        {
+          enabled:
+            true,
+
+          live:
+            true,
+
+          permanent:
+            true
+        }
+      );
+
+
+      if (announce) {
+
+        sendStatusMessage(
+          "Live Paintless3D rendering is active."
+        );
+
+      }
+
+
+      return true;
+
+    }
+
+
+    /*
+     * Calling this with false while still in 3D mode must not
+     * hide the live workspace. This keeps old modules safe.
+     */
+
+    if (
+      is3DMode()
+    ) {
+
+      closeSettingsPanel();
+
+
+      coreState.liveRendering =
+        true;
+
+
+      dispatch(
+        "paintless3d:preview-changed",
+        {
+          enabled:
+            true,
+
+          live:
+            true,
+
+          permanent:
+            true,
+
+          requestedValue:
+            false
+        }
+      );
+
+
+      return true;
+
+    }
+
+
+    coreState.liveRendering =
+      false;
+
+
+    getRendererApi()
+      ?.disableLiveRendering?.();
+
+
+    dispatch(
+      "paintless3d:preview-changed",
+      {
+        enabled:
+          false,
+
+        live:
+          false,
+
+        permanent:
+          true
+      }
+    );
+
+
+    return false;
+
+  }
+
+
+  function enablePreview(
+    options = {}
+  ) {
+
+    return setPreviewEnabled(
+      true,
+      options
+    );
+
+  }
+
+
+  function disablePreview() {
+
+    /*
+     * Backwards-compatible name.
+     * In 3D mode this only closes the settings panel.
+     */
+
+    if (
+      is3DMode()
+    ) {
+
+      closeSettingsPanel();
+
+
+      return true;
+
+    }
+
+
+    return setPreviewEnabled(
+      false
+    );
+
+  }
+
+
+  function togglePreview() {
+
+    /*
+     * The old Preview toggle now opens and closes settings.
+     */
+
+    if (
+      !is3DMode()
+    ) {
+
+      requestMode(
+        "3d"
+      );
+
+
+      window.setTimeout(
+        () => {
+
+          openSettingsPanel();
+
+        },
+        0
+      );
+
+
+      return true;
+
+    }
+
+
+    toggleSettingsPanel();
+
+
+    return true;
+
+  }
+
+
+  /* =======================================================
+     12. SETTINGS PANEL CONTROL
+  ======================================================= */
+
+  function refreshPanelReference() {
+
+    dom.previewPanel =
+      document.getElementById(
+        "paintless3d-preview-panel"
+      );
+
+  }
+
+
+  function openSettingsPanel() {
+
+    refreshPanelReference();
+
+
+    coreState.settingsPanelOpen =
+      true;
+
+
+    if (
+      typeof getPreviewApi()
+        ?.openPanel ===
+      "function"
+    ) {
+
+      getPreviewApi()
+        .openPanel();
+
+    } else {
+
+      dom.previewPanel
+        ?.classList.add(
+          "is-open"
+        );
+
+    }
+
+
+    updatePreviewButton();
+
+
+    dispatch(
+      "paintless3d:settings-panel-changed",
+      {
+        open:
+          true
+      }
+    );
+
+
+    return true;
+
+  }
+
+
+  function closeSettingsPanel() {
+
+    refreshPanelReference();
+
+
+    coreState.settingsPanelOpen =
+      false;
+
+
+    if (
+      typeof getPreviewApi()
+        ?.closePanel ===
+      "function"
+    ) {
+
+      getPreviewApi()
+        .closePanel();
+
+    } else {
+
+      dom.previewPanel
+        ?.classList.remove(
+          "is-open"
+        );
+
+    }
+
+
+    updatePreviewButton();
+
+
+    dispatch(
+      "paintless3d:settings-panel-changed",
+      {
+        open:
+          false
+      }
+    );
+
+
+    return true;
+
+  }
+
+
+  function toggleSettingsPanel() {
+
+    refreshPanelReference();
+
+
+    const panelActuallyOpen =
+      Boolean(
+        dom.previewPanel
+          ?.classList.contains(
+            "is-open"
+          )
+      );
+
+
+    const currentlyOpen =
+      coreState.settingsPanelOpen ||
+      panelActuallyOpen;
+
+
+    return currentlyOpen
+      ? closeSettingsPanel()
+      : openSettingsPanel();
+
+  }
+
+
+  /* =======================================================
+     13. DOM COLLECTION
+  ======================================================= */
+
+  function collectDomReferences() {
+
+    dom.modeSwitch =
+      document.getElementById(
+        "paintless3d-mode-switch"
+      ) ||
+      findFirst(
+        [
+          "[data-paintless3d-mode-switch]",
+          ".paintless3d-mode-switch"
+        ]
+      );
+
+
+    dom.previewButton =
+      document.getElementById(
+        "paintless3d-preview-button"
+      ) ||
+      findFirst(
+        [
+          "[data-paintless3d-preview]",
+          "[data-action='paintless3d-preview']",
+          ".paintless3d-preview-button"
+        ]
+      );
+
+
+    refreshPanelReference();
+
+  }
+
+
+  /* =======================================================
+     14. STYLES
   ======================================================= */
 
   function installStyles() {
@@ -600,7 +1664,7 @@
     if (
       coreState.stylesInstalled ||
       document.getElementById(
-        "paintless3d-core-styles"
+        "paintless3d-live-core-styles"
       )
     ) {
 
@@ -609,6 +1673,7 @@
 
 
       return true;
+
     }
 
 
@@ -619,465 +1684,60 @@
 
 
     style.id =
-      "paintless3d-core-styles";
+      "paintless3d-live-core-styles";
 
 
     style.textContent = `
-      :root {
-        --paintless3d-red: #ff315c;
-        --paintless3d-cyan: #25e6ff;
-        --paintless3d-panel: rgba(18, 11, 29, 0.96);
-        --paintless3d-border: rgba(255, 255, 255, 0.13);
-        --paintless3d-text: #ffffff;
-        --paintless3d-muted: rgba(255, 255, 255, 0.58);
-      }
-
-      .paintless3d-controls {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        flex: 0 0 auto;
-        min-width: 0;
-        margin-inline: 6px;
-      }
-
-      .paintless3d-mode-control {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        min-height: 36px;
-        padding: 4px 7px;
-        border: 1px solid var(--paintless3d-border);
-        border-radius: 12px;
-        background:
-          linear-gradient(
-            145deg,
-            rgba(24, 16, 38, 0.95),
-            rgba(10, 7, 17, 0.96)
-          );
-        box-shadow:
-          inset 0 0 0 1px rgba(168, 76, 255, 0.07);
-        user-select: none;
-      }
-
-      .paintless3d-mode-label {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 20px;
-        color: rgba(255, 255, 255, 0.5);
-        font:
-          800 10px/1
-          "Segoe UI",
-          Arial,
-          sans-serif;
-        letter-spacing: 0.05em;
-        transition:
-          color 140ms ease,
-          text-shadow 140ms ease,
-          transform 140ms ease;
-      }
-
-      .paintless3d-mode-label.is-active {
-        color: #ffffff;
-        transform: scale(1.05);
-      }
-
-      .paintless3d-mode-label-3d.is-active {
-        text-shadow:
-          -1px 0 0 rgba(255, 49, 92, 0.88),
-          1px 0 0 rgba(37, 230, 255, 0.88);
-      }
-
-      .paintless3d-switch {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        width: 48px;
-        height: 25px;
-        padding: 0;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 999px;
-        background:
-          linear-gradient(
-            90deg,
-            rgba(168, 76, 255, 0.34),
-            rgba(53, 231, 255, 0.18)
-          );
-        box-shadow:
-          inset 0 2px 7px rgba(0, 0, 0, 0.44);
-        cursor: pointer;
-        touch-action: manipulation;
-        transition:
-          border-color 150ms ease,
-          box-shadow 150ms ease,
-          background 150ms ease;
-      }
-
-      .paintless3d-switch:hover {
-        border-color: rgba(255, 255, 255, 0.38);
-      }
-
-      .paintless3d-switch:focus-visible {
-        outline: 2px solid #a84cff;
-        outline-offset: 2px;
-      }
-
-      .paintless3d-switch-track {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        border-radius: inherit;
-        pointer-events: none;
-      }
-
-      .paintless3d-switch-track::before,
-      .paintless3d-switch-track::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 55%;
-        opacity: 0;
-        transition: opacity 160ms ease;
-      }
-
-      .paintless3d-switch-track::before {
-        left: 0;
-        background:
-          radial-gradient(
-            circle at left center,
-            rgba(255, 49, 92, 0.36),
-            transparent 70%
-          );
-      }
-
-      .paintless3d-switch-track::after {
-        right: 0;
-        background:
-          radial-gradient(
-            circle at right center,
-            rgba(37, 230, 255, 0.36),
-            transparent 70%
-          );
-      }
-
-      .paintless3d-switch.is-3d
-      .paintless3d-switch-track::before,
-      .paintless3d-switch.is-3d
-      .paintless3d-switch-track::after {
-        opacity: 1;
-      }
-
-      .paintless3d-switch-thumb {
-        position: absolute;
-        left: 3px;
-        top: 3px;
-        width: 17px;
-        height: 17px;
-        border: 1px solid rgba(255, 255, 255, 0.58);
-        border-radius: 50%;
-        background:
-          linear-gradient(
-            145deg,
-            #ffffff,
-            #c8b8de
-          );
-        box-shadow:
-          0 2px 8px rgba(0, 0, 0, 0.48);
-        pointer-events: none;
-        transition:
-          transform 180ms cubic-bezier(.2, .8, .2, 1),
-          background 180ms ease,
-          box-shadow 180ms ease;
-      }
-
-      .paintless3d-switch.is-3d
-      .paintless3d-switch-thumb {
-        transform: translateX(23px);
-        background:
-          linear-gradient(
-            90deg,
-            var(--paintless3d-red) 0 46%,
-            #ffffff 46% 54%,
-            var(--paintless3d-cyan) 54% 100%
-          );
-        box-shadow:
-          -3px 0 8px rgba(255, 49, 92, 0.4),
-          3px 0 8px rgba(37, 230, 255, 0.42),
-          0 2px 8px rgba(0, 0, 0, 0.48);
-      }
-
+      #paintless3d-preview-button,
+      [data-paintless3d-preview],
       .paintless3d-preview-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 36px;
-        padding: 6px 10px;
-        border: 1px solid var(--paintless3d-border);
-        border-radius: 12px;
-        color: rgba(255, 255, 255, 0.58);
-        background:
-          linear-gradient(
-            145deg,
-            rgba(24, 16, 38, 0.95),
-            rgba(10, 7, 17, 0.96)
-          );
-        font:
-          800 10px/1
-          "Segoe UI",
-          Arial,
-          sans-serif;
-        letter-spacing: 0.04em;
-        cursor: pointer;
-        touch-action: manipulation;
-        transition:
-          color 140ms ease,
-          border-color 140ms ease,
-          background 140ms ease,
-          box-shadow 140ms ease,
-          transform 140ms ease;
+        position: relative;
       }
 
-      .paintless3d-preview-button:hover:not(:disabled) {
+      #paintless3d-preview-button.is-live,
+      [data-paintless3d-preview].is-live,
+      .paintless3d-preview-button.is-live {
         color: #ffffff;
-        border-color: rgba(255, 255, 255, 0.32);
-        transform: translateY(-1px);
-      }
-
-      .paintless3d-preview-button:focus-visible {
-        outline: 2px solid #a84cff;
-        outline-offset: 2px;
-      }
-
-      .paintless3d-preview-button:disabled {
-        opacity: 0.42;
-        cursor: not-allowed;
-      }
-
-      .paintless3d-preview-button.is-enabled {
-        color: #ffffff;
-        border-color: rgba(53, 231, 255, 0.56);
+        border-color: rgba(37, 230, 255, 0.5);
         background:
           linear-gradient(
             90deg,
             rgba(255, 49, 92, 0.15),
-            rgba(37, 230, 255, 0.19)
+            rgba(168, 76, 255, 0.17),
+            rgba(37, 230, 255, 0.16)
           );
         box-shadow:
-          -4px 0 13px rgba(255, 49, 92, 0.12),
-          4px 0 13px rgba(37, 230, 255, 0.15);
+          -2px 0 8px rgba(255, 49, 92, 0.1),
+          2px 0 8px rgba(37, 230, 255, 0.11);
       }
 
-      .paintless3d-preview-icon {
-        font-size: 15px;
-        line-height: 1;
-      }
-
-      html[data-paintless-mode="3d"] body {
-        --paintless-active-accent: #35e7ff;
-      }
-
-      html[data-paintless-mode="3d"] .app-header,
-      html[data-paintless-mode="3d"] header,
-      body.paintless-3d-mode .app-header,
-      body.paintless-3d-mode header {
+      #paintless3d-preview-button.is-live::after,
+      [data-paintless3d-preview].is-live::after,
+      .paintless3d-preview-button.is-live::after {
+        content: "";
+        position: absolute;
+        right: 4px;
+        top: 4px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #69f59c;
         box-shadow:
-          inset 3px 0 0 rgba(255, 49, 92, 0.34),
-          inset -3px 0 0 rgba(37, 230, 255, 0.34);
+          0 0 7px rgba(105, 245, 156, 0.7);
       }
 
-      html[data-paintless-mode="3d"] #canvas-stage,
-      html[data-paintless-mode="3d"] .canvas-stage,
-      body.paintless-3d-mode #canvas-stage,
-      body.paintless-3d-mode .canvas-stage {
-        box-shadow:
-          -4px 0 24px rgba(255, 49, 92, 0.08),
-          4px 0 24px rgba(37, 230, 255, 0.09);
+      #paintless3d-preview-button.is-panel-open,
+      [data-paintless3d-preview].is-panel-open,
+      .paintless3d-preview-button.is-panel-open {
+        border-color: rgba(168, 76, 255, 0.65);
+        filter: brightness(1.08);
       }
 
-      .paintless3d-welcome-backdrop {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        padding: 18px;
-        background: rgba(4, 2, 8, 0.72);
-        backdrop-filter: blur(7px);
-        z-index: 12000;
-        opacity: 0;
-        transition: opacity 170ms ease;
-      }
-
-      .paintless3d-welcome-backdrop[hidden] {
-        display: none !important;
-      }
-
-      .paintless3d-welcome-backdrop.is-visible {
-        opacity: 1;
-      }
-
-      .paintless3d-welcome-dialog {
-        width: min(430px, calc(100vw - 28px));
-        padding: 25px;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 20px;
-        color: var(--paintless3d-text);
-        background:
-          radial-gradient(
-            circle at 15% 0%,
-            rgba(255, 49, 92, 0.17),
-            transparent 40%
-          ),
-          radial-gradient(
-            circle at 85% 0%,
-            rgba(37, 230, 255, 0.18),
-            transparent 40%
-          ),
-          linear-gradient(
-            145deg,
-            rgba(28, 18, 43, 0.99),
-            rgba(9, 6, 16, 0.99)
-          );
-        box-shadow:
-          0 28px 90px rgba(0, 0, 0, 0.68),
-          -8px 0 30px rgba(255, 49, 92, 0.1),
-          8px 0 30px rgba(37, 230, 255, 0.11);
-        text-align: center;
-        transform: translateY(8px) scale(0.97);
-        transition: transform 180ms ease;
-      }
-
-      .paintless3d-welcome-backdrop.is-visible
-      .paintless3d-welcome-dialog {
-        transform: translateY(0) scale(1);
-      }
-
-      .paintless3d-welcome-glasses {
-        display: block;
-        margin-bottom: 11px;
-        font-size: 48px;
-        line-height: 1;
-        filter:
-          drop-shadow(-4px 0 4px rgba(255, 49, 92, 0.36))
-          drop-shadow(4px 0 4px rgba(37, 230, 255, 0.38));
-      }
-
-      .paintless3d-welcome-title {
-        margin: 0;
-        color: #ffffff;
-        font:
-          900 28px/1.1
-          "Segoe UI",
-          Arial,
-          sans-serif;
-        letter-spacing: 0.02em;
-        text-shadow:
-          -2px 0 0 rgba(255, 49, 92, 0.52),
-          2px 0 0 rgba(37, 230, 255, 0.55);
-      }
-
-      .paintless3d-welcome-copy {
-        margin: 14px auto 0;
-        max-width: 330px;
-        color: rgba(255, 255, 255, 0.68);
-        font:
-          500 14px/1.55
-          "Segoe UI",
-          Arial,
-          sans-serif;
-      }
-
-      .paintless3d-welcome-note {
-        display: block;
-        margin-top: 7px;
-        color: rgba(255, 255, 255, 0.42);
-        font-size: 11px;
-      }
-
-      .paintless3d-continue-button {
-        width: 100%;
-        min-height: 44px;
-        margin-top: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        border-radius: 13px;
-        color: #ffffff;
-        background:
-          linear-gradient(
-            90deg,
-            rgba(255, 49, 92, 0.72),
-            rgba(168, 76, 255, 0.86),
-            rgba(37, 230, 255, 0.72)
-          );
-        font:
-          900 12px/1
-          "Segoe UI",
-          Arial,
-          sans-serif;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition:
-          transform 130ms ease,
-          filter 130ms ease;
-      }
-
-      .paintless3d-continue-button:hover {
-        filter: brightness(1.1);
-        transform: translateY(-1px);
-      }
-
-      .paintless3d-continue-button:focus-visible {
-        outline: 2px solid #ffffff;
-        outline-offset: 3px;
-      }
-
-      @media (max-width: 760px) {
-        .paintless3d-controls {
-          gap: 4px;
-          margin-inline: 3px;
-        }
-
-        .paintless3d-mode-control {
-          gap: 5px;
-          min-height: 33px;
-          padding-inline: 5px;
-        }
-
-        .paintless3d-switch {
-          width: 44px;
-          height: 24px;
-        }
-
-        .paintless3d-switch-thumb {
-          width: 16px;
-          height: 16px;
-        }
-
-        .paintless3d-switch.is-3d
-        .paintless3d-switch-thumb {
-          transform: translateX(20px);
-        }
-
-        .paintless3d-preview-button {
-          min-height: 33px;
-          padding-inline: 8px;
-        }
-
-        .paintless3d-preview-label {
-          display: none;
-        }
-      }
-
-      @media (max-width: 460px) {
-        .paintless3d-mode-label {
-          font-size: 9px;
-        }
-
-        .paintless3d-controls {
-          margin-inline: 1px;
-        }
+      html[data-paintless-mode="2d"]
+      #paintless3d-preview-button,
+      body:not(.paintless3d-editor-active)
+      #paintless3d-preview-button {
+        opacity: 0.72;
       }
     `;
 
@@ -1096,813 +1756,185 @@
 
 
     return true;
+
   }
 
 
   /* =======================================================
-     8. BUILD MODE SWITCH
+     15. PREVIEW BUTTON
   ======================================================= */
 
-  function createModeLabel(
-    text,
-    className
-  ) {
+  function updatePreviewButton() {
 
-    const label =
-      document.createElement(
-        "span"
+    if (
+      !dom.previewButton
+    ) {
+
+      return false;
+
+    }
+
+
+    const live =
+      is3DMode();
+
+
+    refreshPanelReference();
+
+
+    const panelOpen =
+      Boolean(
+        coreState.settingsPanelOpen ||
+        dom.previewPanel
+          ?.classList.contains(
+            "is-open"
+          )
       );
 
 
-    label.className =
-      `paintless3d-mode-label ${className}`;
-
-
-    label.textContent =
-      text;
-
-
-    label.setAttribute(
-      "aria-hidden",
-      "true"
+    dom.previewButton.classList.toggle(
+      "is-live",
+      live
     );
 
 
-    return label;
-  }
-
-
-  function createModeSwitch() {
-
-    const controls =
-      document.createElement(
-        "div"
-      );
-
-
-    controls.id =
-      "paintless3d-controls";
-
-
-    controls.className =
-      "paintless3d-controls";
-
-
-    const modeContainer =
-      document.createElement(
-        "div"
-      );
-
-
-    modeContainer.id =
-      "paintless3d-mode-control";
-
-
-    modeContainer.className =
-      "paintless3d-mode-control";
-
-
-    const twoDLabel =
-      createModeLabel(
-        "2D",
-        "paintless3d-mode-label-2d"
-      );
-
-
-    const switchButton =
-      document.createElement(
-        "button"
-      );
-
-
-    switchButton.type =
-      "button";
-
-
-    switchButton.id =
-      "paintless3d-mode-switch";
-
-
-    switchButton.className =
-      "paintless3d-switch";
-
-
-    switchButton.setAttribute(
-      "role",
-      "switch"
+    dom.previewButton.classList.toggle(
+      "is-panel-open",
+      panelOpen
     );
 
 
-    switchButton.setAttribute(
-      "aria-checked",
-      "false"
-    );
-
-
-    switchButton.setAttribute(
-      "aria-label",
-      "Switch between 2D and Paintless3D mode"
-    );
-
-
-    switchButton.title =
-      "Switch between 2D and Paintless3D";
-
-
-    const switchTrack =
-      document.createElement(
-        "span"
-      );
-
-
-    switchTrack.className =
-      "paintless3d-switch-track";
-
-
-    switchTrack.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    const switchThumb =
-      document.createElement(
-        "span"
-      );
-
-
-    switchThumb.className =
-      "paintless3d-switch-thumb";
-
-
-    switchThumb.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    switchButton.append(
-      switchTrack,
-      switchThumb
-    );
-
-
-    const threeDLabel =
-      createModeLabel(
-        "3D",
-        "paintless3d-mode-label-3d"
-      );
-
-
-    modeContainer.append(
-      twoDLabel,
-      switchButton,
-      threeDLabel
-    );
-
-
-    const previewButton =
-      document.createElement(
-        "button"
-      );
-
-
-    previewButton.type =
-      "button";
-
-
-    previewButton.id =
-      "paintless3d-preview-button";
-
-
-    previewButton.className =
-      "paintless3d-preview-button";
-
-
-    previewButton.disabled =
-      true;
-
-
-    previewButton.setAttribute(
+    dom.previewButton.setAttribute(
       "aria-pressed",
-      "false"
+      String(
+        panelOpen
+      )
     );
 
 
-    previewButton.title =
-      "Enable anaglyph glasses preview";
-
-
-    const previewIcon =
-      document.createElement(
-        "span"
-      );
-
-
-    previewIcon.className =
-      "paintless3d-preview-icon";
-
-
-    previewIcon.textContent =
-      "👓";
-
-
-    previewIcon.setAttribute(
-      "aria-hidden",
-      "true"
+    dom.previewButton.setAttribute(
+      "aria-expanded",
+      String(
+        panelOpen
+      )
     );
 
 
-    const previewLabel =
-      document.createElement(
-        "span"
-      );
+    dom.previewButton.title =
+      live
+        ? panelOpen
+          ? "Close live 3D settings"
+          : "Open live 3D settings"
+        : "Enter 3D mode and open stereo settings";
 
 
-    previewLabel.className =
-      "paintless3d-preview-label";
-
-
-    previewLabel.textContent =
-      "Preview";
-
-
-    previewButton.append(
-      previewIcon,
-      previewLabel
+    dom.previewButton.setAttribute(
+      "aria-label",
+      dom.previewButton.title
     );
 
 
-    controls.append(
-      modeContainer,
-      previewButton
-    );
+    /*
+     * Preserve an existing icon while changing only text that
+     * clearly says Preview.
+     */
 
-
-    dom.modeContainer =
-      controls;
-
-
-    dom.switchButton =
-      switchButton;
-
-
-    dom.switchTrack =
-      switchTrack;
-
-
-    dom.switchThumb =
-      switchThumb;
-
-
-    dom.twoDLabel =
-      twoDLabel;
-
-
-    dom.threeDLabel =
-      threeDLabel;
-
-
-    dom.previewButton =
-      previewButton;
-
-
-    dom.previewIcon =
-      previewIcon;
-
-
-    dom.previewLabel =
-      previewLabel;
-
-
-    return controls;
-  }
-
-
-  function installModeSwitch() {
-
-    const existingControls =
-      document.getElementById(
-        "paintless3d-controls"
+    const textNodes =
+      Array.from(
+        dom.previewButton.childNodes
+      ).filter(
+        (node) =>
+          node.nodeType ===
+          Node.TEXT_NODE
       );
 
 
-    if (existingControls) {
+    textNodes.forEach(
+      (node) => {
+
+        if (
+          /preview/i.test(
+            node.textContent ||
+            ""
+          )
+        ) {
+
+          node.textContent =
+            live
+              ? " Live 3D"
+              : " 3D Settings";
+
+        }
 
-      dom.modeContainer =
-        existingControls;
-
-
-      dom.switchButton =
-        document.getElementById(
-          "paintless3d-mode-switch"
-        );
-
-
-      dom.previewButton =
-        document.getElementById(
-          "paintless3d-preview-button"
-        );
-
-
-      dom.twoDLabel =
-        existingControls.querySelector(
-          ".paintless3d-mode-label-2d"
-        );
-
-
-      dom.threeDLabel =
-        existingControls.querySelector(
-          ".paintless3d-mode-label-3d"
-        );
-
-
-      coreState.modeSwitchInstalled =
-        true;
-
-
-      return true;
-    }
-
-
-    const parent =
-      getPreferredControlParent();
-
-
-    if (!parent) {
-
-      return false;
-    }
-
-
-    const controls =
-      createModeSwitch();
-
-
-    if (
-      dom.importButton &&
-      dom.importButton.parentElement ===
-        parent
-    ) {
-
-      parent.insertBefore(
-        controls,
-        dom.importButton
-      );
-
-    } else if (
-      dom.exportButton &&
-      dom.exportButton.parentElement ===
-        parent
-    ) {
-
-      parent.insertBefore(
-        controls,
-        dom.exportButton
-      );
-
-    } else {
-
-      parent.appendChild(
-        controls
-      );
-    }
-
-
-    coreState.modeSwitchInstalled =
-      true;
-
-
-    return true;
-  }
-
-
-  /* =======================================================
-     9. WELCOME DIALOG
-  ======================================================= */
-
-  function createWelcomeDialog() {
-
-    const backdrop =
-      document.createElement(
-        "div"
-      );
-
-
-    backdrop.id =
-      "paintless3d-welcome-backdrop";
-
-
-    backdrop.className =
-      "paintless3d-welcome-backdrop";
-
-
-    backdrop.hidden =
-      true;
-
-
-    backdrop.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    const dialog =
-      document.createElement(
-        "section"
-      );
-
-
-    dialog.className =
-      "paintless3d-welcome-dialog";
-
-
-    dialog.setAttribute(
-      "role",
-      "dialog"
-    );
-
-
-    dialog.setAttribute(
-      "aria-modal",
-      "true"
-    );
-
-
-    dialog.setAttribute(
-      "aria-labelledby",
-      "paintless3d-welcome-title"
-    );
-
-
-    const glasses =
-      document.createElement(
-        "span"
-      );
-
-
-    glasses.className =
-      "paintless3d-welcome-glasses";
-
-
-    glasses.textContent =
-      "👓";
-
-
-    glasses.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    const title =
-      document.createElement(
-        "h2"
-      );
-
-
-    title.id =
-      "paintless3d-welcome-title";
-
-
-    title.className =
-      "paintless3d-welcome-title";
-
-
-    title.textContent =
-      "Paintless3D";
-
-
-    const copy =
-      document.createElement(
-        "p"
-      );
-
-
-    copy.className =
-      "paintless3d-welcome-copy";
-
-
-    copy.innerHTML =
-      [
-        "Put on your red/cyan glasses and prepare to paint in depth.",
-        '<span class="paintless3d-welcome-note">',
-        "The renderer is being built next — tonight, the 3D engine officially wakes up.",
-        "</span>"
-      ].join(
-        ""
-      );
-
-
-    const continueButton =
-      document.createElement(
-        "button"
-      );
-
-
-    continueButton.type =
-      "button";
-
-
-    continueButton.className =
-      "paintless3d-continue-button";
-
-
-    continueButton.textContent =
-      "Enter Paintless3D";
-
-
-    dialog.append(
-      glasses,
-      title,
-      copy,
-      continueButton
-    );
-
-
-    backdrop.appendChild(
-      dialog
-    );
-
-
-    document.body.appendChild(
-      backdrop
-    );
-
-
-    dom.welcomeBackdrop =
-      backdrop;
-
-
-    dom.welcomeDialog =
-      dialog;
-
-
-    dom.continueButton =
-      continueButton;
-
-
-    return backdrop;
-  }
-
-
-  function ensureWelcomeDialog() {
-
-    const existingBackdrop =
-      document.getElementById(
-        "paintless3d-welcome-backdrop"
-      );
-
-
-    if (existingBackdrop) {
-
-      dom.welcomeBackdrop =
-        existingBackdrop;
-
-
-      dom.welcomeDialog =
-        existingBackdrop.querySelector(
-          ".paintless3d-welcome-dialog"
-        );
-
-
-      dom.continueButton =
-        existingBackdrop.querySelector(
-          ".paintless3d-continue-button"
-        );
-
-
-      return existingBackdrop;
-    }
-
-
-    return createWelcomeDialog();
-  }
-
-
-  function showWelcomeDialog() {
-
-    if (
-      coreState.welcomeShown ||
-      !coreState.first3DActivation
-    ) {
-
-      return false;
-    }
-
-
-    ensureWelcomeDialog();
-
-
-    if (!dom.welcomeBackdrop) {
-
-      return false;
-    }
-
-
-    coreState.welcomeShown =
-      true;
-
-
-    dom.welcomeBackdrop.hidden =
-      false;
-
-
-    dom.welcomeBackdrop.setAttribute(
-      "aria-hidden",
-      "false"
-    );
-
-
-    requestAnimationFrame(
-      () => {
-
-        dom.welcomeBackdrop
-          ?.classList.add(
-            "is-visible"
-          );
-
-
-        dom.continueButton
-          ?.focus();
       }
     );
 
 
-    dispatch(
-      "paintless3d:welcome-opened"
-    );
+    if (
+      dom.previewButton.children.length ===
+        0
+    ) {
 
+      dom.previewButton.textContent =
+        live
+          ? "👓 Live 3D"
+          : "👓 3D Settings";
 
-    return true;
-  }
-
-
-  function hideWelcomeDialog() {
-
-    if (!dom.welcomeBackdrop) {
-
-      return false;
     }
 
 
-    dom.welcomeBackdrop.classList.remove(
-      "is-visible"
-    );
-
-
-    dom.welcomeBackdrop.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    window.setTimeout(
-      () => {
-
-        if (dom.welcomeBackdrop) {
-
-          dom.welcomeBackdrop.hidden =
-            true;
-        }
-      },
-      180
-    );
-
-
-    coreState.first3DActivation =
-      false;
-
-
-    dom.switchButton
-      ?.focus();
-
-
-    dispatch(
-      "paintless3d:welcome-closed"
-    );
-
-
     return true;
+
   }
 
 
-  /* =======================================================
-     10. MODE DISPLAY
-  ======================================================= */
-
-  function updateModeDisplay(
-    mode =
-      paintless3d.getMode?.() ||
-      coreState.mode
+  function handlePreviewButtonClick(
+    event
   ) {
 
-    const safeMode =
-      normaliseMode(
-        mode
+    event.preventDefault();
+
+    event.stopImmediatePropagation();
+
+
+    if (
+      !is3DMode()
+    ) {
+
+      requestMode(
+        "3d"
       );
 
 
-    const is3D =
-      safeMode ===
-      "3d";
+      window.setTimeout(
+        () => {
 
+          openSettingsPanel();
 
-    coreState.mode =
-      safeMode;
-
-
-    document.documentElement
-      .dataset.paintlessMode =
-      safeMode;
-
-
-    document.body
-      ?.classList.toggle(
-        "paintless-3d-mode",
-        is3D
+        },
+        0
       );
 
 
-    dom.switchButton
-      ?.classList.toggle(
-        "is-3d",
-        is3D
-      );
+      return;
 
-
-    dom.switchButton
-      ?.setAttribute(
-        "aria-checked",
-        String(
-          is3D
-        )
-      );
-
-
-    if (dom.switchButton) {
-
-      dom.switchButton.title =
-        is3D
-          ? "Return to normal 2D mode"
-          : "Enter Paintless3D mode";
     }
 
 
-    dom.twoDLabel
-      ?.classList.toggle(
-        "is-active",
-        !is3D
-      );
+    toggleSettingsPanel();
 
-
-    dom.threeDLabel
-      ?.classList.toggle(
-        "is-active",
-        is3D
-      );
-
-
-    if (dom.previewButton) {
-
-      dom.previewButton.disabled =
-        !is3D;
-
-
-      if (!is3D) {
-
-        setPreviewEnabled(
-          false,
-          {
-            announce:
-              false
-          }
-        );
-      }
-    }
-
-
-    dispatch(
-      "paintless3d:core-mode-display-updated",
-      {
-        mode:
-          safeMode
-      }
-    );
-
-
-    return safeMode;
   }
 
 
-  function requestMode(
+  /* =======================================================
+     16. MODE EVENTS
+  ======================================================= */
+
+  function applyModeState(
     mode,
     {
       announce =
-        true,
-
-      showWelcome =
-        true
+        false
     } = {}
   ) {
 
@@ -1912,73 +1944,76 @@
       );
 
 
-    const previousMode =
-      paintless3d.getMode?.() ||
-      coreState.mode;
-
-
-    const changed =
-      paintless3d.setMode(
-        safeMode
-      );
-
-
-    if (
-      changed ===
-      false
-    ) {
-
-      return false;
-    }
-
-
-    updateModeDisplay(
-      safeMode
-    );
+    coreState.lastMode =
+      safeMode;
 
 
     if (
       safeMode ===
-        "3d" &&
-      previousMode !==
-        "3d"
+      "3d"
     ) {
 
-      if (
-        showWelcome &&
-        coreState.first3DActivation
-      ) {
+      coreState.liveRendering =
+        true;
 
-        showWelcomeDialog();
-      }
+
+      getRendererApi()
+        ?.enableLiveRendering?.();
+
+
+      dispatch(
+        "paintless3d:preview-changed",
+        {
+          enabled:
+            true,
+
+          live:
+            true,
+
+          permanent:
+            true
+        }
+      );
 
 
       if (announce) {
 
         sendStatusMessage(
-          "Paintless3D mode activated. Get the glasses!"
+          "Live Paintless3D workspace enabled."
         );
+
       }
 
+    } else {
 
-      console.log(
-        "%cPaintless3D switched to 3D mode.",
-        [
-          "color:#35e7ff",
-          "font-weight:bold",
-          "font-size:13px",
-          "text-shadow:-1px 0 #ff315c"
-        ].join(";")
+      coreState.liveRendering =
+        false;
+
+
+      coreState.settingsPanelOpen =
+        false;
+
+
+      getRendererApi()
+        ?.disableLiveRendering?.();
+
+
+      closeSettingsPanel();
+
+
+      dispatch(
+        "paintless3d:preview-changed",
+        {
+          enabled:
+            false,
+
+          live:
+            false,
+
+          permanent:
+            true
+        }
       );
-
-    } else if (
-      safeMode ===
-        "2d" &&
-      previousMode !==
-        "2d"
-    ) {
-
-      hideWelcomeDialog();
 
 
       if (announce) {
@@ -1986,599 +2021,224 @@
         sendStatusMessage(
           "Paintless returned to normal 2D mode."
         );
+
       }
 
-
-      console.log(
-        "%cPaintless3D switched to 2D mode.",
-        [
-          "color:#d49aff",
-          "font-weight:bold"
-        ].join(";")
-      );
     }
 
 
-    return true;
-  }
-
-
-  function toggleMode() {
-
-    return requestMode(
-      paintless3d.is3DMode?.()
-        ? "2d"
-        : "3d"
-    );
-  }
-
-
-  /* =======================================================
-     11. PREVIEW STATE
-  ======================================================= */
-
-  function updatePreviewDisplay() {
-
-    const enabled =
-      Boolean(
-        coreState.previewEnabled &&
-        paintless3d.is3DMode?.()
-      );
-
-
-    dom.previewButton
-      ?.classList.toggle(
-        "is-enabled",
-        enabled
-      );
-
-
-    dom.previewButton
-      ?.setAttribute(
-        "aria-pressed",
-        String(
-          enabled
-        )
-      );
-
-
-    if (dom.previewLabel) {
-
-      dom.previewLabel.textContent =
-        enabled
-          ? "Preview On"
-          : "Preview";
-    }
-
-
-    if (dom.previewButton) {
-
-      dom.previewButton.title =
-        enabled
-          ? "Disable anaglyph preview"
-          : "Enable anaglyph glasses preview";
-    }
-
-
-    return enabled;
-  }
-
-
-  function setPreviewEnabled(
-    enabled,
-    {
-      announce =
-        true
-    } = {}
-  ) {
-
-    const nextValue =
-      Boolean(
-        enabled
-      );
-
-
-    if (
-      nextValue &&
-      !paintless3d.is3DMode?.()
-    ) {
-
-      requestMode(
-        "3d",
-        {
-          announce,
-          showWelcome:
-            true
-        }
-      );
-    }
-
-
-    coreState.previewEnabled =
-      nextValue &&
-      paintless3d.is3DMode?.();
-
-
-    updatePreviewDisplay();
+    updatePreviewButton();
 
 
     dispatch(
-      "paintless3d:preview-changed",
+      "paintless3d:live-state-changed",
       {
-        enabled:
-          coreState.previewEnabled,
+        mode:
+          safeMode,
 
-        strength:
-          coreState.strength,
+        live:
+          safeMode ===
+            "3d",
 
-        convergence:
-          coreState.convergence,
-
-        channelMode:
-          coreState.channelMode,
-
-        swapEyes:
-          coreState.swapEyes,
-
-        ghostReduction:
-          coreState.ghostReduction
-      }
-    );
-
-
-    if (announce) {
-
-      if (coreState.previewEnabled) {
-
-        sendStatusMessage(
-          "Glasses Preview enabled. The anaglyph renderer is next."
-        );
-
-      } else {
-
-        sendStatusMessage(
-          "Glasses Preview disabled."
-        );
-      }
-    }
-
-
-    return coreState.previewEnabled;
-  }
-
-
-  function togglePreview() {
-
-    return setPreviewEnabled(
-      !coreState.previewEnabled
-    );
-  }
-
-
-  /* =======================================================
-     12. STEREO SETTINGS
-  ======================================================= */
-
-  function setStrength(
-    value
-  ) {
-
-    coreState.strength =
-      clamp(
-        value,
-        0,
-        100
-      );
-
-
-    saveSettings();
-
-
-    dispatch(
-      "paintless3d:strength-changed",
-      {
-        strength:
-          coreState.strength
-      }
-    );
-
-
-    return coreState.strength;
-  }
-
-
-  function getStrength() {
-
-    return coreState.strength;
-  }
-
-
-  function setConvergence(
-    value
-  ) {
-
-    coreState.convergence =
-      clamp(
-        value,
-        -100,
-        100
-      );
-
-
-    saveSettings();
-
-
-    dispatch(
-      "paintless3d:convergence-changed",
-      {
-        convergence:
-          coreState.convergence
-      }
-    );
-
-
-    return coreState.convergence;
-  }
-
-
-  function getConvergence() {
-
-    return coreState.convergence;
-  }
-
-
-  function setChannelMode(
-    mode
-  ) {
-
-    const safeMode =
-      String(
-        mode ||
-        ""
-      ).toLowerCase();
-
-
-    if (
-      ![
-        "red-cyan",
-        "red-blue",
-        "green-magenta"
-      ].includes(
-        safeMode
-      )
-    ) {
-
-      return false;
-    }
-
-
-    coreState.channelMode =
-      safeMode;
-
-
-    saveSettings();
-
-
-    dispatch(
-      "paintless3d:channel-mode-changed",
-      {
-        channelMode:
-          safeMode
+        settingsPanelOpen:
+          coreState.settingsPanelOpen
       }
     );
 
 
     return safeMode;
+
   }
 
 
-  function getChannelMode() {
-
-    return coreState.channelMode;
-  }
-
-
-  function setSwapEyes(
-    enabled
+  function handleModeChanged(
+    event
   ) {
 
-    coreState.swapEyes =
-      Boolean(
-        enabled
-      );
-
-
-    saveSettings();
-
-
-    dispatch(
-      "paintless3d:swap-eyes-changed",
-      {
-        swapEyes:
-          coreState.swapEyes
-      }
+    applyModeState(
+      event.detail?.mode ||
+      getCurrentMode()
     );
 
-
-    return coreState.swapEyes;
   }
 
 
-  function getSwapEyes() {
+  function handleSettingsPanelOpened() {
 
-    return coreState.swapEyes;
+    coreState.settingsPanelOpen =
+      true;
+
+
+    updatePreviewButton();
+
   }
 
 
-  function setGhostReduction(
-    value
-  ) {
+  function handleSettingsPanelClosed() {
 
-    coreState.ghostReduction =
-      clamp(
-        value,
-        0,
-        100
-      );
+    coreState.settingsPanelOpen =
+      false;
 
 
-    saveSettings();
+    updatePreviewButton();
 
-
-    dispatch(
-      "paintless3d:ghost-reduction-changed",
-      {
-        ghostReduction:
-          coreState.ghostReduction
-      }
-    );
-
-
-    return coreState.ghostReduction;
   }
 
 
-  function getGhostReduction() {
+  function handleRendererReady() {
 
-    return coreState.ghostReduction;
+    if (
+      is3DMode()
+    ) {
+
+      getRendererApi()
+        ?.enableLiveRendering?.();
+
+    }
+
   }
 
 
-  function getStereoSettings() {
-
-    return {
-
-      strength:
-        coreState.strength,
-
-      convergence:
-        coreState.convergence,
-
-      channelMode:
-        coreState.channelMode,
-
-      swapEyes:
-        coreState.swapEyes,
-
-      ghostReduction:
-        coreState.ghostReduction,
-
-      minimumDepth:
-        coreState.minimumDepth,
-
-      maximumDepth:
-        coreState.maximumDepth
-    };
-  }
-
-
-  /* =======================================================
-     13. EVENTS
-  ======================================================= */
-
-  function connectEvents() {
-
-    dom.switchButton
-      ?.addEventListener(
-        "click",
-        (event) => {
-
-          event.preventDefault();
-
-
-          toggleMode();
-        }
-      );
-
-
-    dom.previewButton
-      ?.addEventListener(
-        "click",
-        (event) => {
-
-          event.preventDefault();
-
-
-          togglePreview();
-        }
-      );
-
-
-    dom.continueButton
-      ?.addEventListener(
-        "click",
-        (event) => {
-
-          event.preventDefault();
-
-
-          hideWelcomeDialog();
-        }
-      );
-
-
-    dom.welcomeBackdrop
-      ?.addEventListener(
-        "pointerdown",
-        (event) => {
-
-          if (
-            event.target ===
-            dom.welcomeBackdrop
-          ) {
-
-            hideWelcomeDialog();
-          }
-        }
-      );
-
-
-    window.addEventListener(
-      "keydown",
-      handleKeyboardShortcuts
-    );
-
-
-    document.addEventListener(
-      "paintless3d:mode-changed",
-      handleExternalModeChange
-    );
-
-
-    document.addEventListener(
-      "paintless:document-reset",
-      handleDocumentReset
-    );
-  }
-
-
-  function disconnectEvents() {
-
-    window.removeEventListener(
-      "keydown",
-      handleKeyboardShortcuts
-    );
-
-
-    document.removeEventListener(
-      "paintless3d:mode-changed",
-      handleExternalModeChange
-    );
-
-
-    document.removeEventListener(
-      "paintless:document-reset",
-      handleDocumentReset
-    );
-  }
-
-
-  function handleKeyboardShortcuts(
+  function handleKeyboard(
     event
   ) {
 
     if (
-      isTypingElement() ||
       event.ctrlKey ||
       event.metaKey ||
       event.altKey
     ) {
 
       return;
+
     }
+
+
+    const activeElement =
+      document.activeElement;
 
 
     if (
-      event.key ===
-        "Escape" &&
-      dom.welcomeBackdrop &&
-      !dom.welcomeBackdrop.hidden
+      activeElement?.tagName ===
+        "INPUT" ||
+      activeElement?.tagName ===
+        "TEXTAREA" ||
+      activeElement?.tagName ===
+        "SELECT" ||
+      activeElement?.isContentEditable
     ) {
 
-      event.preventDefault();
-
-
-      hideWelcomeDialog();
-
-
       return;
+
     }
 
-
-    /*
-     * Keyboard shortcut:
-     *
-     * Shift + 3 toggles Paintless3D mode.
-     */
-
-    if (
-      event.shiftKey &&
-      event.key ===
-        "#"
-    ) {
-
-      event.preventDefault();
-
-
-      toggleMode();
-
-
-      return;
-    }
-
-
-    /*
-     * G toggles Glasses Preview while in 3D mode.
-     */
 
     if (
       event.key.toLowerCase() ===
-        "g" &&
-      paintless3d.is3DMode?.()
+      "p" &&
+      is3DMode()
     ) {
 
       event.preventDefault();
 
 
-      togglePreview();
-    }
-  }
+      toggleSettingsPanel();
 
-
-  function handleExternalModeChange(
-    event
-  ) {
-
-    const mode =
-      event.detail?.mode;
-
-
-    if (!mode) {
-
-      return;
     }
 
-
-    updateModeDisplay(
-      mode
-    );
-  }
-
-
-  function handleDocumentReset() {
-
-    setPreviewEnabled(
-      false,
-      {
-        announce:
-          false
-      }
-    );
   }
 
 
   /* =======================================================
-     14. INITIALISATION
+     17. EVENT CONNECTION
+  ======================================================= */
+
+  function connectEvents() {
+
+    dom.previewButton
+      ?.addEventListener(
+        "click",
+        handlePreviewButtonClick,
+        true
+      );
+
+
+    document.addEventListener(
+      "paintless3d:mode-changed",
+      handleModeChanged
+    );
+
+
+    document.addEventListener(
+      "paintless3d:preview-panel-opened",
+      handleSettingsPanelOpened
+    );
+
+
+    document.addEventListener(
+      "paintless3d:preview-panel-closed",
+      handleSettingsPanelClosed
+    );
+
+
+    document.addEventListener(
+      "paintless3d:renderer-ready",
+      handleRendererReady
+    );
+
+
+    window.addEventListener(
+      "keydown",
+      handleKeyboard
+    );
+
+  }
+
+
+  function disconnectEvents() {
+
+    dom.previewButton
+      ?.removeEventListener(
+        "click",
+        handlePreviewButtonClick,
+        true
+      );
+
+
+    document.removeEventListener(
+      "paintless3d:mode-changed",
+      handleModeChanged
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:preview-panel-opened",
+      handleSettingsPanelOpened
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:preview-panel-closed",
+      handleSettingsPanelClosed
+    );
+
+
+    document.removeEventListener(
+      "paintless3d:renderer-ready",
+      handleRendererReady
+    );
+
+
+    window.removeEventListener(
+      "keydown",
+      handleKeyboard
+    );
+
+  }
+
+
+  /* =======================================================
+     18. INITIALISE
   ======================================================= */
 
   async function initialise() {
@@ -2588,7 +2248,11 @@
     ) {
 
       return true;
+
     }
+
+
+    loadSettings();
 
 
     collectDomReferences();
@@ -2597,34 +2261,7 @@
     installStyles();
 
 
-    loadSettings();
-
-
-    const switchInstalled =
-      installModeSwitch();
-
-
-    if (!switchInstalled) {
-
-      throw new Error(
-        "Paintless3D Core could not find a suitable location for the mode switch."
-      );
-    }
-
-
-    ensureWelcomeDialog();
-
-
     connectEvents();
-
-
-    updateModeDisplay(
-      paintless3d.getMode?.() ||
-      "2d"
-    );
-
-
-    updatePreviewDisplay();
 
 
     coreState.initialised =
@@ -2635,37 +2272,54 @@
       false;
 
 
+    coreState.lastMode =
+      getCurrentMode();
+
+
+    applyModeState(
+      coreState.lastMode
+    );
+
+
+    updatePreviewButton();
+
+
     dispatch(
       "paintless3d:core-ready",
       {
         core:
-          publicApi
+          publicApi,
+
+        settings:
+          getStereoSettings(),
+
+        mode:
+          coreState.lastMode,
+
+        live:
+          coreState.liveRendering
       }
     );
 
 
-    sendStatusMessage(
-      "Paintless3D is awake. Switch to 3D when ready."
-    );
-
-
     console.log(
-      "%cPaintless3D Core ready.",
+      "%cPaintless3D Live Core ready.",
       [
-        "color:#35e7ff",
+        "color:#d49aff",
         "font-weight:bold",
         "font-size:14px",
-        "text-shadow:-1px 0 #ff315c"
+        "text-shadow:-1px 0 #ff315c, 1px 0 #25e6ff"
       ].join(";")
     );
 
 
     return true;
+
   }
 
 
   /* =======================================================
-     15. DESTROY
+     19. DESTROY
   ======================================================= */
 
   async function destroy() {
@@ -2673,26 +2327,11 @@
     disconnectEvents();
 
 
-    dom.modeContainer
-      ?.remove();
-
-
-    dom.welcomeBackdrop
-      ?.remove();
+    closeSettingsPanel();
 
 
     dom.styles
       ?.remove();
-
-
-    delete document.documentElement
-      .dataset.paintlessMode;
-
-
-    document.body
-      ?.classList.remove(
-        "paintless-3d-mode"
-      );
 
 
     coreState.initialised =
@@ -2703,7 +2342,11 @@
       true;
 
 
-    coreState.modeSwitchInstalled =
+    coreState.liveRendering =
+      false;
+
+
+    coreState.settingsPanelOpen =
       false;
 
 
@@ -2717,11 +2360,12 @@
 
 
     return true;
+
   }
 
 
   /* =======================================================
-     16. PUBLIC API
+     20. PUBLIC API
   ======================================================= */
 
   const publicApi = {
@@ -2731,6 +2375,11 @@
 
     dom,
 
+    defaults:
+      {
+        ...DEFAULT_SETTINGS
+      },
+
 
     initialise,
 
@@ -2739,84 +2388,128 @@
 
     requestMode,
 
+    enter3DMode,
+
+    enter2DMode,
+
     toggleMode,
 
-    updateModeDisplay,
+    is3DMode,
 
+    getCurrentMode,
+
+
+    isPreviewEnabled,
 
     setPreviewEnabled,
 
+    enablePreview,
+
+    disablePreview,
+
     togglePreview,
 
-    updatePreviewDisplay,
 
+    openSettingsPanel,
 
-    showWelcomeDialog,
+    closeSettingsPanel,
 
-    hideWelcomeDialog,
-
-
-    setStrength,
-
-    getStrength,
-
-
-    setConvergence,
-
-    getConvergence,
-
-
-    setChannelMode,
-
-    getChannelMode,
-
-
-    setSwapEyes,
-
-    getSwapEyes,
-
-
-    setGhostReduction,
-
-    getGhostReduction,
+    toggleSettingsPanel,
 
 
     getStereoSettings,
 
+    setStrength,
 
-    saveSettings,
+    setConvergence,
+
+    setChannelMode,
+
+    setSwapEyes,
+
+    toggleSwapEyes,
+
+    setGhostReduction,
+
+    resetStereoSettings,
+
 
     loadSettings,
 
+    saveSettings,
 
-    isPreviewEnabled() {
 
-      return coreState.previewEnabled;
+    updatePreviewButton,
+
+
+    requestRender(
+      reason =
+        "core-api-request"
+    ) {
+
+      return getRendererApi()
+        ?.requestRender?.(
+          reason
+        ) ||
+        false;
+
     },
 
 
-    isInitialised() {
+    isLiveRendering() {
 
-      return coreState.initialised;
+      return Boolean(
+        coreState.liveRendering &&
+        is3DMode()
+      );
+
     },
 
 
-    getMode() {
+    isSettingsPanelOpen() {
 
-      return coreState.mode;
+      refreshPanelReference();
+
+
+      return Boolean(
+        coreState.settingsPanelOpen ||
+        dom.previewPanel
+          ?.classList.contains(
+            "is-open"
+          )
+      );
+
     },
 
 
-    getDepthRange() {
+    getSummary() {
 
       return {
 
-        minimum:
-          coreState.minimumDepth,
+        initialised:
+          coreState.initialised,
 
-        maximum:
-          coreState.maximumDepth
+        mode:
+          getCurrentMode(),
+
+        liveRendering:
+          coreState.liveRendering,
+
+        settingsPanelOpen:
+          publicApi
+            .isSettingsPanelOpen(),
+
+        settings:
+          getStereoSettings(),
+
+        lastSettingsChange:
+          coreState.lastSettingsChange,
+
+        storageAvailable:
+          coreState.storageAvailable
+
       };
+
     }
 
   };
@@ -2827,7 +2520,7 @@
 
 
   /* =======================================================
-     17. REGISTER MODULE
+     21. REGISTER MODULE
   ======================================================= */
 
   paintless3d.registerModule(
@@ -2835,7 +2528,7 @@
     {
 
       label:
-        "Paintless3D Core",
+        "Paintless3D Live Core",
 
       initialised:
         false,
