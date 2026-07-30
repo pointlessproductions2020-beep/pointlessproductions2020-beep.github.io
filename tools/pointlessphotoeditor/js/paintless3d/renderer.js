@@ -1064,7 +1064,7 @@
       #overlay-canvas {
         position: absolute;
         z-index: 20 !important;
-        pointer-events: auto;
+        pointer-events: none !important;
         touch-action: none;
       }
 
@@ -1293,7 +1293,7 @@
 
 
       dom.overlayCanvas.style.pointerEvents =
-        "auto";
+  "none";
 
     }
 
