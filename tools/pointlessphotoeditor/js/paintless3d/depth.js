@@ -61,16 +61,16 @@
       false,
 
     minimum:
-      -100,
+      -300,
 
     maximum:
-      100,
+      300,
 
     defaultDepth:
       0,
 
     activationDepth:
-      -100,
+      -300,
 
     step:
       1,
@@ -96,19 +96,19 @@
     presets: {
 
       deepest:
-        -100,
+        -300,
 
       behind:
-        -50,
+        -150,
 
       screen:
         0,
 
       forward:
-        35,
+        120,
 
       closest:
-        75
+        250
 
     }
 
