@@ -222,7 +222,7 @@ if (
       opacity = 1,
       blendMode = "source-over",
       locked = false,
-      stereo3dEnabled = false,
+      stereo3dEnabled = true,
       depth3d = 0
     } = {}) {
 
@@ -1305,64 +1305,153 @@ if (
 
 
   function setLayerDepth3D(
-    layerId,
-    depth
-  ) {
+  layerId,
+  depth,
+  {
+    refreshLayerList = false
+  } = {}
+) {
 
-    const layer =
-      getLayerById(
-        layerId
+  const layer =
+    getLayerById(
+      layerId
+    );
+
+
+  if (!layer) {
+
+    return false;
+
+  }
+
+
+  const previousDepth =
+    Number(layer.depth3d) || 0;
+
+
+  const numericDepth =
+    Number(depth);
+
+
+  layer.depth3d =
+    clamp(
+      Number.isFinite(numericDepth)
+        ? Math.round(numericDepth)
+        : 0,
+      -300,
+      300
+    );
+
+
+  /*
+   * Every layer always participates in Paintless3D.
+   * A depth of zero means the layer sits on the screen plane.
+   */
+
+  layer.stereo3dEnabled =
+    true;
+
+
+  const layerItem =
+    layerList?.querySelector(
+      `[data-layer-id="${layer.id}"]`
+    );
+
+
+  if (layerItem) {
+
+    const slider =
+      layerItem.querySelector(
+        `[data-layer-depth-slider="${layer.id}"]`
       );
 
 
-    if (!layer) {
-      return false;
+    const value =
+      layerItem.querySelector(
+        `[data-layer-depth-value="${layer.id}"]`
+      );
+
+
+    if (
+      slider &&
+      slider !== document.activeElement
+    ) {
+
+      slider.value =
+        String(layer.depth3d);
+
     }
 
 
-    const previousDepth =
-      Number(layer.depth3d) || 0;
+    if (value) {
+
+      value.textContent =
+        `${
+          layer.depth3d > 0
+            ? "+"
+            : ""
+        }${layer.depth3d}`;
+
+    }
 
 
-    layer.depth3d =
-      clamp(
-        Math.round(
-          Number(depth)
-        ),
-        -300,
-        300
-      );
+    layerItem.classList.toggle(
+      "is-depth-behind",
+      layer.depth3d < 0
+    );
 
+
+    layerItem.classList.toggle(
+      "is-depth-forward",
+      layer.depth3d > 0
+    );
+
+
+    layerItem.classList.toggle(
+      "is-depth-screen",
+      layer.depth3d === 0
+    );
+
+  }
+
+
+  if (refreshLayerList) {
 
     renderLayerList();
 
-
-    dispatchLayerEvent(
-      "paintless3d:layer-depth-changed",
-      {
-        layer,
-        depth:
-          layer.depth3d,
-        previousDepth,
-        source:
-          "layers"
-      }
-    );
-
-
-    dispatchLayerEvent(
-      "paintless3d:render-requested",
-      {
-        reason:
-          "layer-depth-changed",
-        layer
-      }
-    );
-
-
-    return layer.depth3d;
-
   }
+
+
+  dispatchLayerEvent(
+    "paintless3d:layer-depth-changed",
+    {
+      layer,
+
+      depth:
+        layer.depth3d,
+
+      previousDepth,
+
+      source:
+        "layers"
+    }
+  );
+
+
+  dispatchLayerEvent(
+    "paintless3d:render-requested",
+    {
+      reason:
+        "layer-depth-changed",
+
+      layer
+    }
+  );
+
+
+  return layer.depth3d;
+
+}
 
 
   /* =======================================================
@@ -2133,61 +2222,111 @@ if (
      22. LAYER LIST UI
   ======================================================= */
 
-  function renderLayerList() {
+function renderLayerList() {
 
-    if (!layerList) {
-      return;
-    }
+  if (!layerList) {
 
+    return;
 
-    layerList.innerHTML =
-      "";
+  }
 
 
-    /*
-     * Display topmost layer first.
-     */
-
-    [...layers]
-      .reverse()
-      .forEach(
-        (layer) => {
-
-          const layerItem =
-            document.createElement(
-              "article"
-            );
+  layerList.innerHTML =
+    "";
 
 
-          layerItem.className =
-            "layer-item";
+  /*
+   * Layers are stored bottom-to-top,
+   * but displayed topmost-first.
+   */
+
+  [...layers]
+    .reverse()
+    .forEach(
+      (layer) => {
+
+        /*
+         * Every layer automatically belongs to Paintless3D.
+         * Zero depth means screen level, not disabled.
+         */
+
+        layer.stereo3dEnabled =
+          true;
 
 
-          if (
-            layer.id ===
-            activeLayerId
-          ) {
-
-            layerItem.classList.add(
-              "is-active"
-            );
-
-          }
-
-
-          layerItem.dataset.layerId =
-            layer.id;
-
-          layerItem.setAttribute(
-            "role",
-            "listitem"
+        const safeDepth =
+          clamp(
+            Math.round(
+              Number(layer.depth3d) || 0
+            ),
+            -300,
+            300
           );
 
-          layerItem.tabIndex =
-            0;
+
+        layer.depth3d =
+          safeDepth;
 
 
-          layerItem.innerHTML = `
+        const depthText =
+          `${
+            safeDepth > 0
+              ? "+"
+              : ""
+          }${safeDepth}`;
+
+
+        const layerItem =
+          document.createElement(
+            "article"
+          );
+
+
+        layerItem.className =
+          "layer-item paintless-layer-row";
+
+
+        layerItem.classList.toggle(
+          "is-active",
+          layer.id === activeLayerId
+        );
+
+
+        layerItem.classList.toggle(
+          "is-depth-behind",
+          safeDepth < 0
+        );
+
+
+        layerItem.classList.toggle(
+          "is-depth-forward",
+          safeDepth > 0
+        );
+
+
+        layerItem.classList.toggle(
+          "is-depth-screen",
+          safeDepth === 0
+        );
+
+
+        layerItem.dataset.layerId =
+          layer.id;
+
+
+        layerItem.setAttribute(
+          "role",
+          "listitem"
+        );
+
+
+        layerItem.tabIndex =
+          0;
+
+
+        layerItem.innerHTML = `
+          <div class="paintless-layer-main">
+
             <button
               class="layer-visibility"
               type="button"
@@ -2211,35 +2350,6 @@ if (
             </button>
 
             <button
-              class="layer-stereo3d${
-                layer.stereo3dEnabled
-                  ? " is-enabled"
-                  : ""
-              }"
-              type="button"
-              data-layer-stereo3d="${layer.id}"
-              aria-pressed="${String(
-                Boolean(layer.stereo3dEnabled)
-              )}"
-              aria-label="${
-                layer.stereo3dEnabled
-                  ? "Disable"
-                  : "Enable"
-              } 3D depth for ${escapeHtml(layer.name)}"
-              title="${
-                layer.stereo3dEnabled
-                  ? `3D enabled · depth ${
-                      Number(layer.depth3d) > 0
-                        ? "+"
-                        : ""
-                    }${Number(layer.depth3d) || 0}`
-                  : "Enable layer in Paintless3D"
-              }"
-            >
-              <span aria-hidden="true">🟥🟦</span>
-            </button>
-
-            <button
               class="layer-thumbnail"
               type="button"
               data-layer-thumbnail="${layer.id}"
@@ -2259,57 +2369,317 @@ if (
                   : ""
               }${escapeHtml(layer.name)}
             </button>
-          `;
+
+            <button
+              class="paintless-layer-settings"
+              type="button"
+              data-layer-settings="${layer.id}"
+              aria-label="Open settings for ${escapeHtml(layer.name)}"
+              title="Layer settings"
+            >
+              ⚙
+            </button>
+
+          </div>
+
+          <div
+            class="paintless-layer-depth"
+            aria-label="3D depth for ${escapeHtml(layer.name)}"
+          >
+
+            <button
+              class="paintless-depth-nudge"
+              type="button"
+              data-layer-depth-minus="${layer.id}"
+              aria-label="Move ${escapeHtml(layer.name)} one step behind"
+              title="Decrease depth"
+            >
+              −
+            </button>
+
+            <input
+              class="paintless-depth-slider"
+              type="range"
+              min="-300"
+              max="300"
+              step="1"
+              value="${safeDepth}"
+              data-layer-depth-slider="${layer.id}"
+              aria-label="Depth for ${escapeHtml(layer.name)}"
+            >
+
+            <button
+              class="paintless-depth-nudge"
+              type="button"
+              data-layer-depth-plus="${layer.id}"
+              aria-label="Move ${escapeHtml(layer.name)} one step forward"
+              title="Increase depth"
+            >
+              +
+            </button>
+
+            <output
+              class="paintless-depth-value"
+              data-layer-depth-value="${layer.id}"
+              title="Current layer depth"
+            >
+              ${depthText}
+            </output>
+
+          </div>
+        `;
 
 
-          layerItem.addEventListener(
-            "click",
-            (event) => {
+        const selectThisLayer =
+          () => {
 
-              const visibilityButton =
-                event.target.closest(
-                  "[data-layer-visibility]"
-                );
+            if (
+              activeLayerId !==
+              layer.id
+            ) {
+
+              selectLayer(
+                layer.id
+              );
+
+            }
+
+          };
 
 
-              if (visibilityButton) {
+        const commitDepthHistory =
+          () => {
 
-                toggleLayerVisibility(
-                  layer.id
-                );
-
-                return;
-
+            dispatchLayerEvent(
+              "paintless:history-requested",
+              {
+                reason:
+                  "Change layer depth"
               }
+            );
+
+          };
 
 
-              const stereoButton =
-                event.target.closest(
-                  "[data-layer-stereo3d]"
-                );
+        layerItem.addEventListener(
+          "click",
+          (event) => {
+
+            const visibilityButton =
+              event.target.closest(
+                "[data-layer-visibility]"
+              );
 
 
-              if (stereoButton) {
+            if (visibilityButton) {
 
-                toggleLayerStereo3D(
-                  layer.id
-                );
+              toggleLayerVisibility(
+                layer.id
+              );
 
-                selectLayer(
-                  layer.id
-                );
+              return;
 
-                dispatchLayerEvent(
-                  "paintless:history-requested",
-                  {
-                    reason:
-                      "Toggle layer 3D"
-                  }
-                );
+            }
 
-                return;
 
-              }
+            const minusButton =
+              event.target.closest(
+                "[data-layer-depth-minus]"
+              );
+
+
+            if (minusButton) {
+
+              selectThisLayer();
+
+
+              setLayerDepth3D(
+                layer.id,
+                Number(layer.depth3d) - 1
+              );
+
+
+              commitDepthHistory();
+
+              return;
+
+            }
+
+
+            const plusButton =
+              event.target.closest(
+                "[data-layer-depth-plus]"
+              );
+
+
+            if (plusButton) {
+
+              selectThisLayer();
+
+
+              setLayerDepth3D(
+                layer.id,
+                Number(layer.depth3d) + 1
+              );
+
+
+              commitDepthHistory();
+
+              return;
+
+            }
+
+
+            const settingsButton =
+              event.target.closest(
+                "[data-layer-settings]"
+              );
+
+
+            if (settingsButton) {
+
+              selectThisLayer();
+
+
+              dispatchLayerEvent(
+                "paintless3d:layer-settings-requested",
+                {
+                  layer
+                }
+              );
+
+
+              return;
+
+            }
+
+
+            const slider =
+              event.target.closest(
+                "[data-layer-depth-slider]"
+              );
+
+
+            if (slider) {
+
+              selectThisLayer();
+
+              return;
+
+            }
+
+
+            selectThisLayer();
+
+          }
+        );
+
+
+        const depthSlider =
+          layerItem.querySelector(
+            `[data-layer-depth-slider="${layer.id}"]`
+          );
+
+
+        depthSlider?.addEventListener(
+          "pointerdown",
+          (event) => {
+
+            event.stopPropagation();
+
+            selectThisLayer();
+
+          }
+        );
+
+
+        depthSlider?.addEventListener(
+          "click",
+          (event) => {
+
+            event.stopPropagation();
+
+          }
+        );
+
+
+        depthSlider?.addEventListener(
+          "input",
+          () => {
+
+            setLayerDepth3D(
+              layer.id,
+              Number(depthSlider.value)
+            );
+
+          }
+        );
+
+
+        depthSlider?.addEventListener(
+          "change",
+          commitDepthHistory
+        );
+
+
+        layerItem.addEventListener(
+          "dblclick",
+          (event) => {
+
+            const nameButton =
+              event.target.closest(
+                "[data-layer-name]"
+              );
+
+
+            if (!nameButton) {
+
+              return;
+
+            }
+
+
+            const newName =
+              window.prompt(
+                "Rename layer:",
+                layer.name
+              );
+
+
+            if (newName !== null) {
+
+              renameLayer(
+                layer.id,
+                newName
+              );
+
+            }
+
+          }
+        );
+
+
+        layerItem.addEventListener(
+          "keydown",
+          (event) => {
+
+            if (
+              event.target.matches(
+                "input, button"
+              )
+            ) {
+
+              return;
+
+            }
+
+
+            if (
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+
+              event.preventDefault();
 
 
               selectLayer(
@@ -2317,78 +2687,24 @@ if (
               );
 
             }
-          );
+
+          }
+        );
 
 
-          layerItem.addEventListener(
-            "dblclick",
-            (event) => {
+        layerList.appendChild(
+          layerItem
+        );
 
-              const nameButton =
-                event.target.closest(
-                  "[data-layer-name]"
-                );
+      }
+    );
 
 
-              if (!nameButton) {
-                return;
-              }
+  updateLayerControls();
 
+  updateLayerThumbnails();
 
-              const newName =
-                window.prompt(
-                  "Rename layer:",
-                  layer.name
-                );
-
-
-              if (newName !== null) {
-
-                renameLayer(
-                  layer.id,
-                  newName
-                );
-
-              }
-
-            }
-          );
-
-
-          layerItem.addEventListener(
-            "keydown",
-            (event) => {
-
-              if (
-                event.key === "Enter" ||
-                event.key === " "
-              ) {
-
-                event.preventDefault();
-
-                selectLayer(
-                  layer.id
-                );
-
-              }
-
-            }
-          );
-
-
-          layerList.appendChild(
-            layerItem
-          );
-
-        }
-      );
-
-
-    updateLayerControls();
-
-    updateLayerThumbnails();
-
-  }
+}
 
 
   /* =======================================================
@@ -2770,171 +3086,337 @@ if (
 
   function installPaintless3DLayerStyles() {
 
-    if (
-      document.getElementById(
-        "paintless-layer-stereo3d-styles"
-      )
-    ) {
-      return;
-    }
-
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-
-    style.id =
-      "paintless-layer-stereo3d-styles";
-
-
-    style.textContent = `
-      .layer-stereo3d {
-        display: none;
-        align-items: center;
-        justify-content: center;
-        flex: 0 0 auto;
-        width: 31px;
-        height: 31px;
-        padding: 0;
-        border: 1px solid rgba(255, 255, 255, 0.11);
-        border-radius: 8px;
-        color: rgba(255, 255, 255, 0.55);
-        background: rgba(255, 255, 255, 0.035);
-        font-size: 10px;
-        line-height: 1;
-        cursor: pointer;
-        touch-action: manipulation;
-      }
-
-      html[data-paintless-mode="3d"] .layer-stereo3d,
-      body.paintless-3d-mode .layer-stereo3d,
-      body.paintless3d-editor-active .layer-stereo3d {
-        display: inline-flex;
-      }
-
-      .layer-stereo3d:hover {
-        border-color: rgba(255, 255, 255, 0.28);
-        color: #ffffff;
-      }
-
-      .layer-stereo3d.is-enabled {
-        color: #ffffff;
-        border-color: rgba(37, 230, 255, 0.55);
-        background:
-          linear-gradient(
-            90deg,
-            rgba(255, 49, 92, 0.18),
-            rgba(37, 230, 255, 0.19)
-          );
-        box-shadow:
-          -2px 0 7px rgba(255, 49, 92, 0.12),
-          2px 0 7px rgba(37, 230, 255, 0.13);
-      }
-
-      .layer-stereo3d:focus-visible {
-        outline: 2px solid #25e6ff;
-        outline-offset: 2px;
-      }
-    `;
-
-
-    document.head.appendChild(
-      style
+  const existingStyle =
+    document.getElementById(
+      "paintless-layer-stereo3d-styles"
     );
 
-  }
+
+  existingStyle?.remove();
 
 
-  installPaintless3DLayerStyles();
+  const style =
+    document.createElement(
+      "style"
+    );
 
 
-  /* =======================================================
-     27. PUBLIC API
-  ======================================================= */
+  style.id =
+    "paintless-layer-stereo3d-styles";
 
-  window.PaintlessLayers = {
 
-    PaintlessLayer,
+  style.textContent = `
+    .paintless-layer-row {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      padding: 7px;
+      overflow: hidden;
+    }
 
-    layers,
+    .paintless-layer-main {
+      display: grid;
+      grid-template-columns:
+        auto
+        42px
+        minmax(0, 1fr)
+        31px;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
 
-    createLayer,
+    .paintless-layer-row .layer-thumbnail {
+      width: 42px;
+      height: 36px;
+      min-width: 42px;
+      border-radius: 8px;
+    }
 
-    createBackgroundLayer,
+    .paintless-layer-row .layer-name {
+      min-width: 0;
+      overflow: hidden;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-    createLayerFromImage,
+    .paintless-layer-settings {
+      display: grid;
+      place-items: center;
+      width: 31px;
+      height: 31px;
+      padding: 0;
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.11);
+      border-radius: 8px;
+      color:
+        rgba(255, 255, 255, 0.64);
+      background:
+        rgba(255, 255, 255, 0.035);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
 
-    deleteLayer,
+    .paintless-layer-settings:hover {
+      border-color:
+        rgba(37, 230, 255, 0.42);
+      color: #ffffff;
+      background:
+        rgba(37, 230, 255, 0.08);
+    }
 
-    duplicateLayer,
+    .paintless-layer-depth {
+      display: grid;
+      grid-template-columns:
+        27px
+        minmax(58px, 1fr)
+        27px
+        42px;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+      min-width: 0;
+      margin-top: 6px;
+    }
 
-    selectLayer,
+    .paintless-depth-nudge {
+      display: grid;
+      place-items: center;
+      width: 27px;
+      height: 25px;
+      padding: 0;
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.11);
+      border-radius: 7px;
+      color:
+        rgba(255, 255, 255, 0.75);
+      background:
+        rgba(255, 255, 255, 0.035);
+      font:
+        800 15px/1
+        Arial,
+        sans-serif;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+    }
 
-    getActiveLayer,
+    .paintless-depth-nudge:hover {
+      border-color:
+        rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      background:
+        rgba(255, 255, 255, 0.08);
+    }
 
-    getLayerById,
+    .paintless-depth-slider {
+      width: 100%;
+      min-width: 0;
+      height: 25px;
+      margin: 0;
+      accent-color: #a84cff;
+      cursor: ew-resize;
+      touch-action: pan-y;
+    }
 
-    getLayerIndex,
+    .paintless-depth-value {
+      display: grid;
+      place-items: center;
+      min-width: 42px;
+      height: 25px;
+      padding: 0 5px;
+      overflow: hidden;
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.1);
+      border-radius: 7px;
+      color:
+        rgba(255, 255, 255, 0.8);
+      background:
+        rgba(0, 0, 0, 0.18);
+      font:
+        800 10px/1
+        "Segoe UI",
+        Arial,
+        sans-serif;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-    renderLayers,
+    .paintless-layer-row.is-depth-behind
+    .paintless-depth-value {
+      color: #ff6684;
+      border-color:
+        rgba(255, 49, 92, 0.34);
+    }
 
-    renderLayerList,
+    .paintless-layer-row.is-depth-forward
+    .paintless-depth-value {
+      color: #67efff;
+      border-color:
+        rgba(37, 230, 255, 0.34);
+    }
 
-    setLayerVisibility,
+    .paintless-layer-row.is-depth-screen
+    .paintless-depth-value {
+      color:
+        rgba(255, 255, 255, 0.7);
+    }
 
-    toggleLayerVisibility,
+    .paintless-layer-row.is-active
+    .paintless-layer-depth {
+      opacity: 1;
+    }
 
-    setLayerStereo3D,
+    .paintless-layer-row:not(.is-active)
+    .paintless-layer-depth {
+      opacity: 0.72;
+    }
 
-    toggleLayerStereo3D,
+    .paintless-layer-row:focus-visible,
+    .paintless-layer-settings:focus-visible,
+    .paintless-depth-nudge:focus-visible,
+    .paintless-depth-slider:focus-visible {
+      outline:
+        2px solid
+        #25e6ff;
+      outline-offset: 2px;
+    }
 
-    setLayerDepth3D,
+    /*
+     * Compact tablet layout.
+     */
 
-    setLayerOpacity,
+    @media (max-width: 1000px) {
 
-    setLayerBlendMode,
+      .paintless-layer-row {
+        padding: 6px;
+      }
 
-    setLayerLocked,
+      .paintless-layer-main {
+        grid-template-columns:
+          auto
+          36px
+          minmax(0, 1fr)
+          29px;
+        gap: 5px;
+      }
 
-    renameLayer,
+      .paintless-layer-row
+      .layer-thumbnail {
+        width: 36px;
+        min-width: 36px;
+        height: 32px;
+      }
 
-    clearActiveLayer,
+      .paintless-layer-depth {
+        grid-template-columns:
+          27px
+          minmax(48px, 1fr)
+          27px
+          38px;
+        gap: 4px;
+      }
 
-    moveLayer,
-
-    moveLayerUp,
-
-    moveLayerDown,
-
-    mergeLayerDown,
-
-    flattenImage,
-
-    resizeDocument,
-
-    resetDocument,
-
-    createLayersSnapshot,
-
-    restoreLayersSnapshot,
-
-    getDocumentSize() {
-
-      return {
-        width:
-          documentWidth,
-
-        height:
-          documentHeight
-      };
+      .paintless-depth-value {
+        min-width: 38px;
+      }
 
     }
 
-  };
+    /*
+     * Mobile:
+     * non-active layers stay compact;
+     * only the selected layer shows its depth controls.
+     */
+
+    @media (max-width: 700px) {
+
+      .paintless-layer-row {
+        padding: 6px;
+      }
+
+      .paintless-layer-main {
+        grid-template-columns:
+          29px
+          38px
+          minmax(0, 1fr)
+          30px;
+      }
+
+      .paintless-layer-row
+      .layer-thumbnail {
+        width: 38px;
+        min-width: 38px;
+        height: 32px;
+      }
+
+      .paintless-layer-row:not(.is-active)
+      .paintless-layer-depth {
+        display: none;
+      }
+
+      .paintless-layer-row.is-active
+      .paintless-layer-depth {
+        display: grid;
+        grid-template-columns:
+          30px
+          minmax(72px, 1fr)
+          30px
+          42px;
+        margin-top: 7px;
+      }
+
+      .paintless-depth-nudge {
+        width: 30px;
+        height: 29px;
+      }
+
+      .paintless-depth-slider {
+        height: 29px;
+      }
+
+      .paintless-depth-value {
+        height: 29px;
+      }
+
+    }
+
+    /*
+     * Very narrow phones.
+     */
+
+    @media (max-width: 430px) {
+
+      .paintless-layer-row.is-active
+      .paintless-layer-depth {
+        grid-template-columns:
+          30px
+          minmax(50px, 1fr)
+          30px;
+      }
+
+      .paintless-layer-row.is-active
+      .paintless-depth-value {
+        grid-column:
+          1 / -1;
+        width: 100%;
+      }
+
+    }
+  `;
 
 
+  document.head.appendChild(
+    style
+  );
+
+}
   /* =======================================================
      28. INITIAL UI
   ======================================================= */
