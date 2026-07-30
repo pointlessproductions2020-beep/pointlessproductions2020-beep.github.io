@@ -1411,6 +1411,122 @@
     return true;
   }
 
+     function prepareVisibleLayersFor3D() {
+
+    const layersApi =
+      getLayersApi();
+
+
+    const layers =
+      layersApi?.layers;
+
+
+    if (
+      !Array.isArray(layers) ||
+      layers.length === 0
+    ) {
+
+      return false;
+
+    }
+
+
+    const visibleLayers =
+      layers.filter(
+        (layer) =>
+          layer.visible &&
+          layer.opacity > 0
+      );
+
+
+    if (visibleLayers.length === 0) {
+
+      return false;
+
+    }
+
+
+    const hasExistingArrangement =
+      visibleLayers.some(
+        (layer) =>
+          Boolean(layer.stereo3dEnabled) ||
+          Number(layer.depth3d) !== 0
+      );
+
+
+    if (!hasExistingArrangement) {
+
+      const minimumDepth =
+        -300;
+
+
+      const maximumDepth =
+        300;
+
+
+      const depthRange =
+        maximumDepth -
+        minimumDepth;
+
+
+      const step =
+        visibleLayers.length > 1
+          ? depthRange /
+            (visibleLayers.length - 1)
+          : 0;
+
+
+      visibleLayers.forEach(
+        (layer, index) => {
+
+          layer.stereo3dEnabled =
+            true;
+
+
+          layer.depth3d =
+            visibleLayers.length === 1
+              ? 0
+              : Math.round(
+                  minimumDepth +
+                  step * index
+                );
+
+        }
+      );
+
+    } else {
+
+      visibleLayers.forEach(
+        (layer) => {
+
+          layer.stereo3dEnabled =
+            true;
+
+        }
+      );
+
+    }
+
+
+    layersApi.renderLayerList?.();
+
+
+    document.dispatchEvent(
+      new CustomEvent(
+        "paintless3d:render-requested",
+        {
+          detail: {
+            reason:
+              "automatic-3d-layer-preparation"
+          }
+        }
+      )
+    );
+
+
+    return true;
+
+  }
 
   /* =======================================================
      11. ENTER AND EXIT MODE
@@ -1470,8 +1586,9 @@
       performance.now();
 
 
-    updateActiveLayerInformation();
+    prepareVisibleLayersFor3D();
 
+    updateActiveLayerInformation();
 
     showInformationStrip();
 
