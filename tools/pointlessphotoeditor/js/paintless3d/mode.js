@@ -95,9 +95,6 @@
     modeClass:
       "paintless3d-editor-active",
 
-    previewClass:
-      "paintless3d-preview-active",
-
     storageKey:
       "paintless3d-mode-state-v1",
 
@@ -111,9 +108,6 @@
       false,
 
     rendererReady:
-      false,
-
-    previewReady:
       false,
 
     exportReady:
@@ -1685,7 +1679,6 @@
     document.body
       ?.classList.remove(
         modeState.modeClass,
-        modeState.previewClass
       );
 
 
@@ -1775,70 +1768,6 @@
 
 
   /* =======================================================
-     12. PREVIEW DISPLAY STATE
-  ======================================================= */
-
-  function setPreviewVisualState(
-    enabled
-  ) {
-
-    const active =
-      Boolean(
-        enabled &&
-        modeState.active
-      );
-
-
-    document.body
-      ?.classList.toggle(
-        modeState.previewClass,
-        active
-      );
-
-
-    if (active) {
-
-      setInformationMessage(
-        modeState.rendererReady
-          ? "Live anaglyph rendering is active."
-          : "Preview requested. The anaglyph renderer is being connected next.",
-        {
-          title:
-            "Glasses Preview",
-
-          icon:
-            "👓",
-
-          depth:
-            getLayerDepth()
-        }
-      );
-
-
-      showInformationStrip();
-
-    } else if (
-      modeState.active
-    ) {
-
-      updateActiveLayerInformation();
-    }
-
-
-    dispatch(
-      "paintless3d:mode-preview-visual-changed",
-      {
-        enabled:
-          active
-      }
-    );
-
-
-    return active;
-  }
-
-
-  /* =======================================================
      13. MODULE READINESS
   ======================================================= */
 
@@ -1873,18 +1802,6 @@
     ) {
 
       modeState.rendererReady =
-        Boolean(
-          ready
-        );
-    }
-
-
-    if (
-      safeName ===
-      "preview"
-    ) {
-
-      modeState.previewReady =
         Boolean(
           ready
         );
@@ -1942,8 +1859,6 @@
       renderer:
         modeState.rendererReady,
 
-      preview:
-        modeState.previewReady,
 
       export:
         modeState.exportReady
@@ -1969,16 +1884,6 @@
       mode
     );
 
-  }
-
-
-  function handlePreviewChanged(
-    event
-  ) {
-
-    setPreviewVisualState(
-      event.detail?.enabled
-    );
   }
 
 
@@ -2113,12 +2018,6 @@
 
 
     document.addEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
-    );
-
-
-    document.addEventListener(
       "paintless:active-layer-changed",
       handleActiveLayerChanged
     );
@@ -2169,13 +2068,6 @@
       "paintless3d:mode-changed",
       handleModeChanged
     );
-
-
-    document.removeEventListener(
-      "paintless3d:preview-changed",
-      handlePreviewChanged
-    );
-
 
     document.removeEventListener(
       "paintless:active-layer-changed",
@@ -2372,9 +2264,6 @@
     rememberEditorState,
 
     restoreEditorState,
-
-
-    setPreviewVisualState,
 
     updateModuleReadiness,
 
