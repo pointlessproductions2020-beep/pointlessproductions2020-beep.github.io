@@ -389,69 +389,71 @@
 
   function collectDomReferences() {
 
-    dom.existingOldSwitch =
-      document.getElementById(
-        "paintless3d-mode-switch"
-      );
+  dom.existingOldSwitch =
+    document.getElementById(
+      "paintless3d-mode-switch"
+    );
 
 
-    dom.existingOldPreviewButton =
-      document.getElementById(
-        "paintless3d-preview-button"
-      );
+  dom.existingOldPreviewButton =
+    document.getElementById(
+      "paintless3d-preview-button"
+    );
 
+
+  const importButton =
+    findFirst(
+      [
+        "#import-button",
+        '[data-action="import"]',
+        ".import-button"
+      ]
+    );
+
+
+  const exportButton =
+    findFirst(
+      [
+        "#export-button",
+        '[data-action="export"]',
+        ".export-button"
+      ]
+    );
+
+
+  const zoomValue =
+    findFirst(
+      [
+        "#zoom-value",
+        "[data-zoom-value]",
+        ".zoom-value"
+      ]
+    );
+
+
+  dom.toolbarParent =
+    importButton?.parentElement ||
+    exportButton?.parentElement ||
+    zoomValue?.parentElement ||
+    null;
+
+
+  if (
+    dom.toolbarParent &&
+    dom.toolbarParent.children.length <= 1
+  ) {
 
     dom.toolbarParent =
-      findFirst(
-        [
-          "#top-toolbar",
-          ".top-toolbar",
-          "#main-toolbar",
-          ".main-toolbar",
-          ".editor-toolbar",
-          ".toolbar-top",
-          "header .toolbar",
-          "header"
-        ]
-      );
-
-
-    /*
-     * Fallback:
-     * Locate the zoom controls shown in the Paintless header
-     * and use their parent as the insertion area.
-     */
-
-    if (!dom.toolbarParent) {
-
-      const zoomElement =
-        findFirst(
-          [
-            "#zoom-value",
-            "[data-zoom-value]",
-            ".zoom-value",
-            "#zoom-in",
-            "#zoom-out"
-          ]
-        );
-
-
-      dom.toolbarParent =
-        zoomElement?.parentElement ||
-        zoomElement?.parentElement
-          ?.parentElement ||
-        null;
-
-    }
-
-
-    return Boolean(
-      dom.toolbarParent
-    );
+      dom.toolbarParent.parentElement;
 
   }
 
 
+  return Boolean(
+    dom.toolbarParent
+  );
+
+}
   /* =======================================================
      7. REMOVE OLD TEMPORARY CONTROLS
   ======================================================= */
