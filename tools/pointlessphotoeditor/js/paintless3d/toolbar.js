@@ -539,8 +539,9 @@
         gap: 7px;
         flex: 0 0 auto;
         min-width: 0;
-        margin-inline: 8px;
-        padding: 4px 6px;
+        margin-left: auto;
+        margin-right: 8px;
+        padding: 3px 5px;
         border: 1px solid rgba(255, 255, 255, 0.09);
         border-radius: 13px;
         background:
