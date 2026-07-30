@@ -2719,13 +2719,21 @@
      12. DOCUMENT EVENTS
   ======================================================= */
 
-  function handleModeChanged(
-    event
-  ) {
+ function handleModeChanged(
+  event
+) {
 
-    return;
+  /*
+   * Layer depth controls now live
+   * inside each layer row.
+   *
+   * Nothing needs to be shown or hidden
+   * when entering/leaving 3D mode.
+   */
 
-  }
+  return true;
+
+}
 
 
   function handleActiveLayerChanged() {
