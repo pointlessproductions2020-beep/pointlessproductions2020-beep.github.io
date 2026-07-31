@@ -2324,109 +2324,78 @@ function renderLayerList() {
           0;
 
 
-        layerItem.innerHTML = `
-          <div class="paintless-layer-main">
+                layerItem.innerHTML = `
+          <button
+            class="layer-visibility"
+            type="button"
+            data-layer-visibility="${layer.id}"
+            aria-label="${
+              layer.visible
+                ? "Hide"
+                : "Show"
+            } ${escapeHtml(layer.name)}"
+            title="${
+              layer.visible
+                ? "Hide layer"
+                : "Show layer"
+            }"
+          >
+            ${
+              layer.visible
+                ? "◉"
+                : "○"
+            }
+          </button>
 
-            <button
-              class="layer-visibility"
-              type="button"
-              data-layer-visibility="${layer.id}"
-              aria-label="${
-                layer.visible
-                  ? "Hide"
-                  : "Show"
-              } ${escapeHtml(layer.name)}"
-              title="${
-                layer.visible
-                  ? "Hide layer"
-                  : "Show layer"
-              }"
-            >
-              ${
-                layer.visible
-                  ? "◉"
-                  : "○"
-              }
-            </button>
+          <button
+            class="layer-thumbnail"
+            type="button"
+            data-layer-thumbnail="${layer.id}"
+            aria-label="Select ${escapeHtml(layer.name)}"
+            title="Select layer"
+          ></button>
 
-            <button
-              class="layer-thumbnail"
-              type="button"
-              data-layer-thumbnail="${layer.id}"
-              aria-label="Select ${escapeHtml(layer.name)}"
-              title="Select layer"
-            ></button>
+          <button
+            class="layer-name"
+            type="button"
+            data-layer-name="${layer.id}"
+            title="Double-click to rename"
+          >
+            ${
+              layer.locked
+                ? "🔒 "
+                : ""
+            }${escapeHtml(layer.name)}
+          </button>
 
-            <button
-              class="layer-name"
-              type="button"
-              data-layer-name="${layer.id}"
-              title="Double-click to rename"
-            >
-              ${
-                layer.locked
-                  ? "🔒 "
-                  : ""
-              }${escapeHtml(layer.name)}
-            </button>
+          <button
+            class="paintless-layer-stereo"
+            type="button"
+            data-layer-stereo="${layer.id}"
+            aria-label="Toggle 3D depth for ${escapeHtml(layer.name)}"
+            title="Toggle layer depth"
+          >
+            ◼
+          </button>
 
-            <button
-              class="paintless-layer-settings"
-              type="button"
-              data-layer-settings="${layer.id}"
-              aria-label="Open settings for ${escapeHtml(layer.name)}"
-              title="Layer settings"
-            >
-              ⚙
-            </button>
-
-          </div>
-
-          <div
-            class="paintless-layer-depth"
-            aria-label="3D depth for ${escapeHtml(layer.name)}"
+          <input
+            class="paintless-depth-slider"
+            type="range"
+            min="-300"
+            max="300"
+            step="1"
+            value="${safeDepth}"
+            data-layer-depth-slider="${layer.id}"
+            aria-label="Depth for ${escapeHtml(layer.name)}"
           >
 
-            <button
-              class="paintless-depth-nudge"
-              type="button"
-              data-layer-depth-minus="${layer.id}"
-              aria-label="Move ${escapeHtml(layer.name)} one step behind"
-              title="Decrease depth"
-            >
-              −
-            </button>
-
-            <input
-              class="paintless-depth-slider"
-              type="range"
-              min="-300"
-              max="300"
-              step="1"
-              value="${safeDepth}"
-              data-layer-depth-slider="${layer.id}"
-              aria-label="Depth for ${escapeHtml(layer.name)}"
-            >
-
-            <button
-              class="paintless-depth-nudge"
-              type="button"
-              data-layer-depth-plus="${layer.id}"
-              aria-label="Move ${escapeHtml(layer.name)} one step forward"
-              title="Increase depth"
-            >
-              +
-            </button>
-
-            <output
-              class="paintless-depth-value"
-              data-layer-depth-value="${layer.id}"
-              title="Current layer depth"
-            >
-              ${depthText}
-            </output>
-
-          </div>
+          <output
+            class="paintless-depth-value"
+            data-layer-depth-value="${layer.id}"
+            title="Current layer depth"
+          >
+            Z ${depthText}
+          </output>
         `;
 
 
@@ -2481,6 +2450,27 @@ function renderLayerList() {
 
             }
 
+                         const stereoButton =
+              event.target.closest(
+                "[data-layer-stereo]"
+              );
+
+
+            if (stereoButton) {
+
+              selectThisLayer();
+
+
+              toggleLayerStereo3D(
+                layer.id
+              );
+
+
+              commitDepthHistory();
+
+              return;
+
+            }
 
             const minusButton =
               event.target.closest(
