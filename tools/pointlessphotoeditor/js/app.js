@@ -1483,7 +1483,7 @@
     "Export Image",
 
           shortcut:
-            "Ctrl+Shift+S"
+            "Ctrl+Shift+S",
              
           action() {
 
