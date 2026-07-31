@@ -1,5 +1,5 @@
 /* =========================================================
-   PAINTLESS
+   PAINTLESSUV
    Pointless Productions Browser Image Editor
 ========================================================= */
 
@@ -3559,4 +3559,1189 @@ select option:checked {
     animation: none;
   }
 
+}
+/* =========================================================
+   PAINTLESSUV
+   APP-SPECIFIC INTERFACE
+========================================================= */
+
+
+/* =========================================================
+   1. TOOL OPTION BUTTONS
+========================================================= */
+
+.tool-option-button {
+  min-height: 32px;
+  padding: 6px 12px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  color:
+    var(--text-soft);
+
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.tool-option-button:hover:not(:disabled) {
+  border-color:
+    var(--border-strong);
+
+  background:
+    rgba(168, 76, 255, 0.09);
+
+  color:
+    #ffffff;
+}
+
+.tool-option-button.is-active {
+  border-color:
+    rgba(212, 154, 255, 0.62);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(101, 32, 170, 0.58),
+      rgba(168, 76, 255, 0.34)
+    );
+
+  color:
+    #ffffff;
+
+  box-shadow:
+    inset 0 0 16px rgba(168, 76, 255, 0.09),
+    0 0 16px rgba(168, 76, 255, 0.13);
+}
+
+
+/* =========================================================
+   2. PAINTLESSUV WORKSPACE
+========================================================= */
+
+.paintlessuv-workspace {
+  background:
+    linear-gradient(
+      rgba(255, 255, 255, 0.021) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.021) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 28% 40%,
+      rgba(168, 76, 255, 0.065),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 76% 54%,
+      rgba(53, 231, 255, 0.025),
+      transparent 34%
+    ),
+    #111018;
+
+  background-size:
+    24px 24px,
+    24px 24px,
+    auto,
+    auto,
+    auto;
+}
+
+
+/* =========================================================
+   3. EMPTY STATE
+========================================================= */
+
+.paintlessuv-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width:
+    min(
+      560px,
+      calc(100% - 46px)
+    );
+
+  padding:
+    24px 38px 32px;
+
+  border-color:
+    rgba(212, 154, 255, 0.28);
+
+  background:
+    radial-gradient(
+      circle at 50% 0,
+      rgba(168, 76, 255, 0.13),
+      transparent 43%
+    ),
+    radial-gradient(
+      circle at 96% 90%,
+      rgba(255, 215, 90, 0.04),
+      transparent 32%
+    ),
+    rgba(10, 7, 15, 0.92);
+}
+
+.paintlessuv-empty-state .empty-state-logo {
+  width:
+    min(
+      290px,
+      78%
+    );
+
+  margin:
+    0 auto 18px;
+
+  box-shadow:
+    none;
+}
+
+.paintlessuv-empty-state .empty-state-logo img {
+  width:
+    100%;
+
+  height:
+    auto;
+
+  object-fit:
+    contain;
+
+  filter:
+    drop-shadow(
+      0 0 16px rgba(168, 76, 255, 0.38)
+    )
+    drop-shadow(
+      0 13px 25px rgba(0, 0, 0, 0.55)
+    );
+}
+
+.paintlessuv-empty-state h1 {
+  margin:
+    0 0 12px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #ffffff,
+      var(--purple-light),
+      #ffffff
+    );
+
+  color:
+    transparent;
+
+  background-clip:
+    text;
+
+  -webkit-background-clip:
+    text;
+}
+
+.paintlessuv-empty-state p {
+  max-width:
+    450px;
+
+  margin:
+    0 auto 22px;
+}
+
+.supported-formats {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  justify-content:
+    center;
+
+  gap:
+    7px;
+
+  margin-top:
+    16px;
+}
+
+.supported-formats span {
+  min-width:
+    48px;
+
+  padding:
+    5px 9px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius:
+    var(--radius-pill);
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  color:
+    var(--text-muted);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size:
+    0.62rem;
+
+  font-weight:
+    850;
+
+  letter-spacing:
+    0.05em;
+}
+
+
+/* =========================================================
+   4. SPLIT VIEWPORT LAYOUT
+========================================================= */
+
+.paintlessuv-viewports {
+  position:
+    absolute;
+
+  inset:
+    12px;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    8px
+    minmax(0, 1fr);
+
+  min-width:
+    0;
+
+  min-height:
+    0;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid var(--border);
+
+  border-radius:
+    var(--radius-medium);
+
+  background:
+    rgba(7, 6, 10, 0.84);
+
+  box-shadow:
+    0 18px 54px rgba(0, 0, 0, 0.34);
+}
+
+.paintlessuv-viewports[hidden] {
+  display:
+    none;
+}
+
+.paintlessuv-viewport-panel {
+  display:
+    grid;
+
+  grid-template-rows:
+    42px
+    minmax(0, 1fr);
+
+  min-width:
+    0;
+
+  min-height:
+    0;
+
+  overflow:
+    hidden;
+
+  background:
+    rgba(13, 11, 18, 0.96);
+}
+
+.paintlessuv-viewport-header {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+
+  min-width:
+    0;
+
+  padding:
+    6px 10px;
+
+  border-bottom:
+    1px solid var(--border);
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(28, 20, 38, 0.96),
+      rgba(15, 11, 21, 0.96)
+    );
+}
+
+.paintlessuv-viewport-header strong {
+  overflow:
+    hidden;
+
+  color:
+    var(--purple-light);
+
+  font-size:
+    0.66rem;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    0.1em;
+
+  text-overflow:
+    ellipsis;
+
+  text-transform:
+    uppercase;
+
+  white-space:
+    nowrap;
+}
+
+.paintlessuv-viewport-header div {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+}
+
+.paintlessuv-viewport-header button {
+  min-height:
+    27px;
+
+  padding:
+    4px 8px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius:
+    7px;
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.59rem;
+
+  font-weight:
+    800;
+}
+
+.paintlessuv-viewport-header button:hover {
+  border-color:
+    var(--border-strong);
+
+  background:
+    rgba(168, 76, 255, 0.09);
+
+  color:
+    #ffffff;
+}
+
+
+/* =========================================================
+   5. VIEWPORT SURFACES
+========================================================= */
+
+.paintlessuv-viewport {
+  position:
+    relative;
+
+  min-width:
+    0;
+
+  min-height:
+    0;
+
+  overflow:
+    hidden;
+
+  outline:
+    none;
+
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgba(168, 76, 255, 0.05),
+      transparent 45%
+    ),
+    linear-gradient(
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    #111018;
+
+  background-size:
+    auto,
+    24px 24px,
+    24px 24px,
+    auto;
+
+  touch-action:
+    none;
+}
+
+.paintlessuv-viewport:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--cyan);
+}
+
+#model-canvas,
+#uv-canvas {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  max-width:
+    none;
+
+  background:
+    transparent;
+
+  touch-action:
+    none;
+}
+
+#uv-canvas {
+  background:
+    linear-gradient(
+      45deg,
+      #bdbdbd 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      -45deg,
+      #bdbdbd 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      #bdbdbd 75%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 75%,
+      #bdbdbd 75%
+    ),
+    #e7e7e7;
+
+  background-position:
+    0 0,
+    0 12px,
+    12px -12px,
+    -12px 0;
+
+  background-size:
+    24px 24px;
+}
+
+
+/* =========================================================
+   6. VIEWPORT DIVIDER
+========================================================= */
+
+.paintlessuv-divider {
+  position:
+    relative;
+
+  z-index:
+    8;
+
+  cursor:
+    col-resize;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  transition:
+    background 130ms ease;
+}
+
+.paintlessuv-divider::before {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  top:
+    50%;
+
+  left:
+    50%;
+
+  width:
+    2px;
+
+  height:
+    42px;
+
+  border-radius:
+    var(--radius-pill);
+
+  background:
+    rgba(212, 154, 255, 0.5);
+
+  transform:
+    translate(-50%, -50%);
+}
+
+.paintlessuv-divider:hover,
+.paintlessuv-divider:focus-visible {
+  background:
+    rgba(168, 76, 255, 0.12);
+}
+
+
+/* =========================================================
+   7. AXIS GIZMO
+========================================================= */
+
+.viewport-axis-gizmo {
+  position:
+    absolute;
+
+  right:
+    14px;
+
+  bottom:
+    14px;
+
+  width:
+    62px;
+
+  height:
+    62px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(6, 4, 10, 0.76);
+
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.34);
+
+  pointer-events:
+    none;
+}
+
+.viewport-axis-gizmo span {
+  position:
+    absolute;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    20px;
+
+  height:
+    20px;
+
+  border-radius:
+    50%;
+
+  color:
+    #ffffff;
+
+  font-size:
+    0.61rem;
+
+  font-weight:
+    950;
+
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.viewport-axis-gizmo .axis-x {
+  right:
+    3px;
+
+  top:
+    22px;
+
+  background:
+    #e74b61;
+}
+
+.viewport-axis-gizmo .axis-y {
+  top:
+    3px;
+
+  left:
+    21px;
+
+  background:
+    #53c878;
+}
+
+.viewport-axis-gizmo .axis-z {
+  bottom:
+    3px;
+
+  left:
+    4px;
+
+  background:
+    #4f87ff;
+}
+
+
+/* =========================================================
+   8. RIGHT SIDEBAR INFORMATION
+========================================================= */
+
+.paintlessuv-information-list {
+  display:
+    grid;
+
+  gap:
+    8px;
+}
+
+.paintlessuv-information-list > div {
+  display:
+    grid;
+
+  grid-template-columns:
+    minmax(78px, auto)
+    minmax(0, 1fr);
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  min-height:
+    34px;
+
+  padding:
+    6px 8px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.055);
+
+  border-radius:
+    8px;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+.paintlessuv-information-list span {
+  color:
+    var(--text-muted);
+
+  font-size:
+    0.59rem;
+
+  font-weight:
+    850;
+
+  letter-spacing:
+    0.05em;
+
+  text-transform:
+    uppercase;
+}
+
+.paintlessuv-information-list strong {
+  min-width:
+    0;
+
+  overflow:
+    hidden;
+
+  color:
+    var(--text-soft);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size:
+    0.66rem;
+
+  font-weight:
+    800;
+
+  text-align:
+    right;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+/* =========================================================
+   9. ANALYSIS PANEL
+========================================================= */
+
+.model-analysis-summary,
+.material-list {
+  display:
+    grid;
+
+  gap:
+    8px;
+}
+
+.analysis-empty {
+  display:
+    grid;
+
+  gap:
+    5px;
+
+  padding:
+    13px;
+
+  border:
+    1px dashed var(--border);
+
+  border-radius:
+    var(--radius-small);
+
+  background:
+    rgba(255, 255, 255, 0.02);
+
+  text-align:
+    center;
+}
+
+.analysis-empty strong {
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.7rem;
+}
+
+.analysis-empty span {
+  color:
+    var(--text-muted);
+
+  font-size:
+    0.62rem;
+
+  line-height:
+    1.45;
+}
+
+.prepare-model-wide-button {
+  width:
+    100%;
+
+  margin-top:
+    12px;
+}
+
+
+/* =========================================================
+   10. ANALYSIS RESULT ROWS
+========================================================= */
+
+.analysis-result {
+  display:
+    grid;
+
+  grid-template-columns:
+    24px
+    minmax(0, 1fr)
+    auto;
+
+  align-items:
+    center;
+
+  gap:
+    8px;
+
+  min-height:
+    38px;
+
+  padding:
+    7px 8px;
+
+  border:
+    1px solid var(--border);
+
+  border-radius:
+    8px;
+
+  background:
+    rgba(255, 255, 255, 0.026);
+}
+
+.analysis-result__icon {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    24px;
+
+  height:
+    24px;
+
+  border-radius:
+    50%;
+
+  font-size:
+    0.7rem;
+
+  font-weight:
+    950;
+}
+
+.analysis-result__content {
+  display:
+    grid;
+
+  gap:
+    2px;
+
+  min-width:
+    0;
+}
+
+.analysis-result__content strong {
+  overflow:
+    hidden;
+
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.66rem;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+.analysis-result__content span {
+  color:
+    var(--text-muted);
+
+  font-size:
+    0.58rem;
+}
+
+.analysis-result__value {
+  color:
+    var(--purple-light);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size:
+    0.61rem;
+
+  font-weight:
+    850;
+}
+
+.analysis-result.is-good {
+  border-color:
+    rgba(105, 245, 156, 0.2);
+}
+
+.analysis-result.is-good
+.analysis-result__icon {
+  background:
+    rgba(105, 245, 156, 0.13);
+
+  color:
+    var(--green);
+}
+
+.analysis-result.is-warning {
+  border-color:
+    rgba(255, 215, 90, 0.25);
+}
+
+.analysis-result.is-warning
+.analysis-result__icon {
+  background:
+    rgba(255, 215, 90, 0.13);
+
+  color:
+    var(--yellow);
+}
+
+.analysis-result.is-error {
+  border-color:
+    rgba(255, 89, 109, 0.25);
+}
+
+.analysis-result.is-error
+.analysis-result__icon {
+  background:
+    rgba(255, 89, 109, 0.13);
+
+  color:
+    var(--red);
+}
+
+
+/* =========================================================
+   11. DRAG AND DROP OVERLAY
+========================================================= */
+
+.model-drop-overlay {
+  position:
+    absolute;
+
+  inset:
+    18px;
+
+  z-index:
+    90;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border:
+    2px dashed rgba(212, 154, 255, 0.62);
+
+  border-radius:
+    var(--radius-large);
+
+  background:
+    rgba(8, 5, 13, 0.88);
+
+  backdrop-filter:
+    blur(14px);
+
+  -webkit-backdrop-filter:
+    blur(14px);
+}
+
+.model-drop-overlay[hidden] {
+  display:
+    none;
+}
+
+.model-drop-overlay > div {
+  display:
+    grid;
+
+  gap:
+    7px;
+
+  padding:
+    26px 32px;
+
+  text-align:
+    center;
+}
+
+.model-drop-overlay strong {
+  color:
+    #ffffff;
+
+  font-size:
+    1.25rem;
+
+  font-weight:
+    950;
+}
+
+.model-drop-overlay span {
+  color:
+    var(--text-soft);
+
+  font-size:
+    0.75rem;
+}
+
+
+/* =========================================================
+   12. RESPONSIVE TABLET LAYOUT
+========================================================= */
+
+@media
+  (max-width: 980px) {
+
+  :root {
+    --sidebar-width:
+      260px;
+  }
+
+  .paintlessuv-viewports {
+    grid-template-columns:
+      minmax(0, 1fr);
+
+    grid-template-rows:
+      minmax(0, 1fr)
+      8px
+      minmax(0, 1fr);
+  }
+
+  .paintlessuv-divider {
+    cursor:
+      row-resize;
+  }
+
+  .paintlessuv-divider::before {
+    width:
+      42px;
+
+    height:
+      2px;
+  }
+
+}
+
+
+/* =========================================================
+   13. RESPONSIVE MOBILE LAYOUT
+========================================================= */
+
+@media
+  (max-width: 720px) {
+
+  .paintlessuv-empty-state {
+    width:
+      min(
+        94%,
+        480px
+      );
+
+    padding:
+      20px 20px 26px;
+  }
+
+  .paintlessuv-empty-state .empty-state-logo {
+    width:
+      min(
+        250px,
+        82%
+      );
+  }
+
+  .supported-formats {
+    gap:
+      5px;
+  }
+
+  .supported-formats span {
+    min-width:
+      43px;
+
+    padding:
+      4px 7px;
+  }
+
+  .paintlessuv-viewports {
+    inset:
+      7px;
+  }
+
+  .paintlessuv-viewport-header {
+    padding:
+      5px 7px;
+  }
+
+  .paintlessuv-viewport-header button {
+    padding:
+      4px 6px;
+  }
+
+  .viewport-axis-gizmo {
+    right:
+      8px;
+
+    bottom:
+      8px;
+
+    transform:
+      scale(0.84);
+
+    transform-origin:
+      right bottom;
+  }
+
+}
+
+
+/* =========================================================
+   14. HIDDEN UTILITY
+========================================================= */
+
+.is-hidden {
+  display:
+    none !important;
 }
