@@ -3107,310 +3107,228 @@ function renderLayerList() {
 
 
   style.textContent = `
+  .paintless-layer-row {
+    display: grid;
+    grid-template-columns:
+      24px
+      32px
+      minmax(70px, 1fr)
+      24px
+      minmax(70px, 120px)
+      55px;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 3px 6px;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    transition:
+      background 120ms ease,
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  .paintless-layer-row:hover {
+    background:
+      rgba(255, 255, 255, 0.045);
+  }
+
+  .paintless-layer-row.is-active {
+    border-color:
+      rgba(168, 76, 255, 0.55);
+    background:
+      rgba(168, 76, 255, 0.09);
+    box-shadow:
+      inset 0 0 0 1px
+      rgba(168, 76, 255, 0.08);
+  }
+
+  .paintless-layer-row .layer-visibility {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 28px;
+    min-width: 24px;
+    padding: 0;
+    border: 0;
+    color:
+      rgba(255, 255, 255, 0.78);
+    background: transparent;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .paintless-layer-row .layer-visibility:hover {
+    color: #ffffff;
+  }
+
+  .paintless-layer-row .layer-thumbnail {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    border:
+      1px solid
+      rgba(255, 255, 255, 0.14);
+    border-radius: 5px;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .paintless-layer-row .layer-name {
+    min-width: 0;
+    height: 30px;
+    padding: 0 3px;
+    overflow: hidden;
+    border: 0;
+    color:
+      rgba(255, 255, 255, 0.86);
+    background: transparent;
+    font:
+      600 12px/1.2
+      "Segoe UI",
+      Arial,
+      sans-serif;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .paintless-layer-row.is-active
+  .layer-name {
+    color: #ffffff;
+  }
+
+  .paintless-layer-stereo {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    padding: 0;
+    border:
+      1px solid
+      rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    color:
+      rgba(255, 255, 255, 0.34);
+    background:
+      rgba(255, 255, 255, 0.035);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .paintless-layer-stereo:hover {
+    border-color:
+      rgba(255, 255, 255, 0.3);
+    color:
+      rgba(255, 255, 255, 0.75);
+  }
+
+  .paintless-layer-stereo.is-enabled {
+    border-color:
+      rgba(255, 68, 98, 0.52);
+    color: #ff526f;
+    background:
+      rgba(255, 68, 98, 0.12);
+  }
+
+  .paintless-depth-slider {
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    margin: 0;
+    accent-color: #a84cff;
+    cursor: ew-resize;
+    touch-action: pan-y;
+  }
+
+  .paintless-depth-value {
+    display: block;
+    width: 55px;
+    min-width: 55px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    color:
+      rgba(255, 255, 255, 0.7);
+    background: transparent;
+    font:
+      700 10px/1
+      "Segoe UI",
+      Arial,
+      sans-serif;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .paintless-layer-row.is-depth-behind
+  .paintless-depth-value {
+    color: #ff6684;
+  }
+
+  .paintless-layer-row.is-depth-forward
+  .paintless-depth-value {
+    color: #67efff;
+  }
+
+  .paintless-layer-row.is-depth-screen
+  .paintless-depth-value {
+    color:
+      rgba(255, 255, 255, 0.62);
+  }
+
+  .paintless-layer-row:focus-visible,
+  .paintless-layer-row button:focus-visible,
+  .paintless-depth-slider:focus-visible {
+    outline:
+      2px solid
+      #25e6ff;
+    outline-offset: 1px;
+  }
+
+  @media (max-width: 1000px) {
+
     .paintless-layer-row {
-      display: block;
-      width: 100%;
-      min-width: 0;
-      padding: 7px;
-      overflow: hidden;
-    }
-
-    .paintless-layer-main {
-      display: grid;
       grid-template-columns:
-        auto
-        42px
-        minmax(0, 1fr)
-        31px;
-      align-items: center;
-      gap: 7px;
-      min-width: 0;
-    }
-
-    .paintless-layer-row .layer-thumbnail {
-      width: 42px;
-      height: 36px;
-      min-width: 42px;
-      border-radius: 8px;
-    }
-
-    .paintless-layer-row .layer-name {
-      min-width: 0;
-      overflow: hidden;
-      text-align: left;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .paintless-layer-settings {
-      display: grid;
-      place-items: center;
-      width: 31px;
-      height: 31px;
-      padding: 0;
-      border:
-        1px solid
-        rgba(255, 255, 255, 0.11);
-      border-radius: 8px;
-      color:
-        rgba(255, 255, 255, 0.64);
-      background:
-        rgba(255, 255, 255, 0.035);
-      font-size: 13px;
-      line-height: 1;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .paintless-layer-settings:hover {
-      border-color:
-        rgba(37, 230, 255, 0.42);
-      color: #ffffff;
-      background:
-        rgba(37, 230, 255, 0.08);
-    }
-
-    .paintless-layer-depth {
-      display: grid;
-      grid-template-columns:
-        27px
-        minmax(58px, 1fr)
-        27px
-        42px;
-      align-items: center;
+        22px
+        30px
+        minmax(60px, 1fr)
+        22px
+        minmax(55px, 90px)
+        49px;
       gap: 5px;
-      width: 100%;
-      min-width: 0;
-      margin-top: 6px;
+      padding:
+        3px 5px;
     }
 
-    .paintless-depth-nudge {
-      display: grid;
-      place-items: center;
-      width: 27px;
-      height: 25px;
-      padding: 0;
-      border:
-        1px solid
-        rgba(255, 255, 255, 0.11);
-      border-radius: 7px;
-      color:
-        rgba(255, 255, 255, 0.75);
-      background:
-        rgba(255, 255, 255, 0.035);
-      font:
-        800 15px/1
-        Arial,
-        sans-serif;
-      cursor: pointer;
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    .paintless-depth-nudge:hover {
-      border-color:
-        rgba(255, 255, 255, 0.3);
-      color: #ffffff;
-      background:
-        rgba(255, 255, 255, 0.08);
-    }
-
-    .paintless-depth-slider {
-      width: 100%;
-      min-width: 0;
-      height: 25px;
-      margin: 0;
-      accent-color: #a84cff;
-      cursor: ew-resize;
-      touch-action: pan-y;
+    .paintless-layer-row
+    .layer-thumbnail {
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
     }
 
     .paintless-depth-value {
-      display: grid;
-      place-items: center;
-      min-width: 42px;
-      height: 25px;
-      padding: 0 5px;
-      overflow: hidden;
-      border:
-        1px solid
-        rgba(255, 255, 255, 0.1);
-      border-radius: 7px;
-      color:
-        rgba(255, 255, 255, 0.8);
-      background:
-        rgba(0, 0, 0, 0.18);
-      font:
-        800 10px/1
-        "Segoe UI",
-        Arial,
-        sans-serif;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      width: 49px;
+      min-width: 49px;
+      font-size: 9px;
     }
 
-    .paintless-layer-row.is-depth-behind
-    .paintless-depth-value {
-      color: #ff6684;
-      border-color:
-        rgba(255, 49, 92, 0.34);
-    }
-
-    .paintless-layer-row.is-depth-forward
-    .paintless-depth-value {
-      color: #67efff;
-      border-color:
-        rgba(37, 230, 255, 0.34);
-    }
-
-    .paintless-layer-row.is-depth-screen
-    .paintless-depth-value {
-      color:
-        rgba(255, 255, 255, 0.7);
-    }
-
-    .paintless-layer-row.is-active
-    .paintless-layer-depth {
-      opacity: 1;
-    }
-
-    .paintless-layer-row:not(.is-active)
-    .paintless-layer-depth {
-      opacity: 0.72;
-    }
-
-    .paintless-layer-row:focus-visible,
-    .paintless-layer-settings:focus-visible,
-    .paintless-depth-nudge:focus-visible,
-    .paintless-depth-slider:focus-visible {
-      outline:
-        2px solid
-        #25e6ff;
-      outline-offset: 2px;
-    }
-
-    /*
-     * Compact tablet layout.
-     */
-
-    @media (max-width: 1000px) {
-
-      .paintless-layer-row {
-        padding: 6px;
-      }
-
-      .paintless-layer-main {
-        grid-template-columns:
-          auto
-          36px
-          minmax(0, 1fr)
-          29px;
-        gap: 5px;
-      }
-
-      .paintless-layer-row
-      .layer-thumbnail {
-        width: 36px;
-        min-width: 36px;
-        height: 32px;
-      }
-
-      .paintless-layer-depth {
-        grid-template-columns:
-          27px
-          minmax(48px, 1fr)
-          27px
-          38px;
-        gap: 4px;
-      }
-
-      .paintless-depth-value {
-        min-width: 38px;
-      }
-
-    }
-
-    /*
-     * Mobile:
-     * non-active layers stay compact;
-     * only the selected layer shows its depth controls.
-     */
-
-    @media (max-width: 700px) {
-
-      .paintless-layer-row {
-        padding: 6px;
-      }
-
-      .paintless-layer-main {
-        grid-template-columns:
-          29px
-          38px
-          minmax(0, 1fr)
-          30px;
-      }
-
-      .paintless-layer-row
-      .layer-thumbnail {
-        width: 38px;
-        min-width: 38px;
-        height: 32px;
-      }
-
-      .paintless-layer-row:not(.is-active)
-      .paintless-layer-depth {
-        display: none;
-      }
-
-      .paintless-layer-row.is-active
-      .paintless-layer-depth {
-        display: grid;
-        grid-template-columns:
-          30px
-          minmax(72px, 1fr)
-          30px
-          42px;
-        margin-top: 7px;
-      }
-
-      .paintless-depth-nudge {
-        width: 30px;
-        height: 29px;
-      }
-
-      .paintless-depth-slider {
-        height: 29px;
-      }
-
-      .paintless-depth-value {
-        height: 29px;
-      }
-
-    }
-
-    /*
-     * Very narrow phones.
-     */
-
-    @media (max-width: 430px) {
-
-      .paintless-layer-row.is-active
-      .paintless-layer-depth {
-        grid-template-columns:
-          30px
-          minmax(50px, 1fr)
-          30px;
-      }
-
-      .paintless-layer-row.is-active
-      .paintless-depth-value {
-        grid-column:
-          1 / -1;
-        width: 100%;
-      }
-
-    }
-  `;
+  }
+`;
+    
+  
 
 
   document.head.appendChild(
