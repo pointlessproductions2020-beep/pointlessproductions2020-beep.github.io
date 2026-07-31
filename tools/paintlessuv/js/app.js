@@ -304,54 +304,50 @@ function startPaintlessUV() {
    OPEN MODEL
 ========================================================= */
 
+console.log("Binding Open Model...");
+
 openModelButton.addEventListener(
   "click",
   () => {
+
+    console.log("OPEN BUTTON CLICKED!");
 
     modelFileInput.click();
 
   }
 );
 
-
 modelFileInput.addEventListener(
   "change",
-  async event => {
+  async (event) => {
 
-    const file =
-      event.target.files[0];
+    console.log("FILE SELECTED!");
+
+    const file = event.target.files[0];
 
     if (!file)
       return;
+
+    console.log(file);
 
     try {
 
       const model =
         await loadModel(file);
 
+      console.log("MODEL LOADED!");
+
       if (currentModel) {
 
-        scene.remove(
-          currentModel
-        );
+        scene.remove(currentModel);
 
       }
 
-      scene.remove(
-        cube
-      );
+      scene.remove(cube);
 
-      currentModel =
-        model.scene;
+      currentModel = model.scene;
 
-      scene.add(
-        currentModel
-      );
-
-      console.log(
-        "Loaded:",
-        model.name
-      );
+      scene.add(currentModel);
 
     }
 
@@ -363,5 +359,4 @@ modelFileInput.addEventListener(
 
   }
 );
-
 startPaintlessUV();
