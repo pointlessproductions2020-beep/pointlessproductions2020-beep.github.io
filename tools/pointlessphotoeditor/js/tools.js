@@ -117,25 +117,27 @@
      * Main drawing tools.
      */
 
-    "brush.js",
+     "brush.js",
 
-    "eraser.js",
+     "eraser.js",
 
-    "shapes.js",
+     "shapes.js",
 
-    "fill.js",
+     "fill.js",
 
-    "gradient.js",
+     "gradient.js",
 
-    "picker.js",
+     "picker.js",
 
-    "text.js",
+     "text.js",
 
-    "move.js",
+     "move.js",
 
-    "selection.js",
+     "transform.js",
 
-    "crop.js",
+     "selection.js",
+
+     "crop.js",
 
 
     /*
