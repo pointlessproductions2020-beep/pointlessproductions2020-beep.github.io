@@ -3423,16 +3423,117 @@ function renderLayerList() {
 
   renderLayerList();
 
-  updateLayerControls();
+updateLayerControls();
 
 
-  console.log(
-    "%cPaintless layers ready.",
-    [
-      "color:#d49aff",
-      "font-weight:bold",
-      "font-size:13px"
-    ].join(";")
-  );
+/* =======================================================
+   29. PUBLIC API
+======================================================= */
+
+window.PaintlessLayers = {
+
+  PaintlessLayer,
+
+  getLayers() {
+
+    return layers;
+
+  },
+
+  getLayerById,
+
+  getLayerIndex,
+
+  getActiveLayer,
+
+  getActiveLayerId() {
+
+    return activeLayerId;
+
+  },
+
+  getDocumentSize() {
+
+    return {
+      width:
+        documentWidth,
+
+      height:
+        documentHeight
+    };
+
+  },
+
+  createLayer,
+
+  createBackgroundLayer,
+
+  createLayerFromImage,
+
+  selectLayer,
+
+  deleteLayer,
+
+  duplicateLayer,
+
+  moveLayer,
+
+  moveLayerUp,
+
+  moveLayerDown,
+
+  setLayerVisibility,
+
+  toggleLayerVisibility,
+
+  setLayerStereo3D,
+
+  toggleLayerStereo3D,
+
+  setLayerDepth3D,
+
+  setLayerOpacity,
+
+  setLayerBlendMode,
+
+  renameLayer,
+
+  setLayerLocked,
+
+  clearActiveLayer,
+
+  mergeLayerDown,
+
+  flattenImage,
+
+  resizeDocument,
+
+  resetDocument,
+
+  renderLayers,
+
+  renderLayerList,
+
+  updateLayerControls,
+
+  updateLayerThumbnails,
+
+  createLayersSnapshot,
+
+  restoreLayersSnapshot,
+
+  installPaintless3DLayerStyles
+
+};
+
+
+console.log(
+  "%cPaintless layers ready.",
+  [
+    "color:#d49aff",
+    "font-weight:bold",
+    "font-size:13px"
+  ].join(";")
+);
 
 })();
