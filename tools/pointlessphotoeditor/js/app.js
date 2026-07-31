@@ -442,6 +442,11 @@
       getFilesApi();
 
 
+      console.log("Layers API:", layersApi);
+      console.log("Canvas API:", canvasApi);
+      console.log("window.PaintlessLayers:", window.PaintlessLayers);
+      console.log("window.PaintlessCanvas:", window.PaintlessCanvas);
+     
     if (
       !layersApi ||
       !canvasApi
