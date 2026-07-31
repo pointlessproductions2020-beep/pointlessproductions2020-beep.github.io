@@ -2408,32 +2408,39 @@
 
   function initialiseApplication() {
 
-    installApplicationMenuStyles();
-
-    syncAdjustmentInputs();
-
-    closeApplicationMenu();
-
-
-    applicationReady =
-      Boolean(
-        getLayersApi() &&
-        getCanvasApi() &&
-        getToolsApi() &&
-        getHistoryApi() &&
-        getFilesApi()
-      );
+  const requiredSystemsReady =
+    Boolean(
+      getLayersApi() &&
+      getCanvasApi() &&
+      getToolsApi() &&
+      getHistoryApi() &&
+      getFilesApi()
+    );
 
 
-    if (!applicationReady) {
+  /*
+   * The modular tools load asynchronously.
+   * Wait for them instead of permanently
+   * aborting the application too early.
+   */
 
-      console.error(
-        "Paintless did not load all required systems."
-      );
+  if (!requiredSystemsReady) {
+
+    initialiseApplication.attempts =
+      (
+        initialiseApplication.attempts ||
+        0
+      ) + 1;
 
 
-      setStatusMessage(
-        "Paintless is missing part of its brain."
+    if (
+      initialiseApplication.attempts <=
+      100
+    ) {
+
+      window.setTimeout(
+        initialiseApplication,
+        50
       );
 
       return;
@@ -2441,46 +2448,75 @@
     }
 
 
+    console.error(
+      "Paintless did not load all required systems."
+    );
+
+
     setStatusMessage(
-      "Your masterpiece is currently imaginary."
+      "Paintless is missing part of its brain."
     );
 
 
-    window.setTimeout(
-      runInitialLoadingSequence,
-      120
-    );
-
-
-    dispatchAppEvent(
-      "paintless:application-ready"
-    );
-
-
-    console.log(
-      "%cPAINTLESS READY",
-      [
-        "color:#ffffff",
-        "background:#6b21c3",
-        "font-weight:bold",
-        "font-size:16px",
-        "padding:7px 11px",
-        "border-radius:6px"
-      ].join(";")
-    );
-
-
-    console.log(
-      "%cNo account. No cloud. No unnecessary nonsense.",
-      [
-        "color:#d49aff",
-        "font-weight:bold",
-        "font-size:12px"
-      ].join(";")
-    );
+    return;
 
   }
 
+
+  initialiseApplication.attempts =
+    0;
+
+
+  installApplicationMenuStyles();
+
+  syncAdjustmentInputs();
+
+  closeApplicationMenu();
+
+
+  applicationReady =
+    true;
+
+
+  setStatusMessage(
+    "Your masterpiece is currently imaginary."
+  );
+
+
+  window.setTimeout(
+    runInitialLoadingSequence,
+    120
+  );
+
+
+  dispatchAppEvent(
+    "paintless:application-ready"
+  );
+
+
+  console.log(
+    "%cPAINTLESS READY",
+    [
+      "color:#ffffff",
+      "background:#6b21c3",
+      "font-weight:bold",
+      "font-size:16px",
+      "padding:7px 11px",
+      "border-radius:6px"
+    ].join(";")
+  );
+
+
+  console.log(
+    "%cNo account. No cloud. No unnecessary nonsense.",
+    [
+      "color:#d49aff",
+      "font-weight:bold",
+      "font-size:12px"
+    ].join(";")
+  );
+
+}
 
   /* =======================================================
      14. PUBLIC API
