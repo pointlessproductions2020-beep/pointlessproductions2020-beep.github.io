@@ -2233,7 +2233,12 @@ function renderLayerList() {
 
   layerList.innerHTML =
     "";
-
+   
+      const is3DMode =
+          Boolean(
+          window.Paintless3DCore
+            ?.is3DMode?.()
+     );
 
   /*
    * Layers are stored bottom-to-top,
@@ -2292,6 +2297,11 @@ function renderLayerList() {
           "is-active",
           layer.id === activeLayerId
         );
+
+      layerItem.classList.toggle(
+           "is-2d-mode",
+            !is3DMode
+         );
 
 
         layerItem.classList.toggle(
@@ -2370,43 +2380,49 @@ function renderLayerList() {
             }${escapeHtml(layer.name)}
           </button>
 
-          <button
-              class="paintless-layer-stereo${
-              layer.stereo3dEnabled
-               ? " is-enabled"
-               : ""
-                }"
-                type="button"
-                data-layer-stereo="${layer.id}"
-                aria-pressed="${layer.stereo3dEnabled}"
-                aria-label="Toggle 3D depth for ${escapeHtml(layer.name)}"
-                title="${
-                   layer.stereo3dEnabled
-                   ? "Disable layer depth"
-                   : "Enable layer depth"
-                   }"
-                   >
-                      ◼
-                   </button>
+          ${
+  is3DMode
+    ? `
+      <button
+        class="paintless-layer-stereo${
+          layer.stereo3dEnabled
+            ? " is-enabled"
+            : ""
+        }"
+        type="button"
+        data-layer-stereo="${layer.id}"
+        aria-pressed="${layer.stereo3dEnabled}"
+        aria-label="Toggle 3D depth for ${escapeHtml(layer.name)}"
+        title="${
+          layer.stereo3dEnabled
+            ? "Disable layer depth"
+            : "Enable layer depth"
+        }"
+      >
+        ◼
+      </button>
 
-          <input
-            class="paintless-depth-slider"
-            type="range"
-            min="-300"
-            max="300"
-            step="1"
-            value="${safeDepth}"
-            data-layer-depth-slider="${layer.id}"
-            aria-label="Depth for ${escapeHtml(layer.name)}"
-          >
+      <input
+        class="paintless-depth-slider"
+        type="range"
+        min="-300"
+        max="300"
+        step="1"
+        value="${safeDepth}"
+        data-layer-depth-slider="${layer.id}"
+        aria-label="Depth for ${escapeHtml(layer.name)}"
+      >
 
-          <output
-            class="paintless-depth-value"
-            data-layer-depth-value="${layer.id}"
-            title="Current layer depth"
-          >
-            Z ${depthText}
-          </output>
+      <output
+        class="paintless-depth-value"
+        data-layer-depth-value="${layer.id}"
+        title="Current layer depth"
+      >
+        Z ${depthText}
+      </output>
+    `
+    : ""
+}
         `;
 
 
@@ -3137,6 +3153,13 @@ function renderLayerList() {
     rgba(255, 255, 255, 0.045);
 }
 
+   .layer-item.paintless-layer-row.is-2d-mode {
+    grid-template-columns:
+        24px
+        32px
+        minmax(0, 1fr);
+}
+
 .layer-item.paintless-layer-row.is-active {
   border-color:
     rgba(168, 76, 255, 0.55);
@@ -3310,7 +3333,12 @@ function renderLayerList() {
   gap: 4px;
   padding: 3px 4px;
 }
-
+   .layer-item.paintless-layer-row.is-2d-mode {
+    grid-template-columns:
+        22px
+        30px
+        minmax(0, 1fr);
+}
     .paintless-layer-row
     .layer-thumbnail {
       width: 30px;
