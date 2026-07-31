@@ -3339,7 +3339,9 @@ function renderLayerList() {
      28. INITIAL UI
   ======================================================= */
 
-  renderLayerList();
+installPaintless3DLayerStyles();
+
+renderLayerList();
 
 updateLayerControls();
 
