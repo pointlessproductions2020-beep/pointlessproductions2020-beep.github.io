@@ -3107,45 +3107,45 @@ function renderLayerList() {
 
 
   style.textContent = `
-  .paintless-layer-row {
-    display: grid;
-    grid-template-columns:
-      24px
-      32px
-      minmax(70px, 1fr)
-      24px
-      minmax(70px, 120px)
-      55px;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-    min-width: 0;
-    min-height: 38px;
-    padding: 3px 6px;
-    overflow: hidden;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    background: transparent;
-    transition:
-      background 120ms ease,
-      border-color 120ms ease,
-      box-shadow 120ms ease;
-  }
+  .layer-item.paintless-layer-row {
+  display: grid;
+  grid-template-columns:
+    24px
+    32px
+    minmax(0, 1fr)
+    24px
+    minmax(60px, 90px)
+    48px;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 3px 5px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
 
-  .paintless-layer-row:hover {
-    background:
-      rgba(255, 255, 255, 0.045);
-  }
+  .layer-item.paintless-layer-row:hover {
+  background:
+    rgba(255, 255, 255, 0.045);
+}
 
-  .paintless-layer-row.is-active {
-    border-color:
-      rgba(168, 76, 255, 0.55);
-    background:
-      rgba(168, 76, 255, 0.09);
-    box-shadow:
-      inset 0 0 0 1px
-      rgba(168, 76, 255, 0.08);
-  }
+.layer-item.paintless-layer-row.is-active {
+  border-color:
+    rgba(168, 76, 255, 0.55);
+  background:
+    rgba(168, 76, 255, 0.09);
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(168, 76, 255, 0.08);
+}
 
   .paintless-layer-row .layer-visibility {
     display: grid;
@@ -3299,18 +3299,17 @@ function renderLayerList() {
 
   @media (max-width: 1000px) {
 
-    .paintless-layer-row {
-      grid-template-columns:
-        22px
-        30px
-        minmax(60px, 1fr)
-        22px
-        minmax(55px, 90px)
-        49px;
-      gap: 5px;
-      padding:
-        3px 5px;
-    }
+    .layer-item.paintless-layer-row {
+  grid-template-columns:
+    22px
+    30px
+    minmax(0, 1fr)
+    22px
+    minmax(48px, 70px)
+    43px;
+  gap: 4px;
+  padding: 3px 4px;
+}
 
     .paintless-layer-row
     .layer-thumbnail {
