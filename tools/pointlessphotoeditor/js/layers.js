@@ -1385,14 +1385,14 @@ if (
 
     if (value) {
 
-      value.textContent =
-        `${
-          layer.depth3d > 0
-            ? "+"
-            : ""
-        }${layer.depth3d}`;
+  value.textContent =
+    `Z ${
+      layer.depth3d > 0
+        ? "+"
+        : ""
+    }${layer.depth3d}`;
 
-    }
+}
 
 
     layerItem.classList.toggle(
@@ -2250,8 +2250,10 @@ function renderLayerList() {
          * Zero depth means screen level, not disabled.
          */
 
-        layer.stereo3dEnabled =
-          true;
+
+
+
+         
 
 
         const safeDepth =
@@ -2324,7 +2326,7 @@ function renderLayerList() {
           0;
 
 
-                layerItem.innerHTML = `
+         layerItem.innerHTML = `
           <button
             class="layer-visibility"
             type="button"
@@ -2369,14 +2371,23 @@ function renderLayerList() {
           </button>
 
           <button
-            class="paintless-layer-stereo"
-            type="button"
-            data-layer-stereo="${layer.id}"
-            aria-label="Toggle 3D depth for ${escapeHtml(layer.name)}"
-            title="Toggle layer depth"
-          >
-            ◼
-          </button>
+              class="paintless-layer-stereo${
+              layer.stereo3dEnabled
+               ? " is-enabled"
+               : ""
+                }"
+                type="button"
+                data-layer-stereo="${layer.id}"
+                aria-pressed="${layer.stereo3dEnabled}"
+                aria-label="Toggle 3D depth for ${escapeHtml(layer.name)}"
+                title="${
+                   layer.stereo3dEnabled
+                   ? "Disable layer depth"
+                   : "Enable layer depth"
+                   }"
+                   >
+                      ◼
+                   </button>
 
           <input
             class="paintless-depth-slider"
@@ -2450,7 +2461,7 @@ function renderLayerList() {
 
             }
 
-                         const stereoButton =
+          const stereoButton =
               event.target.closest(
                 "[data-layer-stereo]"
               );
