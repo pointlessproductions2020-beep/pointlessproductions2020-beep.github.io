@@ -62,6 +62,15 @@
       "add-layer-button"
     );
 
+   /*
+ * Paintless project files preserve the complete editable document.
+ */
+
+const projectFileInput =
+  byId(
+    "project-file-input"
+  );
+
 
   /*
    * Export controls.
@@ -140,6 +149,19 @@
   /* =======================================================
      2. FILE STATE
   ======================================================= */
+
+
+
+   const paintlessProjectVersion =
+  1;
+
+
+const paintlessProjectExtension =
+  "paintless";
+
+
+const paintlessProjectMimeType =
+  "application/json";
 
   const supportedImageTypes = [
     "image/png",
