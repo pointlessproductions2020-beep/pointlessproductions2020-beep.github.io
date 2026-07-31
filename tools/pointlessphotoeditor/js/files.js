@@ -1740,9 +1740,10 @@
     }
 
 
-    layersApi.layers.forEach(
-      (layer) => {
+       layersApi.getLayers().forEach(
+        (layer) => {
 
+         
         if (
           !layer.visible ||
           layer.opacity <= 0
