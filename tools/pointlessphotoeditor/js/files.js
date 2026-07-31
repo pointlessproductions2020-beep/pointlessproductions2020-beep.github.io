@@ -2097,6 +2097,159 @@ const paintlessProjectMimeType =
     }
 
   }
+
+
+     async function openProjectFile(
+    file
+  ) {
+
+    const layersApi =
+      getLayersApi();
+
+    const canvasApi =
+      getCanvasApi();
+
+
+    if (
+      !layersApi ||
+      !canvasApi
+    ) {
+
+      setStatusMessage(
+        "Paintless is still assembling itself."
+      );
+
+
+      return false;
+
+    }
+
+
+    const sequenceId =
+      showLoadingScreen(
+        "Opening Paintless project..."
+      );
+
+
+    try {
+
+      updateLoadingScreen(
+        20,
+        "Reading project file..."
+      );
+
+
+      const projectText =
+        await file.text();
+
+
+      const projectData =
+        JSON.parse(
+          projectText
+        );
+
+
+      if (
+        projectData?.format !==
+          "Paintless" ||
+        !projectData.snapshot
+      ) {
+
+        throw new Error(
+          "Invalid Paintless project file."
+        );
+
+      }
+
+
+      updateLoadingScreen(
+        55,
+        "Restoring layers..."
+      );
+
+
+      await layersApi.restoreLayersSnapshot(
+        projectData.snapshot
+      );
+
+
+      canvasApi.setDocumentName?.(
+        cleanFileName(
+          file.name
+        )
+      );
+
+      canvasApi.showCanvas?.();
+
+      canvasApi.updateStageDimensions?.();
+
+      canvasApi.updateDocumentInformation?.();
+
+      canvasApi.fitCanvasToScreen?.();
+
+
+      getHistoryApi()
+        ?.resetHistory?.(
+          "Open project"
+        );
+
+
+      updateLoadingScreen(
+        100,
+        "Project opened."
+      );
+
+
+      await delay(
+        350
+      );
+
+
+      hideLoadingScreen(
+        sequenceId
+      );
+
+
+      setStatusMessage(
+        `${file.name} opened successfully.`
+      );
+
+
+      dispatchFileEvent(
+        "paintless:project-opened",
+        {
+          fileName:
+            file.name
+        }
+      );
+
+
+      return true;
+
+    } catch (error) {
+
+      console.error(
+        "Paintless project open failed:",
+        error
+      );
+
+
+      hideLoadingScreen(
+        sequenceId
+      );
+
+
+      setStatusMessage(
+        "Paintless could not open that project."
+      );
+
+
+      return false;
+
+    }
+
+  }
+
    
 
   /* =======================================================
@@ -2685,6 +2838,32 @@ const paintlessProjectMimeType =
   );
 
 
+     projectFileInput?.addEventListener(
+    "change",
+    async () => {
+
+      const selectedFile =
+        projectFileInput.files?.[0];
+
+
+      if (selectedFile) {
+
+        await openProjectFile(
+          selectedFile
+        );
+
+      }
+
+
+      projectFileInput.value =
+        "";
+
+    }
+  );
+
+
+   
+
   /* =======================================================
      17. BUTTON EVENTS
   ======================================================= */
@@ -2878,7 +3057,9 @@ const paintlessProjectMimeType =
 
      requestImportImage,
 
-    openImageFile,
+     openImageFile,
+
+     openProjectFile,
 
     importImageAsLayer,
 
