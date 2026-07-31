@@ -2872,9 +2872,11 @@ const paintlessProjectMimeType =
 
   window.PaintlessFiles = {
 
-    requestOpenImage,
+     requestOpenImage,
 
-    requestImportImage,
+     requestOpenProject,
+
+     requestImportImage,
 
     openImageFile,
 
