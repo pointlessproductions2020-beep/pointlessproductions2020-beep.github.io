@@ -39,47 +39,7 @@
     document.getElementById("delete-layer-button");
 
    const duplicateLayerButton =
-  document.createElement("button");
-
-
-duplicateLayerButton.id =
-  "duplicate-layer-button";
-
-
-duplicateLayerButton.type =
-  "button";
-
-
-duplicateLayerButton.className =
-  addLayerButton?.className ||
-  deleteLayerButton?.className ||
-  "";
-
-
-duplicateLayerButton.innerHTML =
-  "⧉";
-
-
-duplicateLayerButton.title =
-  "Duplicate active layer";
-
-
-duplicateLayerButton.setAttribute(
-  "aria-label",
-  "Duplicate active layer"
-);
-
-
-if (
-  deleteLayerButton?.parentElement
-) {
-
-  deleteLayerButton.parentElement.insertBefore(
-    duplicateLayerButton,
-    deleteLayerButton
-  );
-
-}
+  document.getElementById("duplicate-layer-button");
 
   const layerBlendMode =
     document.getElementById("layer-blend-mode");
