@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Paintless | Pointless Productions</title>
+
+  <meta
+    name="description"
+    content="Paintless is a fast, friendly browser image editor from Pointless Productions."
+  >
+
+  <meta name="theme-color" content="#090611">
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="assets/images/paintless-logo.png"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       ACCESSIBILITY
+  ====================================================== -->
+
+  <a class="skip-link" href="#editor-canvas">
+    Skip to canvas
+  </a>
+
+
+  <!-- =====================================================
+       APPLICATION
+  ====================================================== -->
+
+  <div class="paintless-app" id="paintless-app">
+
+
+    <!-- ===================================================
+         TOP BAR
+    ==================================================== -->
+
+    <header class="top-bar">
+
+      <div class="brand-area">
+
+        <a
+          class="paintless-brand"
+          href="../../index.html"
+          aria-label="Return to Pointless Productions"
+        >
+
+          <img
+            src="assets/images/paintless-logo.png"
+            alt="Paintless"
+            width="42"
+            height="42"
+          >
+
+          <span class="paintless-brand__text">
+
+            <strong>
+              Paintless
+            </strong>
+
+            <small>
+              Less pain. More creating.
+            </small>
+
+          </span>
+
+        </a>
+
+      </div>
+
+
+      <nav
+        class="main-menu"
+        aria-label="Paintless menu"
+      >
+
+        <button
+          class="menu-button"
+          id="file-menu-button"
+          type="button"
+          aria-expanded="false"
+        >
+          File
+        </button>
+
+        <button
+          class="menu-button"
+          id="edit-menu-button"
+          type="button"
+          aria-expanded="false"
+        >
+          Edit
+        </button>
+
+        <button
+          class="menu-button"
+          id="image-menu-button"
+          type="button"
+          aria-expanded="false"
+        >
+          Image
+        </button>
+
+        <button
+          class="menu-button"
+          id="layer-menu-button"
+          type="button"
+          aria-expanded="false"
+        >
+          Layer
+        </button>
+
+        <button
+          class="menu-button"
+          id="help-menu-button"
+          type="button"
+          aria-expanded="false"
+        >
+          Help
+        </button>
+
+      </nav>
+
+
+      <div class="top-actions">
+
+        <button
+          class="top-action-button"
+          id="undo-button"
+          type="button"
+          title="Pretending that never happened"
+          aria-label="Undo"
+          disabled
+        >
+          ↶
+        </button>
+
+        <button
+          class="top-action-button"
+          id="redo-button"
+          type="button"
+          title="Actually, put it back"
+          aria-label="Redo"
+          disabled
+        >
+          ↷
+        </button>
+
+        <span
+          class="top-divider"
+          aria-hidden="true"
+        ></span>
+
+        <button
+          class="top-action-button"
+          id="zoom-out-button"
+          type="button"
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+
+        <output
+          class="zoom-display"
+          id="zoom-display"
+          aria-live="polite"
+        >
+          100%
+        </output>
+
+        <button
+          class="top-action-button"
+          id="zoom-in-button"
+          type="button"
+          title="Zoom in"
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+
+        <button
+          class="secondary-button import-button"
+          id="import-image-button"
+          type="button"
+          title="Import an image as a new layer"
+        >
+          Import
+        </button>
+
+        <button
+          class="export-button"
+          id="export-button"
+          type="button"
+        >
+          Export
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         TOOL OPTIONS BAR
+    ==================================================== -->
+
+    <section
+      class="tool-options-bar"
+      id="tool-options-bar"
+      aria-label="Tool settings"
+    >
+
+      <div class="active-tool-name">
+
+        <span>
+          Tool
+        </span>
+
+        <strong id="active-tool-name">
+          Brush
+        </strong>
+
+      </div>
+
+
+      <!-- BRUSH / ERASER OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="brush-options"
+      >
+
+        <label for="brush-size">
+          Size
+        </label>
+
+        <input
+          id="brush-size"
+          type="range"
+          min="1"
+          max="200"
+          value="20"
+        >
+
+        <output
+          id="brush-size-output"
+          for="brush-size"
+        >
+          20 px
+        </output>
+
+      </div>
+
+
+      <div
+        class="tool-option-group"
+        id="opacity-options"
+      >
+
+        <label for="tool-opacity">
+          Opacity
+        </label>
+
+        <input
+          id="tool-opacity"
+          type="range"
+          min="1"
+          max="100"
+          value="100"
+        >
+
+        <output
+          id="tool-opacity-output"
+          for="tool-opacity"
+        >
+          100%
+        </output>
+
+      </div>
+
+
+      <div
+        class="tool-option-group"
+        id="hardness-options"
+      >
+
+        <label for="brush-hardness">
+          Hardness
+        </label>
+
+        <input
+          id="brush-hardness"
+          type="range"
+          min="0"
+          max="100"
+          value="80"
+        >
+
+        <output
+          id="brush-hardness-output"
+          for="brush-hardness"
+        >
+          80%
+        </output>
+
+      </div>
+
+
+      <!-- SHAPE OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="shape-options"
+        hidden
+      >
+
+        <!--
+          Hidden compatibility control.
+
+          The visible shape chooser now opens from the Shapes
+          button inside the left toolbar. tools.js can continue
+          reading this value without needing to use a native
+          dropdown in the top options bar.
+        -->
+
+        <select
+          id="shape-type"
+          aria-hidden="true"
+          tabindex="-1"
+          hidden
+        >
+
+          <option value="ellipse" selected>
+            Ellipse
+          </option>
+
+          <option value="rectangle">
+            Rectangle
+          </option>
+
+          <option value="rounded-rectangle">
+            Rounded Rectangle
+          </option>
+
+          <option value="line">
+            Line
+          </option>
+
+        </select>
+
+
+        <label class="compact-checkbox">
+
+          <input
+            id="shape-fill-enabled"
+            type="checkbox"
+          >
+
+          <span>
+            Fill
+          </span>
+
+        </label>
+
+
+        <label class="compact-checkbox">
+
+          <input
+            id="shape-stroke-enabled"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+            Stroke
+          </span>
+
+        </label>
+
+
+        <label for="shape-corner-radius">
+          Radius
+        </label>
+
+        <input
+          id="shape-corner-radius"
+          type="range"
+          min="0"
+          max="100"
+          value="24"
+        >
+
+        <output
+          id="shape-corner-radius-output"
+          for="shape-corner-radius"
+        >
+          24 px
+        </output>
+
+      </div>
+
+
+      <!-- SELECTION OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="selection-options"
+        hidden
+      >
+
+        <label for="selection-mode">
+          Selection
+        </label>
+
+        <select id="selection-mode">
+
+          <option value="rectangle">
+            Rectangle
+          </option>
+
+          <option value="magic-wand">
+            Magic Wand
+          </option>
+
+        </select>
+
+        <label for="wand-tolerance">
+          Tolerance
+        </label>
+
+        <input
+          id="wand-tolerance"
+          type="range"
+          min="0"
+          max="100"
+          value="24"
+        >
+
+        <output
+          id="wand-tolerance-output"
+          for="wand-tolerance"
+        >
+          24
+        </output>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="wand-contiguous"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+            Connected
+          </span>
+
+        </label>
+
+        <button
+          class="tool-option-button"
+          id="deselect-button"
+          type="button"
+        >
+          Deselect
+        </button>
+
+      </div>
+
+
+      <!-- TEXT OPTIONS -->
+
+      <div
+        class="tool-option-group"
+        id="text-options"
+        hidden
+      >
+
+        <label for="text-font-family">
+          Font
+        </label>
+
+        <select id="text-font-family">
+
+          <option value="Segoe UI">
+            Segoe UI
+          </option>
+
+          <option value="Arial">
+            Arial
+          </option>
+
+          <option value="Georgia">
+            Georgia
+          </option>
+
+          <option value="Courier New">
+            Courier New
+          </option>
+
+          <option value="Impact">
+            Impact
+          </option>
+
+        </select>
+
+        <label for="text-font-size">
+          Size
+        </label>
+
+        <input
+          id="text-font-size"
+          type="number"
+          min="6"
+          max="500"
+          value="32"
+        >
+
+        <label class="compact-checkbox">
+
+          <input
+            id="text-bold"
+            type="checkbox"
+          >
+
+          <span>
+            Bold
+          </span>
+
+        </label>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="text-italic"
+            type="checkbox"
+          >
+
+          <span>
+            Italic
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <!-- COLOUR -->
+
+      <label class="colour-control">
+
+        <span>
+          Colour
+        </span>
+
+        <input
+          id="primary-colour"
+          type="color"
+          value="#a84cff"
+          aria-label="Primary colour"
+        >
+
+      </label>
+
+    </section>
+
+
+    <!-- ===================================================
+         EDITOR BODY
+    ==================================================== -->
+
+    <main class="editor-layout">
+
+
+      <!-- =================================================
+           LEFT TOOLBAR
+      ================================================== -->
+
+      <aside
+        class="toolbox"
+        aria-label="Paintless tools"
+      >
+
+        <button
+          class="tool-button is-active"
+          type="button"
+          data-tool="brush"
+          title="Brush (B)"
+          aria-label="Brush"
+          aria-pressed="true"
+        >
+          <span aria-hidden="true">🖌️</span>
+          <small>Brush</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="eraser"
+          title="Eraser (E) — Destroying evidence"
+          aria-label="Eraser"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◩</span>
+          <small>Eraser</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="move"
+          title="Move layer (V)"
+          aria-label="Move layer"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">✥</span>
+          <small>Move</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="select"
+          title="Selection tools (M)"
+          aria-label="Selection tools"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">▧</span>
+          <small>Select</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="crop"
+          title="Crop (C)"
+          aria-label="Crop"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">⌗</span>
+          <small>Crop</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="fill"
+          title="Fill bucket (G)"
+          aria-label="Fill bucket"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◒</span>
+          <small>Fill</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="gradient"
+          title="Gradient"
+          aria-label="Gradient"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">◐</span>
+          <small>Gradient</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="eyedropper"
+          title="Colour picker (I)"
+          aria-label="Colour picker"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">⌁</span>
+          <small>Picker</small>
+        </button>
+
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="text"
+          title="Text (T)"
+          aria-label="Text"
+          aria-pressed="false"
+        >
+          <span aria-hidden="true">T</span>
+          <small>Text</small>
+        </button>
+
+
+        <!-- SHAPE TOOL FAMILY -->
+
+        <div
+          class="tool-family"
+          id="shape-tool-family"
+        >
+
+          <button
+            class="tool-button tool-family__main"
+            id="shape-tool-button"
+            type="button"
+            data-tool="shape"
+            title="Ellipse (U) — hold for more shapes"
+            aria-label="Ellipse shape tool"
+            aria-pressed="false"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+
+            <span
+              id="shape-tool-icon"
+              aria-hidden="true"
+            >
+              ◯
+            </span>
+
+            <small id="shape-tool-label">
+              Ellipse
+            </small>
+
+            <span
+              class="tool-family__indicator"
+              aria-hidden="true"
+            >
+              ◢
+            </span>
+
+          </button>
+
+
+          <div
+            class="tool-family-menu"
+            id="shape-tool-menu"
+            role="menu"
+            aria-label="Choose a shape"
+            hidden
+          >
+
+            <button
+              class="tool-family-option is-selected"
+              type="button"
+              role="menuitem"
+              data-shape-choice="ellipse"
+              data-shape-icon="◯"
+              data-shape-label="Ellipse"
+              aria-pressed="true"
+            >
+              <span aria-hidden="true">◯</span>
+              <strong>Ellipse</strong>
+            </button>
+
+
+            <button
+              class="tool-family-option"
+              type="button"
+              role="menuitem"
+              data-shape-choice="rectangle"
+              data-shape-icon="□"
+              data-shape-label="Rectangle"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">□</span>
+              <strong>Rectangle</strong>
+            </button>
+
+
+            <button
+              class="tool-family-option"
+              type="button"
+              role="menuitem"
+              data-shape-choice="rounded-rectangle"
+              data-shape-icon="▢"
+              data-shape-label="Rounded"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">▢</span>
+              <strong>Rounded rectangle</strong>
+            </button>
+
+
+            <button
+              class="tool-family-option"
+              type="button"
+              role="menuitem"
+              data-shape-choice="line"
+              data-shape-icon="╱"
+              data-shape-label="Line"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">╱</span>
+              <strong>Line</strong>
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <span
+          class="toolbox-divider"
+          aria-hidden="true"
+        ></span>
+
+
+        <div
+          class="colour-stack"
+          aria-label="Current colours"
+        >
+
+          <button
+            class="colour-chip colour-chip--primary"
+            id="primary-colour-chip"
+            type="button"
+            aria-label="Choose primary colour"
+            title="Primary colour"
+          ></button>
+
+          <button
+            class="colour-chip colour-chip--secondary"
+            id="secondary-colour-chip"
+            type="button"
+            aria-label="Choose secondary colour"
+            title="Secondary colour"
+          ></button>
+
+          <button
+            class="swap-colours-button"
+            id="swap-colours-button"
+            type="button"
+            aria-label="Swap colours"
+            title="Swap colours (X)"
+          >
+            ⇄
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      <!-- =================================================
+           WORKSPACE
+      ================================================== -->
+
+      <section
+        class="workspace"
+        id="workspace"
+        aria-label="Image editing workspace"
+      >
+
+        <div
+          class="workspace-ruler workspace-ruler--horizontal"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="workspace-ruler workspace-ruler--vertical"
+          aria-hidden="true"
+        ></div>
+
+
+        <div
+          class="canvas-viewport"
+          id="canvas-viewport"
+        >
+
+          <div
+            class="canvas-stage"
+            id="canvas-stage"
+          >
+
+            <canvas
+              id="editor-canvas"
+              width="1280"
+              height="720"
+              tabindex="0"
+              aria-label="Paintless editing canvas"
+            ></canvas>
+
+            <canvas
+              id="overlay-canvas"
+              width="1280"
+              height="720"
+              aria-hidden="true"
+            ></canvas>
+
+            <textarea
+              id="canvas-text-editor"
+              aria-label="Canvas text editor"
+              hidden
+            ></textarea>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="workspace-empty-state"
+          id="workspace-empty-state"
+        >
+
+          <div class="empty-state-logo">
+
+            <img
+              src="assets/images/paintless-logo.png"
+              alt="Paintless crowned painter mascot"
+            >
+
+          </div>
+
+          <h1>
+            Start creating
+          </h1>
+
+          <p>
+            Open an image or make a beautifully empty canvas.
+          </p>
+
+          <div class="empty-state-actions">
+
+            <button
+              class="primary-button"
+              id="new-canvas-button"
+              type="button"
+            >
+              New Canvas
+            </button>
+
+            <button
+              class="secondary-button"
+              id="open-image-button"
+              type="button"
+            >
+              Open Image
+            </button>
+
+          </div>
+
+          <small>
+            No account. No cloud. No unnecessary nonsense.
+          </small>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           RIGHT SIDEBAR
+      ================================================== -->
+
+      <aside
+        class="right-sidebar"
+        aria-label="Paintless panels"
+      >
+
+
+        <!-- COLOUR PANEL -->
+
+        <section class="editor-panel colour-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Colour
+            </h2>
+
+            <button
+              class="panel-menu-button"
+              type="button"
+              aria-label="Colour panel options"
+            >
+              •••
+            </button>
+
+          </header>
+
+
+          <div class="colour-preview">
+
+            <input
+              id="panel-colour-picker"
+              type="color"
+              value="#a84cff"
+              aria-label="Choose colour"
+            >
+
+            <label for="hex-colour-input">
+              Hex
+            </label>
+
+            <input
+              id="hex-colour-input"
+              type="text"
+              value="#A84CFF"
+              maxlength="7"
+              spellcheck="false"
+            >
+
+          </div>
+
+
+          <div
+            class="recent-colours"
+            id="recent-colours"
+            aria-label="Recent colours"
+          ></div>
+
+        </section>
+
+
+        <!-- ADJUSTMENTS PANEL -->
+
+        <section class="editor-panel adjustments-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Adjustments
+            </h2>
+
+            <button
+              class="reset-panel-button"
+              id="reset-adjustments-button"
+              type="button"
+            >
+              Reset
+            </button>
+
+          </header>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Brightness
+            </span>
+
+            <output id="brightness-output">
+              0
+            </output>
+
+            <input
+              id="brightness-control"
+              type="range"
+              min="-100"
+              max="100"
+              value="0"
+            >
+
+          </label>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Contrast
+            </span>
+
+            <output id="contrast-output">
+              0
+            </output>
+
+            <input
+              id="contrast-control"
+              type="range"
+              min="-100"
+              max="100"
+              value="0"
+            >
+
+          </label>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Saturation
+            </span>
+
+            <output id="saturation-output">
+              0
+            </output>
+
+            <input
+              id="saturation-control"
+              type="range"
+              min="-100"
+              max="100"
+              value="0"
+            >
+
+          </label>
+
+
+          <label class="adjustment-control">
+
+            <span>
+              Hue
+            </span>
+
+            <output id="hue-output">
+              0°
+            </output>
+
+            <input
+              id="hue-control"
+              type="range"
+              min="-180"
+              max="180"
+              value="0"
+            >
+
+          </label>
+
+        </section>
+
+
+        <!-- LAYERS PANEL -->
+
+        <section class="editor-panel layers-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Layers
+            </h2>
+
+            <div class="panel-header-actions">
+
+              <button
+                id="import-layer-button"
+                type="button"
+                title="Import image as layer"
+                aria-label="Import image as layer"
+              >
+                🖼
+              </button>
+
+              <button
+                id="add-layer-button"
+                type="button"
+                title="Add layer"
+                aria-label="Add layer"
+              >
+                +
+              </button>
+
+              <button
+                id="duplicate-layer-button"
+                type="button"
+                title="Duplicate layer"
+                aria-label="Duplicate layer"
+              >
+                ⧉
+              </button>
+
+              <button
+                id="transform-layer-button"
+                type="button"
+                title="Transform selected layer"
+                aria-label="Transform selected layer"
+              >
+  ⛶
+              </button>
+
+              <button
+                id="delete-layer-button"
+                type="button"
+                title="Delete layer"
+                aria-label="Delete layer"
+              >
+                🗑
+              </button>
+
+            </div>
+
+          </header>
+
+
+          <div
+            class="layer-list"
+            id="layer-list"
+            role="list"
+            aria-label="Image layers"
+          ></div>
+
+
+          <div class="layer-properties">
+
+            <label for="layer-blend-mode">
+              Blend
+            </label>
+
+            <select id="layer-blend-mode">
+
+              <option value="source-over">
+                Normal
+              </option>
+
+              <option value="multiply">
+                Multiply
+              </option>
+
+              <option value="screen">
+                Screen
+              </option>
+
+              <option value="overlay">
+                Overlay
+              </option>
+
+              <option value="darken">
+                Darken
+              </option>
+
+              <option value="lighten">
+                Lighten
+              </option>
+
+              <option value="color-dodge">
+                Colour Dodge
+              </option>
+
+              <option value="color-burn">
+                Colour Burn
+              </option>
+
+              <option value="hard-light">
+                Hard Light
+              </option>
+
+              <option value="soft-light">
+                Soft Light
+              </option>
+
+              <option value="difference">
+                Difference
+              </option>
+
+              <option value="exclusion">
+                Exclusion
+              </option>
+
+              <option value="hue">
+                Hue
+              </option>
+
+              <option value="saturation">
+                Saturation
+              </option>
+
+              <option value="color">
+                Colour
+              </option>
+
+              <option value="luminosity">
+                Luminosity
+              </option>
+
+            </select>
+
+
+            <label for="layer-opacity">
+              Opacity
+            </label>
+
+            <input
+              id="layer-opacity"
+              type="range"
+              min="0"
+              max="100"
+              value="100"
+            >
+
+          </div>
+
+        </section>
+
+      </aside>
+
+    </main>
+
+
+    <!-- ===================================================
+         STATUS BAR
+    ==================================================== -->
+
+    <footer class="status-bar">
+
+      <div class="status-bar__left">
+
+        <span id="document-status">
+          No document open
+        </span>
+
+        <span
+          class="status-divider"
+          aria-hidden="true"
+        ></span>
+
+        <span id="canvas-size-status">
+          1280 × 720 px
+        </span>
+
+      </div>
+
+
+      <div class="status-bar__centre">
+
+        <span id="save-status">
+          Your masterpiece is currently imaginary.
+        </span>
+
+      </div>
+
+
+      <div class="status-bar__right">
+
+        <button
+          id="fit-screen-button"
+          type="button"
+        >
+          Fit Screen
+        </button>
+
+        <span id="cursor-position">
+          X: 0&nbsp;&nbsp;Y: 0
+        </span>
+
+      </div>
+
+    </footer>
+
+  </div>
+
+
+  <!-- =====================================================
+       HIDDEN FILE INPUTS
+  ====================================================== -->
+
+  <input
+    id="image-file-input"
+    type="file"
+    accept="image/png,image/jpeg,image/webp,image/gif"
+    hidden
+  >
+
+  <input
+    id="import-image-file-input"
+    type="file"
+    accept="image/png,image/jpeg,image/webp,image/gif"
+    hidden
+  >
+
+  <input
+    id="project-file-input"
+    type="file"
+    accept=".paintless,application/json"
+    hidden  
+  >
+
+
+  <!-- =====================================================
+       NEW CANVAS DIALOG
+  ====================================================== -->
+
+  <dialog
+    class="paintless-dialog"
+    id="new-canvas-dialog"
+  >
+
+    <form method="dialog">
+
+      <header class="dialog-header">
+
+        <div>
+
+          <p>
+            Paintless
+          </p>
+
+          <h2>
+            New Canvas
+          </h2>
+
+        </div>
+
+        <button
+          class="dialog-close-button"
+          value="cancel"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="dialog-body">
+
+        <label>
+
+          <span>
+            Name
+          </span>
+
+          <input
+            id="new-document-name"
+            type="text"
+            value="Untitled Masterpiece"
+          >
+
+        </label>
+
+
+        <div class="dialog-row">
+
+          <label>
+
+            <span>
+              Width
+            </span>
+
+            <input
+              id="new-canvas-width"
+              type="number"
+              min="1"
+              max="10000"
+              value="1280"
+            >
+
+          </label>
+
+
+          <label>
+
+            <span>
+              Height
+            </span>
+
+            <input
+              id="new-canvas-height"
+              type="number"
+              min="1"
+              max="10000"
+              value="720"
+            >
+
+          </label>
+
+        </div>
+
+
+        <label>
+
+          <span>
+            Background
+          </span>
+
+          <select id="new-canvas-background">
+
+            <option value="transparent">
+              Transparent
+            </option>
+
+            <option value="white" selected>
+              White
+            </option>
+
+            <option value="black">
+              Black
+            </option>
+
+            <option value="custom">
+              Custom colour
+            </option>
+
+          </select>
+
+        </label>
+
+      </div>
+
+
+      <footer class="dialog-actions">
+
+        <button
+          class="secondary-button"
+          value="cancel"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primary-button"
+          id="create-canvas-button"
+          value="default"
+        >
+          Create Canvas
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       EXPORT DIALOG
+  ====================================================== -->
+
+  <dialog
+    class="paintless-dialog"
+    id="export-dialog"
+  >
+
+    <form method="dialog">
+
+      <header class="dialog-header">
+
+        <div>
+
+          <p>
+            Almost done
+          </p>
+
+          <h2>
+            Export Image
+          </h2>
+
+        </div>
+
+        <button
+          class="dialog-close-button"
+          value="cancel"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="dialog-body">
+
+        <label>
+
+          <span>
+            File name
+          </span>
+
+          <input
+            id="export-file-name"
+            type="text"
+            value="paintless-masterpiece"
+          >
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Format
+          </span>
+
+          <select id="export-format">
+
+            <option value="image/png">
+              PNG
+            </option>
+
+            <option value="image/jpeg">
+              JPEG
+            </option>
+
+            <option value="image/webp">
+              WebP
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Quality
+          </span>
+
+          <input
+            id="export-quality"
+            type="range"
+            min="10"
+            max="100"
+            value="92"
+          >
+
+        </label>
+
+      </div>
+
+
+      <footer class="dialog-actions">
+
+        <button
+          class="secondary-button"
+          value="cancel"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primary-button"
+          id="confirm-export-button"
+          value="default"
+        >
+          Export
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       LOADING SCREEN
+  ====================================================== -->
+
+  <div
+    class="loading-screen"
+    id="loading-screen"
+    aria-hidden="true"
+  >
+
+    <div class="loading-card">
+
+      <img
+        class="loading-logo"
+        src="assets/images/paintless-logo.png"
+        alt="Paintless"
+      >
+
+      <strong>
+        PAINTLESS
+      </strong>
+
+      <p id="loading-message">
+        Loading creativity...
+      </p>
+
+      <div class="loading-track">
+
+        <span id="loading-progress"></span>
+
+      </div>
+
+      <output id="loading-percentage">
+        0%
+      </output>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       APPLICATION SCRIPTS
+  ====================================================== -->
+
+  <script src="js/history.js"></script>
+  <script src="js/layers.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/files.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>
