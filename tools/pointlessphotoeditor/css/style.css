@@ -2528,42 +2528,11 @@ input[type="range"]::-moz-range-thumb {
    25.9 EMPTY-STATE LOGO
 ========================================================= */
 
-.empty-state-logo {
-  display: grid;
-  place-items: center;
-
-  width: min(240px, 72%);
-  height: 150px;
-  margin: 0 auto 24px;
-
-  overflow: hidden;
-
-  border: 0;
-  border-radius: 0;
-
-  background: transparent;
-
-  box-shadow: none;
-}
-
-.empty-state-logo img {
-    position: static;
-   
-    width: 100%;
-    height: 100%;
-
-    object-fit: contain;
-
-  filter:
-    drop-shadow(
-      0 0 13px rgba(168, 76, 255, 0.42)
-    )
-    drop-shadow(
-      0 9px 20px rgba(0, 0, 0, 0.48)
-    );
-}
-
 .workspace-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
   width:
     min(
       520px,
@@ -2571,7 +2540,7 @@ input[type="range"]::-moz-range-thumb {
     );
 
   padding:
-    28px 34px 31px;
+    24px 34px 31px;
 
   background:
     radial-gradient(
@@ -2587,11 +2556,47 @@ input[type="range"]::-moz-range-thumb {
     rgba(10, 7, 15, 0.91);
 }
 
+.empty-state-logo {
+  display: block;
+
+  width: min(240px, 72%);
+  height: auto;
+  margin: 0 auto 18px;
+
+  overflow: visible;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+
+  box-shadow: none;
+}
+
+.empty-state-logo img {
+  display: block;
+  position: static;
+
+  width: 100%;
+  height: auto;
+
+  object-fit: contain;
+
+  filter:
+    drop-shadow(
+      0 0 13px rgba(168, 76, 255, 0.42)
+    )
+    drop-shadow(
+      0 9px 20px rgba(0, 0, 0, 0.48)
+    );
+}
+
 .workspace-empty-state h1 {
-     position: relative;
-     z-index: 2;
-     margin-top: 0;
-   
+  position: static;
+  z-index: auto;
+
+  margin: 0 0 10px;
+
   background:
     linear-gradient(
       90deg,
@@ -2605,10 +2610,9 @@ input[type="range"]::-moz-range-thumb {
   -webkit-background-clip: text;
 }
 
-.workspace-empty-state p {
-  max-width: 360px;
+   .workspace-empty-state p {
+     max-width: 360px;
 }
-
 
 /* =========================================================
    25.10 CANVAS BRUSH CURSOR SUPPORT
