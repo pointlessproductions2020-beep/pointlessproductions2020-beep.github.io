@@ -67,13 +67,19 @@
       false,
 
     layer:
-      null,
+     null,
 
-    layerBackup:
-      null,
+   layerBackup:
+     null,
 
-    startPoint:
-      null,
+   startTransformX:
+     0,
+
+   startTransformY:
+     0,
+
+   startPoint:
+     null,
 
     currentPoint:
       null,
@@ -822,16 +828,26 @@
 
 
     moveState.layer =
-      layer;
+  layer;
 
 
-    moveState.layerBackup =
-      createLayerBackup(
-        layer
-      );
+moveState.layerBackup =
+  null;
 
 
-    moveState.startPoint =
+moveState.startTransformX =
+  Number(
+    layer.transformX
+  ) || 0;
+
+
+moveState.startTransformY =
+  Number(
+    layer.transformY
+  ) || 0;
+
+
+moveState.startPoint =
       copyPoint(
         payload.point
       );
@@ -864,11 +880,10 @@
   ) {
 
     if (
-      !moveState.moving ||
-      !moveState.layer ||
-      !moveState.layerBackup ||
-      !moveState.startPoint
-    ) {
+  !moveState.moving ||
+  !moveState.layer ||
+  !moveState.startPoint
+) {
 
       return false;
 
@@ -920,14 +935,17 @@
         0;
 
 
-    drawLayerAtOffset(
-      moveState.layer,
-      moveState.layerBackup,
-      moveState.lastOffsetX,
-      moveState.lastOffsetY
-    );
+    moveState.layer.transformX =
+  moveState.startTransformX +
+  moveState.lastOffsetX;
 
 
+moveState.layer.transformY =
+  moveState.startTransformY +
+  moveState.lastOffsetY;
+
+
+renderLayers();
     drawMoveGuide(
       moveState.lastOffsetX,
       moveState.lastOffsetY
@@ -1028,8 +1046,15 @@
     }
 
 
-    restoreLayerBackup();
+      moveState.layer.transformX =
+        moveState.startTransformX;
 
+
+      moveState.layer.transformY =
+        moveState.startTransformY;
+
+
+renderLayers();
 
     clearOverlay();
 
@@ -1062,11 +1087,19 @@
 
 
     moveState.layerBackup =
-      null;
+  null;
 
 
-    moveState.startPoint =
-      null;
+moveState.startTransformX =
+  0;
+
+
+moveState.startTransformY =
+  0;
+
+
+moveState.startPoint =
+  null;
 
 
     moveState.currentPoint =
@@ -1107,25 +1140,10 @@
     }
 
 
-    const backup =
-      createLayerBackup(
-        layer
-      );
+    layer.transformX += deltaX;
+layer.transformY += deltaY;
 
-
-    if (!backup) {
-
-      return false;
-
-    }
-
-
-    drawLayerAtOffset(
-      layer,
-      backup,
-      deltaX,
-      deltaY
-    );
+renderLayers();
 
 
     queueKeyboardMoveHistory();
