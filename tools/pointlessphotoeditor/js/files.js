@@ -1932,6 +1932,166 @@ const paintlessProjectMimeType =
   }
 
 
+     async function saveProject(
+    fileName
+  ) {
+
+    const canvasApi =
+      getCanvasApi();
+
+
+    if (
+      !canvasApi?.isDocumentOpen?.()
+    ) {
+
+      setStatusMessage(
+        "Open or create a document before saving."
+      );
+
+
+      return false;
+
+    }
+
+
+    const sequenceId =
+      showLoadingScreen(
+        "Saving Paintless project..."
+      );
+
+
+    try {
+
+      updateLoadingScreen(
+        20,
+        "Collecting layers..."
+      );
+
+
+      await delay(
+        250
+      );
+
+
+      const projectData =
+        createProjectData();
+
+
+      const projectJson =
+        JSON.stringify(
+          projectData
+        );
+
+
+      updateLoadingScreen(
+        55,
+        "Packing project..."
+      );
+
+
+      await delay(
+        250
+      );
+
+
+      const projectBlob =
+        new Blob(
+          [
+            projectJson
+          ],
+          {
+            type:
+              paintlessProjectMimeType
+          }
+        );
+
+
+      const downloadName =
+        createDownloadName(
+          fileName ||
+            canvasApi.getDocumentName?.() ||
+            "Untitled Masterpiece",
+          paintlessProjectExtension
+        );
+
+
+      updateLoadingScreen(
+        85,
+        "Preparing download..."
+      );
+
+
+      await delay(
+        250
+      );
+
+
+      downloadBlob(
+        projectBlob,
+        downloadName
+      );
+
+
+      updateLoadingScreen(
+        100,
+        "Project saved."
+      );
+
+
+      await delay(
+        350
+      );
+
+
+      hideLoadingScreen(
+        sequenceId
+      );
+
+
+      setStatusMessage(
+        `${downloadName} saved successfully.`
+      );
+
+
+      dispatchFileEvent(
+        "paintless:project-saved",
+        {
+          fileName:
+            downloadName,
+
+          size:
+            projectBlob.size
+        }
+      );
+
+
+      return true;
+
+    } catch (error) {
+
+      console.error(
+        "Paintless project save failed:",
+        error
+      );
+
+
+      hideLoadingScreen(
+        sequenceId
+      );
+
+
+      setStatusMessage(
+        "Paintless could not save the project."
+      );
+
+
+      return false;
+
+    }
+
+  }
+   
+
   /* =======================================================
      12. EXPORT DIALOG
   ======================================================= */
@@ -2718,6 +2878,8 @@ const paintlessProjectMimeType =
     closeExportDialog,
 
     exportImage,
+
+    saveProject,
 
     validateImageFile,
 
