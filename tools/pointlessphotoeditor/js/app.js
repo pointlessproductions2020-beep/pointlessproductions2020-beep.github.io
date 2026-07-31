@@ -1455,17 +1455,36 @@
               ?.requestOpenImage();
 
           }
-        },
+},
 
-        "separator",
+{
+  label:
+    "Save Project",
 
-        {
-          label:
-            "Export Image",
+  shortcut:
+    "Ctrl+S",
+
+  disabled:
+    !getCanvasApi()
+      ?.isDocumentOpen?.(),
+
+  action() {
+
+    getFilesApi()
+      ?.saveProject();
+
+  }
+},
+
+"separator",
+
+{
+  label:
+    "Export Image",
 
           shortcut:
-            "Ctrl+S",
-
+            "Ctrl+Shift+S"
+             
           action() {
 
             getFilesApi()
