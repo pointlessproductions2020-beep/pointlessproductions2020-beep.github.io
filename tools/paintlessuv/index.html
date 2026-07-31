@@ -13,10 +13,14 @@
   <title>PaintlessUV | Pointless Productions</title>
 
   <meta
-  name="description"
-  content="PaintlessUV is a fast, friendly browser tool for preparing, painting and exporting 3D models."
->
-  <meta name="theme-color" content="#090611">
+    name="description"
+    content="PaintlessUV is a fast, friendly browser tool for preparing, painting and exporting 3D models."
+  >
+
+  <meta
+    name="theme-color"
+    content="#090611"
+  >
 
   <link
     rel="icon"
@@ -38,8 +42,11 @@
        ACCESSIBILITY
   ====================================================== -->
 
-  <a class="skip-link" href="#editor-canvas">
-    Skip to canvas
+  <a
+    class="skip-link"
+    href="#model-viewport"
+  >
+    Skip to model viewport
   </a>
 
 
@@ -47,33 +54,44 @@
        APPLICATION
   ====================================================== -->
 
-  <div class="paintless-app" id="paintless-app">
+  <div
+    class="paintless-app"
+    id="paintlessuv-app"
+  >
 
 
     <!-- ===================================================
          TOP BAR
     ==================================================== -->
 
-   <img
-  src="assets/images/paintlessuv-logo.png"
-  alt="PaintlessUV"
-  width="42"
-  height="42"
->
+    <header class="top-bar">
 
-<span class="paintless-brand__text">
+      <div class="brand-area">
 
-  <strong>
-    PaintlessUV
-  </strong>
+        <a
+          class="paintless-brand"
+          href="../../index.html"
+          aria-label="Return to Pointless Productions"
+        >
 
-  <small>
-    Prepare.
-    Paint.
-    Play.
-  </small>
+          <img
+            src="assets/images/paintlessuv-logo.png"
+            alt="PaintlessUV"
+            width="42"
+            height="42"
+          >
 
-</span>
+          <span class="paintless-brand__text">
+
+            <strong>
+              PaintlessUV
+            </strong>
+
+            <small>
+              Prepare. Paint. Play.
+            </small>
+
+          </span>
 
         </a>
 
@@ -82,7 +100,7 @@
 
       <nav
         class="main-menu"
-        aria-label="Paintless menu"
+        aria-label="PaintlessUV menu"
       >
 
         <button
@@ -105,20 +123,29 @@
 
         <button
           class="menu-button"
-          id="image-menu-button"
+          id="model-menu-button"
           type="button"
           aria-expanded="false"
         >
-          Image
+          Model
         </button>
 
         <button
           class="menu-button"
-          id="layer-menu-button"
+          id="uv-menu-button"
           type="button"
           aria-expanded="false"
         >
-          Layer
+          UV
+        </button>
+
+        <button
+          class="menu-button"
+          id="view-menu-button"
+          type="button"
+          aria-expanded="false"
+        >
+          View
         </button>
 
         <button
@@ -139,7 +166,7 @@
           class="top-action-button"
           id="undo-button"
           type="button"
-          title="Pretending that never happened"
+          title="Undo"
           aria-label="Undo"
           disabled
         >
@@ -150,7 +177,7 @@
           class="top-action-button"
           id="redo-button"
           type="button"
-          title="Actually, put it back"
+          title="Redo"
           aria-label="Redo"
           disabled
         >
@@ -163,46 +190,19 @@
         ></span>
 
         <button
-          class="top-action-button"
-          id="zoom-out-button"
+          class="secondary-button"
+          id="open-model-top-button"
           type="button"
-          title="Zoom out"
-          aria-label="Zoom out"
+          title="Open a 3D model"
         >
-          −
-        </button>
-
-        <output
-          class="zoom-display"
-          id="zoom-display"
-          aria-live="polite"
-        >
-          100%
-        </output>
-
-        <button
-          class="top-action-button"
-          id="zoom-in-button"
-          type="button"
-          title="Zoom in"
-          aria-label="Zoom in"
-        >
-          +
-        </button>
-
-        <button
-          class="secondary-button import-button"
-          id="import-image-button"
-          type="button"
-          title="Import an image as a new layer"
-        >
-          Import
+          Open Model
         </button>
 
         <button
           class="export-button"
-          id="export-button"
+          id="export-model-button"
           type="button"
+          disabled
         >
           Export
         </button>
@@ -225,318 +225,68 @@
       <div class="active-tool-name">
 
         <span>
-          Tool
+          Mode
         </span>
 
         <strong id="active-tool-name">
-          Brush
+          Prepare
         </strong>
 
       </div>
 
 
-      <!-- BRUSH / ERASER OPTIONS -->
-
       <div
         class="tool-option-group"
-        id="brush-options"
+        id="workspace-mode-options"
       >
 
-        <label for="brush-size">
-          Size
-        </label>
-
-        <input
-          id="brush-size"
-          type="range"
-          min="1"
-          max="200"
-          value="20"
+        <button
+          class="tool-option-button is-active"
+          id="prepare-mode-button"
+          type="button"
+          aria-pressed="true"
         >
-
-        <output
-          id="brush-size-output"
-          for="brush-size"
-        >
-          20 px
-        </output>
-
-      </div>
-
-
-      <div
-        class="tool-option-group"
-        id="opacity-options"
-      >
-
-        <label for="tool-opacity">
-          Opacity
-        </label>
-
-        <input
-          id="tool-opacity"
-          type="range"
-          min="1"
-          max="100"
-          value="100"
-        >
-
-        <output
-          id="tool-opacity-output"
-          for="tool-opacity"
-        >
-          100%
-        </output>
-
-      </div>
-
-
-      <div
-        class="tool-option-group"
-        id="hardness-options"
-      >
-
-        <label for="brush-hardness">
-          Hardness
-        </label>
-
-        <input
-          id="brush-hardness"
-          type="range"
-          min="0"
-          max="100"
-          value="80"
-        >
-
-        <output
-          id="brush-hardness-output"
-          for="brush-hardness"
-        >
-          80%
-        </output>
-
-      </div>
-
-
-      <!-- SHAPE OPTIONS -->
-
-      <div
-        class="tool-option-group"
-        id="shape-options"
-        hidden
-      >
-
-        <!--
-          Hidden compatibility control.
-
-          The visible shape chooser now opens from the Shapes
-          button inside the left toolbar. tools.js can continue
-          reading this value without needing to use a native
-          dropdown in the top options bar.
-        -->
-
-        <select
-          id="shape-type"
-          aria-hidden="true"
-          tabindex="-1"
-          hidden
-        >
-
-          <option value="ellipse" selected>
-            Ellipse
-          </option>
-
-          <option value="rectangle">
-            Rectangle
-          </option>
-
-          <option value="rounded-rectangle">
-            Rounded Rectangle
-          </option>
-
-          <option value="line">
-            Line
-          </option>
-
-        </select>
-
-
-        <label class="compact-checkbox">
-
-          <input
-            id="shape-fill-enabled"
-            type="checkbox"
-          >
-
-          <span>
-            Fill
-          </span>
-
-        </label>
-
-
-        <label class="compact-checkbox">
-
-          <input
-            id="shape-stroke-enabled"
-            type="checkbox"
-            checked
-          >
-
-          <span>
-            Stroke
-          </span>
-
-        </label>
-
-
-        <label for="shape-corner-radius">
-          Radius
-        </label>
-
-        <input
-          id="shape-corner-radius"
-          type="range"
-          min="0"
-          max="100"
-          value="24"
-        >
-
-        <output
-          id="shape-corner-radius-output"
-          for="shape-corner-radius"
-        >
-          24 px
-        </output>
-
-      </div>
-
-
-      <!-- SELECTION OPTIONS -->
-
-      <div
-        class="tool-option-group"
-        id="selection-options"
-        hidden
-      >
-
-        <label for="selection-mode">
-          Selection
-        </label>
-
-        <select id="selection-mode">
-
-          <option value="rectangle">
-            Rectangle
-          </option>
-
-          <option value="magic-wand">
-            Magic Wand
-          </option>
-
-        </select>
-
-        <label for="wand-tolerance">
-          Tolerance
-        </label>
-
-        <input
-          id="wand-tolerance"
-          type="range"
-          min="0"
-          max="100"
-          value="24"
-        >
-
-        <output
-          id="wand-tolerance-output"
-          for="wand-tolerance"
-        >
-          24
-        </output>
-
-        <label class="compact-checkbox">
-
-          <input
-            id="wand-contiguous"
-            type="checkbox"
-            checked
-          >
-
-          <span>
-            Connected
-          </span>
-
-        </label>
+          Prepare
+        </button>
 
         <button
           class="tool-option-button"
-          id="deselect-button"
+          id="paint-mode-button"
           type="button"
+          aria-pressed="false"
+          disabled
         >
-          Deselect
+          Paint
+        </button>
+
+        <button
+          class="tool-option-button"
+          id="animate-mode-button"
+          type="button"
+          aria-pressed="false"
+          disabled
+        >
+          Animate
         </button>
 
       </div>
 
 
-      <!-- TEXT OPTIONS -->
-
       <div
         class="tool-option-group"
-        id="text-options"
-        hidden
+        id="view-options"
       >
-
-        <label for="text-font-family">
-          Font
-        </label>
-
-        <select id="text-font-family">
-
-          <option value="Segoe UI">
-            Segoe UI
-          </option>
-
-          <option value="Arial">
-            Arial
-          </option>
-
-          <option value="Georgia">
-            Georgia
-          </option>
-
-          <option value="Courier New">
-            Courier New
-          </option>
-
-          <option value="Impact">
-            Impact
-          </option>
-
-        </select>
-
-        <label for="text-font-size">
-          Size
-        </label>
-
-        <input
-          id="text-font-size"
-          type="number"
-          min="6"
-          max="500"
-          value="32"
-        >
 
         <label class="compact-checkbox">
 
           <input
-            id="text-bold"
+            id="show-grid"
             type="checkbox"
+            checked
           >
 
           <span>
-            Bold
+            Grid
           </span>
 
         </label>
@@ -544,12 +294,26 @@
         <label class="compact-checkbox">
 
           <input
-            id="text-italic"
+            id="show-wireframe"
             type="checkbox"
           >
 
           <span>
-            Italic
+            Wireframe
+          </span>
+
+        </label>
+
+        <label class="compact-checkbox">
+
+          <input
+            id="show-uv-seams"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+            UV Seams
           </span>
 
         </label>
@@ -557,19 +321,17 @@
       </div>
 
 
-      <!-- COLOUR -->
-
       <label class="colour-control">
 
         <span>
-          Colour
+          Paint
         </span>
 
         <input
           id="primary-colour"
           type="color"
           value="#a84cff"
-          aria-label="Primary colour"
+          aria-label="Primary paint colour"
         >
 
       </label>
@@ -590,243 +352,137 @@
 
       <aside
         class="toolbox"
-        aria-label="Paintless tools"
+        aria-label="PaintlessUV tools"
       >
 
         <button
           class="tool-button is-active"
           type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
+          data-tool="orbit"
+          title="Orbit around model"
+          aria-label="Orbit"
           aria-pressed="true"
         >
-          <span aria-hidden="true">🖌️</span>
-          <small>Brush</small>
+          <span aria-hidden="true">◉</span>
+          <small>Orbit</small>
         </button>
-
 
         <button
           class="tool-button"
           type="button"
-          data-tool="eraser"
-          title="Eraser (E) — Destroying evidence"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span aria-hidden="true">◩</span>
-          <small>Eraser</small>
-        </button>
-
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
+          data-tool="pan"
+          title="Pan viewport"
+          aria-label="Pan viewport"
           aria-pressed="false"
         >
           <span aria-hidden="true">✥</span>
-          <small>Move</small>
+          <small>Pan</small>
         </button>
-
 
         <button
           class="tool-button"
           type="button"
           data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
+          title="Select model part or UV island"
+          aria-label="Select"
           aria-pressed="false"
         >
           <span aria-hidden="true">▧</span>
           <small>Select</small>
         </button>
 
-
         <button
           class="tool-button"
           type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
+          data-tool="transform"
+          title="Transform selected model part"
+          aria-label="Transform"
           aria-pressed="false"
+          disabled
         >
-          <span aria-hidden="true">⌗</span>
-          <small>Crop</small>
+          <span aria-hidden="true">⛶</span>
+          <small>Transform</small>
         </button>
-
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span aria-hidden="true">◒</span>
-          <small>Fill</small>
-        </button>
-
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span aria-hidden="true">◐</span>
-          <small>Gradient</small>
-        </button>
-
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span aria-hidden="true">⌁</span>
-          <small>Picker</small>
-        </button>
-
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="text"
-          title="Text (T)"
-          aria-label="Text"
-          aria-pressed="false"
-        >
-          <span aria-hidden="true">T</span>
-          <small>Text</small>
-        </button>
-
-
-        <!-- SHAPE TOOL FAMILY -->
-
-        <div
-          class="tool-family"
-          id="shape-tool-family"
-        >
-
-          <button
-            class="tool-button tool-family__main"
-            id="shape-tool-button"
-            type="button"
-            data-tool="shape"
-            title="Ellipse (U) — hold for more shapes"
-            aria-label="Ellipse shape tool"
-            aria-pressed="false"
-            aria-haspopup="menu"
-            aria-expanded="false"
-          >
-
-            <span
-              id="shape-tool-icon"
-              aria-hidden="true"
-            >
-              ◯
-            </span>
-
-            <small id="shape-tool-label">
-              Ellipse
-            </small>
-
-            <span
-              class="tool-family__indicator"
-              aria-hidden="true"
-            >
-              ◢
-            </span>
-
-          </button>
-
-
-          <div
-            class="tool-family-menu"
-            id="shape-tool-menu"
-            role="menu"
-            aria-label="Choose a shape"
-            hidden
-          >
-
-            <button
-              class="tool-family-option is-selected"
-              type="button"
-              role="menuitem"
-              data-shape-choice="ellipse"
-              data-shape-icon="◯"
-              data-shape-label="Ellipse"
-              aria-pressed="true"
-            >
-              <span aria-hidden="true">◯</span>
-              <strong>Ellipse</strong>
-            </button>
-
-
-            <button
-              class="tool-family-option"
-              type="button"
-              role="menuitem"
-              data-shape-choice="rectangle"
-              data-shape-icon="□"
-              data-shape-label="Rectangle"
-              aria-pressed="false"
-            >
-              <span aria-hidden="true">□</span>
-              <strong>Rectangle</strong>
-            </button>
-
-
-            <button
-              class="tool-family-option"
-              type="button"
-              role="menuitem"
-              data-shape-choice="rounded-rectangle"
-              data-shape-icon="▢"
-              data-shape-label="Rounded"
-              aria-pressed="false"
-            >
-              <span aria-hidden="true">▢</span>
-              <strong>Rounded rectangle</strong>
-            </button>
-
-
-            <button
-              class="tool-family-option"
-              type="button"
-              role="menuitem"
-              data-shape-choice="line"
-              data-shape-icon="╱"
-              data-shape-label="Line"
-              aria-pressed="false"
-            >
-              <span aria-hidden="true">╱</span>
-              <strong>Line</strong>
-            </button>
-
-          </div>
-
-        </div>
-
 
         <span
           class="toolbox-divider"
           aria-hidden="true"
         ></span>
 
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="brush"
+          title="Paint directly on the model"
+          aria-label="Paint brush"
+          aria-pressed="false"
+          disabled
+        >
+          <span aria-hidden="true">🖌️</span>
+          <small>Paint</small>
+        </button>
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="eraser"
+          title="Erase painted texture"
+          aria-label="Eraser"
+          aria-pressed="false"
+          disabled
+        >
+          <span aria-hidden="true">◩</span>
+          <small>Eraser</small>
+        </button>
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="fill"
+          title="Fill an area or UV island"
+          aria-label="Fill"
+          aria-pressed="false"
+          disabled
+        >
+          <span aria-hidden="true">◒</span>
+          <small>Fill</small>
+        </button>
+
+        <button
+          class="tool-button"
+          type="button"
+          data-tool="picker"
+          title="Pick colour from texture"
+          aria-label="Colour picker"
+          aria-pressed="false"
+          disabled
+        >
+          <span aria-hidden="true">⌁</span>
+          <small>Picker</small>
+        </button>
+
+        <span
+          class="toolbox-divider"
+          aria-hidden="true"
+        ></span>
+
+        <button
+          class="tool-button"
+          id="prepare-model-button"
+          type="button"
+          title="Analyse and prepare model"
+          aria-label="Prepare model"
+          aria-pressed="false"
+          disabled
+        >
+          <span aria-hidden="true">✨</span>
+          <small>Prepare</small>
+        </button>
+
 
         <div
           class="colour-stack"
-          aria-label="Current colours"
+          aria-label="Current paint colours"
         >
 
           <button
@@ -850,7 +506,7 @@
             id="swap-colours-button"
             type="button"
             aria-label="Swap colours"
-            title="Swap colours (X)"
+            title="Swap colours"
           >
             ⇄
           </button>
@@ -865,103 +521,220 @@
       ================================================== -->
 
       <section
-        class="workspace"
+        class="workspace paintlessuv-workspace"
         id="workspace"
-        aria-label="Image editing workspace"
+        aria-label="3D model and UV workspace"
       >
 
-        <div
-          class="workspace-ruler workspace-ruler--horizontal"
-          aria-hidden="true"
-        ></div>
+
+        <!-- VIEWPORTS -->
 
         <div
-          class="workspace-ruler workspace-ruler--vertical"
-          aria-hidden="true"
-        ></div>
-
-
-        <div
-          class="canvas-viewport"
-          id="canvas-viewport"
+          class="paintlessuv-viewports"
+          id="paintlessuv-viewports"
+          hidden
         >
 
-          <div
-            class="canvas-stage"
-            id="canvas-stage"
+          <section
+            class="paintlessuv-viewport-panel"
+            id="model-panel"
           >
 
-            <canvas
-              id="editor-canvas"
-              width="1280"
-              height="720"
+            <header class="paintlessuv-viewport-header">
+
+              <strong>
+                3D Model
+              </strong>
+
+              <div>
+
+                <button
+                  id="frame-model-button"
+                  type="button"
+                  title="Frame model"
+                >
+                  Frame
+                </button>
+
+                <button
+                  id="reset-camera-button"
+                  type="button"
+                  title="Reset camera"
+                >
+                  Reset View
+                </button>
+
+              </div>
+
+            </header>
+
+            <div
+              class="paintlessuv-viewport"
+              id="model-viewport"
               tabindex="0"
-              aria-label="Paintless editing canvas"
-            ></canvas>
+              aria-label="Interactive 3D model viewport"
+            >
 
-            <canvas
-              id="overlay-canvas"
-              width="1280"
-              height="720"
-              aria-hidden="true"
-            ></canvas>
+              <canvas
+                id="model-canvas"
+                aria-label="Rendered 3D model"
+              ></canvas>
 
-            <textarea
-              id="canvas-text-editor"
-              aria-label="Canvas text editor"
-              hidden
-            ></textarea>
+              <div
+                class="viewport-axis-gizmo"
+                id="axis-gizmo"
+                aria-hidden="true"
+              >
+                <span class="axis-x">X</span>
+                <span class="axis-y">Y</span>
+                <span class="axis-z">Z</span>
+              </div>
 
-          </div>
+            </div>
+
+          </section>
+
+
+          <div
+            class="paintlessuv-divider"
+            id="viewport-divider"
+            role="separator"
+            aria-label="Resize 3D and UV viewports"
+            aria-orientation="vertical"
+            tabindex="0"
+          ></div>
+
+
+          <section
+            class="paintlessuv-viewport-panel"
+            id="uv-panel"
+          >
+
+            <header class="paintlessuv-viewport-header">
+
+              <strong>
+                UV Layout
+              </strong>
+
+              <div>
+
+                <button
+                  id="fit-uv-button"
+                  type="button"
+                  title="Fit UV layout"
+                >
+                  Fit
+                </button>
+
+                <button
+                  id="toggle-texture-button"
+                  type="button"
+                  title="Show or hide texture"
+                >
+                  Texture
+                </button>
+
+              </div>
+
+            </header>
+
+            <div
+              class="paintlessuv-viewport"
+              id="uv-viewport"
+              tabindex="0"
+              aria-label="UV layout viewport"
+            >
+
+              <canvas
+                id="uv-canvas"
+                width="1024"
+                height="1024"
+                aria-label="UV layout and texture painting canvas"
+              ></canvas>
+
+            </div>
+
+          </section>
 
         </div>
 
 
+        <!-- EMPTY STATE -->
+
         <div
-          class="workspace-empty-state"
+          class="workspace-empty-state paintlessuv-empty-state"
           id="workspace-empty-state"
         >
 
           <div class="empty-state-logo">
 
             <img
-              src="assets/images/paintless-logo.png"
-              alt="Paintless crowned painter mascot"
+              src="assets/images/paintlessuv-logo.png"
+              alt="PaintlessUV crowned painter mascot with 3D axes"
             >
 
           </div>
 
           <h1>
-            Start creating
+            Prepare. Paint. Play.
           </h1>
 
           <p>
-            Open an image or make a beautifully empty canvas.
+            Open a 3D model and PaintlessUV will inspect its mesh,
+            materials and UV layout before you start painting.
           </p>
 
           <div class="empty-state-actions">
 
             <button
               class="primary-button"
-              id="new-canvas-button"
+              id="open-model-button"
               type="button"
             >
-              New Canvas
+              Open Model
             </button>
 
-            <button
-              class="secondary-button"
-              id="open-image-button"
-              type="button"
-            >
-              Open Image
-            </button>
+          </div>
+
+          <div
+            class="supported-formats"
+            aria-label="Supported model formats"
+          >
+
+            <span>GLB</span>
+            <span>GLTF</span>
+            <span>OBJ</span>
+            <span>FBX</span>
 
           </div>
 
           <small>
             No account. No cloud. No unnecessary nonsense.
           </small>
+
+        </div>
+
+
+        <!-- DRAG AND DROP OVERLAY -->
+
+        <div
+          class="model-drop-overlay"
+          id="model-drop-overlay"
+          aria-hidden="true"
+          hidden
+        >
+
+          <div>
+
+            <strong>
+              Drop model here
+            </strong>
+
+            <span>
+              PaintlessUV will inspect it automatically.
+            </span>
+
+          </div>
 
         </div>
 
@@ -974,24 +747,25 @@
 
       <aside
         class="right-sidebar"
-        aria-label="Paintless panels"
+        aria-label="PaintlessUV panels"
       >
 
 
-        <!-- COLOUR PANEL -->
+        <!-- MODEL PANEL -->
 
-        <section class="editor-panel colour-panel">
+        <section class="editor-panel model-information-panel">
 
           <header class="panel-header">
 
             <h2>
-              Colour
+              Model
             </h2>
 
             <button
               class="panel-menu-button"
+              id="model-panel-menu-button"
               type="button"
-              aria-label="Colour panel options"
+              aria-label="Model panel options"
             >
               •••
             </button>
@@ -999,302 +773,234 @@
           </header>
 
 
-          <div class="colour-preview">
+          <div class="paintlessuv-information-list">
 
-            <input
-              id="panel-colour-picker"
-              type="color"
-              value="#a84cff"
-              aria-label="Choose colour"
-            >
+            <div>
 
-            <label for="hex-colour-input">
-              Hex
-            </label>
+              <span>
+                Name
+              </span>
 
-            <input
-              id="hex-colour-input"
-              type="text"
-              value="#A84CFF"
-              maxlength="7"
-              spellcheck="false"
-            >
+              <strong id="model-name-value">
+                No model loaded
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Format
+              </span>
+
+              <strong id="model-format-value">
+                —
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Vertices
+              </span>
+
+              <strong id="model-vertices-value">
+                —
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Triangles
+              </span>
+
+              <strong id="model-triangles-value">
+                —
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Objects
+              </span>
+
+              <strong id="model-objects-value">
+                —
+              </strong>
+
+            </div>
 
           </div>
-
-
-          <div
-            class="recent-colours"
-            id="recent-colours"
-            aria-label="Recent colours"
-          ></div>
 
         </section>
 
 
-        <!-- ADJUSTMENTS PANEL -->
+        <!-- ANALYSIS PANEL -->
 
-        <section class="editor-panel adjustments-panel">
+        <section class="editor-panel model-analysis-panel">
 
           <header class="panel-header">
 
             <h2>
-              Adjustments
+              Model Analysis
             </h2>
 
             <button
               class="reset-panel-button"
-              id="reset-adjustments-button"
+              id="analyse-model-button"
               type="button"
+              disabled
             >
-              Reset
+              Analyse
             </button>
 
           </header>
 
 
-          <label class="adjustment-control">
+          <div
+            class="model-analysis-summary"
+            id="model-analysis-summary"
+          >
 
-            <span>
-              Brightness
-            </span>
+            <div class="analysis-empty">
 
-            <output id="brightness-output">
-              0
-            </output>
+              <strong>
+                No model loaded
+              </strong>
 
-            <input
-              id="brightness-control"
-              type="range"
-              min="-100"
-              max="100"
-              value="0"
-            >
+              <span>
+                Open a model to inspect its mesh and UV layout.
+              </span>
 
-          </label>
+            </div>
 
-
-          <label class="adjustment-control">
-
-            <span>
-              Contrast
-            </span>
-
-            <output id="contrast-output">
-              0
-            </output>
-
-            <input
-              id="contrast-control"
-              type="range"
-              min="-100"
-              max="100"
-              value="0"
-            >
-
-          </label>
+          </div>
 
 
-          <label class="adjustment-control">
-
-            <span>
-              Saturation
-            </span>
-
-            <output id="saturation-output">
-              0
-            </output>
-
-            <input
-              id="saturation-control"
-              type="range"
-              min="-100"
-              max="100"
-              value="0"
-            >
-
-          </label>
-
-
-          <label class="adjustment-control">
-
-            <span>
-              Hue
-            </span>
-
-            <output id="hue-output">
-              0°
-            </output>
-
-            <input
-              id="hue-control"
-              type="range"
-              min="-180"
-              max="180"
-              value="0"
-            >
-
-          </label>
+          <button
+            class="primary-button prepare-model-wide-button"
+            id="fix-model-button"
+            type="button"
+            disabled
+          >
+            Prepare Model
+          </button>
 
         </section>
 
 
-        <!-- LAYERS PANEL -->
+        <!-- UV PANEL -->
 
-        <section class="editor-panel layers-panel">
+        <section class="editor-panel uv-information-panel">
 
           <header class="panel-header">
 
             <h2>
-              Layers
+              UV
             </h2>
 
-            <div class="panel-header-actions">
+          </header>
 
-              <button
-                id="import-layer-button"
-                type="button"
-                title="Import image as layer"
-                aria-label="Import image as layer"
-              >
-                🖼
-              </button>
 
-              <button
-                id="add-layer-button"
-                type="button"
-                title="Add layer"
-                aria-label="Add layer"
-              >
-                +
-              </button>
+          <div class="paintlessuv-information-list">
 
-              <button
-                id="duplicate-layer-button"
-                type="button"
-                title="Duplicate layer"
-                aria-label="Duplicate layer"
-              >
-                ⧉
-              </button>
+            <div>
 
-              <button
-                id="transform-layer-button"
-                type="button"
-                title="Transform selected layer"
-                aria-label="Transform selected layer"
-              >
-  ⛶
-              </button>
+              <span>
+                UV Layer
+              </span>
 
-              <button
-                id="delete-layer-button"
-                type="button"
-                title="Delete layer"
-                aria-label="Delete layer"
-              >
-                🗑
-              </button>
+              <strong id="uv-layer-status">
+                Not checked
+              </strong>
 
             </div>
+
+            <div>
+
+              <span>
+                Islands
+              </span>
+
+              <strong id="uv-island-count">
+                —
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Overlaps
+              </span>
+
+              <strong id="uv-overlap-count">
+                —
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Texture
+              </span>
+
+              <strong id="texture-status">
+                —
+              </strong>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- MATERIALS PANEL -->
+
+        <section class="editor-panel materials-panel">
+
+          <header class="panel-header">
+
+            <h2>
+              Materials
+            </h2>
+
+            <button
+              class="panel-menu-button"
+              id="add-material-button"
+              type="button"
+              aria-label="Add material"
+              disabled
+            >
+              +
+            </button>
 
           </header>
 
 
           <div
-            class="layer-list"
-            id="layer-list"
-            role="list"
-            aria-label="Image layers"
-          ></div>
+            class="material-list"
+            id="material-list"
+          >
 
+            <div class="analysis-empty">
 
-          <div class="layer-properties">
+              <strong>
+                No materials
+              </strong>
 
-            <label for="layer-blend-mode">
-              Blend
-            </label>
+              <span>
+                Materials will appear after a model is opened.
+              </span>
 
-            <select id="layer-blend-mode">
-
-              <option value="source-over">
-                Normal
-              </option>
-
-              <option value="multiply">
-                Multiply
-              </option>
-
-              <option value="screen">
-                Screen
-              </option>
-
-              <option value="overlay">
-                Overlay
-              </option>
-
-              <option value="darken">
-                Darken
-              </option>
-
-              <option value="lighten">
-                Lighten
-              </option>
-
-              <option value="color-dodge">
-                Colour Dodge
-              </option>
-
-              <option value="color-burn">
-                Colour Burn
-              </option>
-
-              <option value="hard-light">
-                Hard Light
-              </option>
-
-              <option value="soft-light">
-                Soft Light
-              </option>
-
-              <option value="difference">
-                Difference
-              </option>
-
-              <option value="exclusion">
-                Exclusion
-              </option>
-
-              <option value="hue">
-                Hue
-              </option>
-
-              <option value="saturation">
-                Saturation
-              </option>
-
-              <option value="color">
-                Colour
-              </option>
-
-              <option value="luminosity">
-                Luminosity
-              </option>
-
-            </select>
-
-
-            <label for="layer-opacity">
-              Opacity
-            </label>
-
-            <input
-              id="layer-opacity"
-              type="range"
-              min="0"
-              max="100"
-              value="100"
-            >
+            </div>
 
           </div>
 
@@ -1314,7 +1020,7 @@
       <div class="status-bar__left">
 
         <span id="document-status">
-          No document open
+          No model open
         </span>
 
         <span
@@ -1322,8 +1028,8 @@
           aria-hidden="true"
         ></span>
 
-        <span id="canvas-size-status">
-          1280 × 720 px
+        <span id="model-size-status">
+          Ready
         </span>
 
       </div>
@@ -1332,7 +1038,7 @@
       <div class="status-bar__centre">
 
         <span id="save-status">
-          Your masterpiece is currently imaginary.
+          Open a model to begin.
         </span>
 
       </div>
@@ -1341,14 +1047,15 @@
       <div class="status-bar__right">
 
         <button
-          id="fit-screen-button"
+          id="toggle-split-view-button"
           type="button"
+          disabled
         >
-          Fit Screen
+          Split View
         </button>
 
         <span id="cursor-position">
-          X: 0&nbsp;&nbsp;Y: 0
+          X: 0&nbsp;&nbsp;Y: 0&nbsp;&nbsp;Z: 0
         </span>
 
       </div>
@@ -1363,171 +1070,18 @@
   ====================================================== -->
 
   <input
-    id="image-file-input"
+    id="model-file-input"
     type="file"
-    accept="image/png,image/jpeg,image/webp,image/gif"
+    accept=".glb,.gltf,.obj,.fbx,model/gltf-binary,model/gltf+json"
     hidden
   >
 
   <input
-    id="import-image-file-input"
+    id="texture-file-input"
     type="file"
-    accept="image/png,image/jpeg,image/webp,image/gif"
+    accept="image/png,image/jpeg,image/webp"
     hidden
   >
-
-  <input
-    id="project-file-input"
-    type="file"
-    accept=".paintless,application/json"
-    hidden  
-  >
-
-
-  <!-- =====================================================
-       NEW CANVAS DIALOG
-  ====================================================== -->
-
-  <dialog
-    class="paintless-dialog"
-    id="new-canvas-dialog"
-  >
-
-    <form method="dialog">
-
-      <header class="dialog-header">
-
-        <div>
-
-          <p>
-            Paintless
-          </p>
-
-          <h2>
-            New Canvas
-          </h2>
-
-        </div>
-
-        <button
-          class="dialog-close-button"
-          value="cancel"
-          aria-label="Close"
-        >
-          ×
-        </button>
-
-      </header>
-
-
-      <div class="dialog-body">
-
-        <label>
-
-          <span>
-            Name
-          </span>
-
-          <input
-            id="new-document-name"
-            type="text"
-            value="Untitled Masterpiece"
-          >
-
-        </label>
-
-
-        <div class="dialog-row">
-
-          <label>
-
-            <span>
-              Width
-            </span>
-
-            <input
-              id="new-canvas-width"
-              type="number"
-              min="1"
-              max="10000"
-              value="1280"
-            >
-
-          </label>
-
-
-          <label>
-
-            <span>
-              Height
-            </span>
-
-            <input
-              id="new-canvas-height"
-              type="number"
-              min="1"
-              max="10000"
-              value="720"
-            >
-
-          </label>
-
-        </div>
-
-
-        <label>
-
-          <span>
-            Background
-          </span>
-
-          <select id="new-canvas-background">
-
-            <option value="transparent">
-              Transparent
-            </option>
-
-            <option value="white" selected>
-              White
-            </option>
-
-            <option value="black">
-              Black
-            </option>
-
-            <option value="custom">
-              Custom colour
-            </option>
-
-          </select>
-
-        </label>
-
-      </div>
-
-
-      <footer class="dialog-actions">
-
-        <button
-          class="secondary-button"
-          value="cancel"
-        >
-          Cancel
-        </button>
-
-        <button
-          class="primary-button"
-          id="create-canvas-button"
-          value="default"
-        >
-          Create Canvas
-        </button>
-
-      </footer>
-
-    </form>
-
-  </dialog>
 
 
   <!-- =====================================================
@@ -1546,11 +1100,11 @@
         <div>
 
           <p>
-            Almost done
+            PaintlessUV
           </p>
 
           <h2>
-            Export Image
+            Export Model
           </h2>
 
         </div>
@@ -1577,7 +1131,7 @@
           <input
             id="export-file-name"
             type="text"
-            value="paintless-masterpiece"
+            value="paintlessuv-model"
           >
 
         </label>
@@ -1591,16 +1145,16 @@
 
           <select id="export-format">
 
-            <option value="image/png">
-              PNG
+            <option value="glb">
+              GLB — Recommended
             </option>
 
-            <option value="image/jpeg">
-              JPEG
+            <option value="gltf">
+              GLTF
             </option>
 
-            <option value="image/webp">
-              WebP
+            <option value="obj">
+              OBJ
             </option>
 
           </select>
@@ -1608,19 +1162,17 @@
         </label>
 
 
-        <label>
-
-          <span>
-            Quality
-          </span>
+        <label class="compact-checkbox">
 
           <input
-            id="export-quality"
-            type="range"
-            min="10"
-            max="100"
-            value="92"
+            id="export-include-textures"
+            type="checkbox"
+            checked
           >
+
+          <span>
+            Include textures
+          </span>
 
         </label>
 
@@ -1665,8 +1217,8 @@
 
       <img
         class="loading-logo"
-        src="assets/images/paintless-logo.png"
-        alt="Paintless"
+        src="assets/images/paintlessuv-logo.png"
+        alt="PaintlessUV"
       >
 
       <strong>
@@ -1674,7 +1226,7 @@
       </strong>
 
       <p id="loading-message">
-        Loading creativity...
+        Inspecting your model...
       </p>
 
       <div class="loading-track">
@@ -1693,15 +1245,13 @@
 
 
   <!-- =====================================================
-       APPLICATION SCRIPTS
+       APPLICATION SCRIPT
   ====================================================== -->
 
-  <script src="js/history.js"></script>
-  <script src="js/layers.js"></script>
-  <script src="js/canvas.js"></script>
-  <script src="js/tools.js"></script>
-  <script src="js/files.js"></script>
-  <script src="js/app.js"></script>
+  <script
+    type="module"
+    src="js/app.js"
+  ></script>
 
 </body>
 
