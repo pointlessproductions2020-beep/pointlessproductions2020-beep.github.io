@@ -1161,6 +1161,13 @@ const paintlessProjectMimeType =
 
   }
 
+   function requestOpenProject() {
+
+  projectFileInput.value = "";
+
+  projectFileInput.click();
+
+}
 
   /* =======================================================
      9. CREATE A NEW IMPORT LAYER
