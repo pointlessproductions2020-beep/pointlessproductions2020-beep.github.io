@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { loadModel } from "./model/loader.js";
 
 console.log("PaintlessUV starting...");
 
@@ -21,6 +22,18 @@ const viewports =
   document.getElementById(
     "paintlessuv-viewports"
   );
+
+const openModelButton =
+  document.getElementById(
+    "open-model-button"
+  );
+
+const modelFileInput =
+  document.getElementById(
+    "model-file-input"
+  );
+
+let currentModel = null;
 
 
 /* =========================================================
@@ -287,5 +300,68 @@ function startPaintlessUV() {
 
 }
 
+/* =========================================================
+   OPEN MODEL
+========================================================= */
+
+openModelButton.addEventListener(
+  "click",
+  () => {
+
+    modelFileInput.click();
+
+  }
+);
+
+
+modelFileInput.addEventListener(
+  "change",
+  async event => {
+
+    const file =
+      event.target.files[0];
+
+    if (!file)
+      return;
+
+    try {
+
+      const model =
+        await loadModel(file);
+
+      if (currentModel) {
+
+        scene.remove(
+          currentModel
+        );
+
+      }
+
+      scene.remove(
+        cube
+      );
+
+      currentModel =
+        model.scene;
+
+      scene.add(
+        currentModel
+      );
+
+      console.log(
+        "Loaded:",
+        model.name
+      );
+
+    }
+
+    catch (error) {
+
+      console.error(error);
+
+    }
+
+  }
+);
 
 startPaintlessUV();
