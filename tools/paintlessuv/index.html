@@ -1248,11 +1248,19 @@
        APPLICATION SCRIPT
   ====================================================== -->
 
-  <script
-    type="module"
-    src="js/app.js"
-  ></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.179.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.179.1/examples/jsm/"
+  }
+}
+</script>
 
+<script
+  type="module"
+  src="js/app.js"
+></script>
 </body>
 
 </html>
