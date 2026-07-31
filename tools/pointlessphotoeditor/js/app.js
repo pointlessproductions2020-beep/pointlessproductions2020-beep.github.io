@@ -1457,6 +1457,21 @@
           }
 },
 
+         {
+  label:
+    "Open Project",
+
+  shortcut:
+    "Ctrl+Alt+O",
+
+  action() {
+
+    getFilesApi()
+      ?.requestOpenProject();
+
+  }
+},
+
 {
   label:
     "Save Project",
