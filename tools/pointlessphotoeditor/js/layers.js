@@ -568,31 +568,79 @@ width:
      */
 
     layers.forEach(
-      (layer) => {
+  (layer) => {
 
-        if (
-          !layer.visible ||
-          layer.opacity <= 0
-        ) {
-          return;
-        }
-
-
-        editorContext.globalAlpha =
-          layer.opacity;
-
-        editorContext.globalCompositeOperation =
-          layer.blendMode;
+    if (
+      !layer.visible ||
+      layer.opacity <= 0
+    ) {
+      return;
+    }
 
 
-        editorContext.drawImage(
-          layer.canvas,
-          0,
-          0
-        );
+    const layerWidth =
+      layer.canvas.width;
 
-      }
+    const layerHeight =
+      layer.canvas.height;
+
+
+    const centreX =
+      layerWidth / 2;
+
+    const centreY =
+      layerHeight / 2;
+
+
+    const rotationRadians =
+      (
+        Number(layer.rotation) ||
+        0
+      ) *
+      Math.PI /
+      180;
+
+
+    editorContext.save();
+
+
+    editorContext.globalAlpha =
+      layer.opacity;
+
+    editorContext.globalCompositeOperation =
+      layer.blendMode;
+
+
+    editorContext.translate(
+      Number(layer.transformX) +
+        centreX,
+      Number(layer.transformY) +
+        centreY
     );
+
+
+    editorContext.rotate(
+      rotationRadians
+    );
+
+
+    editorContext.scale(
+      Number(layer.scaleX) || 1,
+      Number(layer.scaleY) || 1
+    );
+
+
+    editorContext.drawImage(
+      layer.canvas,
+      -centreX,
+      -centreY
+    );
+
+
+    editorContext.restore();
+
+  }
+);
 
 
     editorContext.restore();
