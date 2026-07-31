@@ -1506,79 +1506,62 @@
 
   function installDashboard() {
 
-    const existingDashboard =
-      document.getElementById(
-        "paintless3d-dashboard"
-      );
+  /*
+   * The old Paintless3D sidebar dashboard
+   * has been retired.
+   *
+   * 3D controls now live in the main toolbar
+   * and directly inside the Layers panel.
+   */
+
+  document
+    .getElementById(
+      "paintless3d-dashboard"
+    )
+    ?.remove();
 
 
-    if (existingDashboard) {
+  dom.dashboard =
+    null;
 
-      existingDashboard.remove();
+  dom.heading =
+    null;
 
-    }
+  dom.modeBadge =
+    null;
 
+  dom.liveBadge =
+    null;
 
-    const parent =
-      getDashboardParent();
+  dom.layerName =
+    null;
 
+  dom.layerState =
+    null;
 
-    if (!parent) {
+  dom.layerDepth =
+    null;
 
-      return false;
+  dom.renderInformation =
+    null;
 
-    }
+  dom.depthButton =
+    null;
 
+  dom.settingsButton =
+    null;
 
-    const dashboard =
-      createDashboard();
-
-
-    refreshPanelReferences();
-
-
-    const first3DPanel =
-      parent.querySelector(
-        [
-          "#paintless3d-depth-control",
-          "#paintless3d-preview-panel",
-          "#paintless3d-export-panel"
-        ].join(
-          ","
-        )
-      );
+  dom.exportButton =
+    null;
 
 
-    if (first3DPanel) {
-
-      parent.insertBefore(
-        dashboard,
-        first3DPanel
-      );
-
-    } else {
-
-      parent.appendChild(
-        dashboard
-      );
-
-    }
+  uiState.dashboardInstalled =
+    true;
 
 
-    collectDashboardReferences(
-      dashboard
-    );
+  return true;
 
-
-    uiState.dashboardInstalled =
-      true;
-
-
-    return true;
-
-  }
-
-
+}
   /* =======================================================
      10. PANEL MANAGEMENT
   ======================================================= */
