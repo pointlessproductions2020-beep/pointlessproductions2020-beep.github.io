@@ -118,14 +118,20 @@ function animate(){
 
 animate();
 
-document
-.getElementById(
-"workspace-empty-state"
-)
-.hidden=true;
+const emptyState =
+  document.getElementById(
+    "workspace-empty-state"
+  );
+
+emptyState.hidden =
+  true;
+
+emptyState.classList.add(
+  "is-hidden"
+);
 
 document
-.getElementById(
-"paintlessuv-viewports"
-)
-.hidden=false;
+  .getElementById(
+    "paintlessuv-viewports"
+  )
+  .hidden = false;
