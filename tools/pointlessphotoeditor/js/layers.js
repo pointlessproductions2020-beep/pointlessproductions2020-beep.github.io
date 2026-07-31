@@ -41,6 +41,9 @@
    const duplicateLayerButton =
   document.getElementById("duplicate-layer-button");
 
+   const transformLayerButton =
+  document.getElementById("transform-layer-button");
+
   const layerBlendMode =
     document.getElementById("layer-blend-mode");
 
@@ -3176,6 +3179,30 @@ restoredLayer.context.putImageData(
   }
 );
 
+  transformLayerButton?.addEventListener(
+  "click",
+  () => {
+
+    const activeLayer =
+      getActiveLayer();
+
+
+    if (!activeLayer) {
+
+      return;
+
+    }
+
+
+    window.PaintlessTools
+      ?.setActiveTool?.(
+        "transform"
+      );
+
+  }
+);
+
+   
   layerBlendMode?.addEventListener(
     "change",
     () => {
