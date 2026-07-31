@@ -174,17 +174,23 @@
   class PaintlessLayer {
 
     constructor({
-      id = createUniqueId(),
-      name = `Layer ${nextLayerNumber}`,
-      width = documentWidth,
-      height = documentHeight,
-      visible = true,
-      opacity = 1,
-      blendMode = "source-over",
-      locked = false,
-      stereo3dEnabled = true,
-      depth3d = 0
-    } = {}) {
+  id = createUniqueId(),
+  name = `Layer ${nextLayerNumber}`,
+  width = documentWidth,
+  height = documentHeight,
+  visible = true,
+  opacity = 1,
+  blendMode = "source-over",
+  locked = false,
+  stereo3dEnabled = true,
+  depth3d = 0,
+
+  transformX = 0,
+  transformY = 0,
+  scaleX = 1,
+  scaleY = 1,
+  rotation = 0
+} = {}) {
 
       this.id = id;
 
@@ -216,6 +222,44 @@
           300
         );
 
+       this.transformX =
+  Number.isFinite(
+    Number(transformX)
+  )
+    ? Number(transformX)
+    : 0;
+
+
+this.transformY =
+  Number.isFinite(
+    Number(transformY)
+  )
+    ? Number(transformY)
+    : 0;
+
+
+this.scaleX =
+  Number.isFinite(
+    Number(scaleX)
+  )
+    ? Number(scaleX)
+    : 1;
+
+
+this.scaleY =
+  Number.isFinite(
+    Number(scaleY)
+  )
+    ? Number(scaleY)
+    : 1;
+
+
+this.rotation =
+  Number.isFinite(
+    Number(rotation)
+  )
+    ? Number(rotation)
+    : 0;
 
       this.canvas =
         document.createElement(
@@ -377,10 +421,29 @@
             this.blendMode,
           locked:
             false,
-          stereo3dEnabled:
-            this.stereo3dEnabled,
-          depth3d:
-            this.depth3d
+
+
+           stereo3dEnabled:
+  this.stereo3dEnabled,
+
+depth3d:
+  this.depth3d,
+
+transformX:
+  this.transformX,
+
+transformY:
+  this.transformY,
+
+scaleX:
+  this.scaleX,
+
+scaleY:
+  this.scaleY,
+
+rotation:
+  this.rotation
+           
         });
 
 
@@ -418,13 +481,28 @@
           this.locked,
 
         stereo3dEnabled:
-          this.stereo3dEnabled,
+  this.stereo3dEnabled,
 
-        depth3d:
-          this.depth3d,
+depth3d:
+  this.depth3d,
 
-        width:
-          this.canvas.width,
+transformX:
+  this.transformX,
+
+transformY:
+  this.transformY,
+
+scaleX:
+  this.scaleX,
+
+scaleY:
+  this.scaleY,
+
+rotation:
+  this.rotation,
+
+width:
+  this.canvas.width,
 
         height:
           this.canvas.height,
@@ -2856,10 +2934,25 @@ function renderLayerList() {
               savedLayer.locked,
 
             stereo3dEnabled:
-              savedLayer.stereo3dEnabled ?? false,
+  savedLayer.stereo3dEnabled ?? false,
 
-            depth3d:
-              savedLayer.depth3d ?? 0
+depth3d:
+  savedLayer.depth3d ?? 0,
+
+transformX:
+  savedLayer.transformX ?? 0,
+
+transformY:
+  savedLayer.transformY ?? 0,
+
+scaleX:
+  savedLayer.scaleX ?? 1,
+
+scaleY:
+  savedLayer.scaleY ?? 1,
+
+rotation:
+  savedLayer.rotation ?? 0
           });
 
 
