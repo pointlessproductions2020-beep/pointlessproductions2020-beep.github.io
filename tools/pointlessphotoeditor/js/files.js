@@ -292,6 +292,39 @@ const paintlessProjectMimeType =
 
   }
 
+  function createProjectData() {
+
+    const layersApi =
+      getLayersApi();
+
+
+    if (!layersApi) {
+
+      throw new Error(
+        "Paintless layers API unavailable."
+      );
+
+    }
+
+
+    return {
+
+      format:
+        "Paintless",
+
+      version:
+        paintlessProjectVersion,
+
+      created:
+        new Date().toISOString(),
+
+      snapshot:
+        layersApi.createLayersSnapshot()
+
+    };
+
+  }
+
 
   /* =======================================================
      4. FILE-NAME HELPERS
