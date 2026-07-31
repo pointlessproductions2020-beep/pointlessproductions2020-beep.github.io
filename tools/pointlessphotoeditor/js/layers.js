@@ -2863,11 +2863,52 @@ function renderLayerList() {
           });
 
 
-        restoredLayer.context.putImageData(
-          savedLayer.imageData,
-          0,
-          0
-        );
+        const savedPixels =
+  savedLayer.imageData;
+
+
+if (
+  !savedPixels ||
+  !savedPixels.data
+) {
+
+  throw new Error(
+    `Layer "${savedLayer.name}" has invalid pixel data.`
+  );
+
+}
+
+
+const pixelArray =
+  savedPixels.data instanceof
+    Uint8ClampedArray
+    ? savedPixels.data
+    : new Uint8ClampedArray(
+        Object.values(
+          savedPixels.data
+        )
+      );
+
+
+const restoredImageData =
+  new ImageData(
+    pixelArray,
+    Number(
+      savedPixels.width ||
+      savedLayer.width
+    ),
+    Number(
+      savedPixels.height ||
+      savedLayer.height
+    )
+  );
+
+
+restoredLayer.context.putImageData(
+  restoredImageData,
+  0,
+  0
+);
 
 
         layers.push(
