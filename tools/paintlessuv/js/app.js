@@ -899,7 +899,11 @@ modelFileInput?.addEventListener(
      * model parsing and UV work begin.
      */
 
-    await waitForNextFrame();
+      await wait(
+        100
+      );
+
+      await waitForNextFrame();
 
 
     try {
