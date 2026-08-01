@@ -57,6 +57,11 @@ const modelFileInput =
     "model-file-input"
   );
 
+const uvCanvas =
+  document.getElementById(
+    "uv-canvas"
+  );
+
 
 let currentModel =
   null;
