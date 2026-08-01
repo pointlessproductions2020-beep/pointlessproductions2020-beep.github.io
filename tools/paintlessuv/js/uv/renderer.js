@@ -296,7 +296,12 @@ export function drawUVLayout(
  * @param {HTMLCanvasElement} canvas
  */
 export function drawCachedUV(
-  canvas
+  canvas,
+  view = {
+    zoom: 1,
+    offsetX: 0,
+    offsetY: 0
+  }
 ) {
 
   if (
@@ -343,11 +348,25 @@ export function drawCachedUV(
     canvas.height
   );
 
-  visibleContext.drawImage(
-    cachedCanvas,
-    0,
-    0
-  );
+ visibleContext.save();
+
+visibleContext.translate(
+  view.offsetX,
+  view.offsetY
+);
+
+visibleContext.scale(
+  view.zoom,
+  view.zoom
+);
+
+visibleContext.drawImage(
+  cachedCanvas,
+  0,
+  0
+);
+
+visibleContext.restore();
 
 }
 
