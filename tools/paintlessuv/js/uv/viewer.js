@@ -3,23 +3,36 @@
    UV VIEWER
 ========================================================= */
 
+
+/* =========================================================
+   VIEW STATE
+========================================================= */
+
 export const uvView = {
 
-  zoom: 1,
+  zoom:
+    1,
 
-  minZoom: 0.25,
+  minZoom:
+    0.25,
 
-  maxZoom: 20,
+  maxZoom:
+    20,
 
-  offsetX: 0,
+  offsetX:
+    0,
 
-  offsetY: 0,
+  offsetY:
+    0,
 
-  dragging: false,
+  dragging:
+    false,
 
-  lastX: 0,
+  lastX:
+    0,
 
-  lastY: 0
+  lastY:
+    0
 
 };
 
@@ -29,39 +42,80 @@ export const uvView = {
 ========================================================= */
 
 export function initialiseUVViewer(
-  canvas,
-  redraw
+  canvas
 ) {
+
+  if (
+    !canvas
+  ) {
+
+    console.warn(
+      "PaintlessUV could not initialise the UV viewer."
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Important:
+   * This temporary safe version does not redraw the UV canvas.
+   *
+   * The dragon UV contains tens of thousands of triangles.
+   * Rebuilding all of them on every wheel event caused the
+   * browser and 3D viewport to lag.
+   *
+   * We will connect zoom and pan to a cached UV image next.
+   */
 
   canvas.addEventListener(
     "wheel",
-    (event) => {
-
-      event.preventDefault();
-
-      const direction =
-        event.deltaY < 0
-          ? 1.1
-          : 0.9;
-
-      uvView.zoom *=
-        direction;
-
-      uvView.zoom =
-        Math.min(
-          uvView.maxZoom,
-          Math.max(
-            uvView.minZoom,
-            uvView.zoom
-          )
-        );
-
-      redraw();
-
-    },
+    preventBrowserScroll,
     {
-      passive: false
+      passive:
+        false
     }
   );
+
+}
+
+
+/* =========================================================
+   PREVENT PAGE SCROLL
+========================================================= */
+
+function preventBrowserScroll(
+  event
+) {
+
+  event.preventDefault();
+
+}
+
+
+/* =========================================================
+   RESET VIEW
+========================================================= */
+
+export function resetUVView() {
+
+  uvView.zoom =
+    1;
+
+  uvView.offsetX =
+    0;
+
+  uvView.offsetY =
+    0;
+
+  uvView.dragging =
+    false;
+
+  uvView.lastX =
+    0;
+
+  uvView.lastY =
+    0;
 
 }
