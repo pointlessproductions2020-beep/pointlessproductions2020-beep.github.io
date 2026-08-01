@@ -401,11 +401,15 @@ function showLoadingScreen() {
 
 
   loadingScreen.hidden =
-    false;
+  false;
 
-  loadingScreen.classList.remove(
-    "is-hiding"
-  );
+loadingScreen.classList.add(
+  "is-visible"
+);
+
+loadingScreen.classList.remove(
+  "is-hiding"
+);
 
   loadingScreen.setAttribute(
     "aria-hidden",
@@ -495,8 +499,12 @@ async function completeLoadingScreen() {
   );
 
 
-  loadingScreen.hidden =
-    true;
+loadingScreen.classList.remove(
+  "is-visible"
+);
+
+loadingScreen.hidden =
+  true;
 
   loadingScreen.classList.remove(
     "is-hiding"
@@ -553,6 +561,10 @@ async function showLoadingError(
 
   loadingScreen.hidden =
     true;
+
+  loadingScreen.classList.remove(
+  "is-visible"
+);
 
   loadingScreen.classList.remove(
     "is-hiding"
