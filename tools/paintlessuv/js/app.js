@@ -6,9 +6,17 @@ from "three/addons/controls/OrbitControls.js";
 import { loadModel }
 from "./model/loader.js";
 
+import { analyseModel }
+from "./model/analyser.js";
+
+import { updateModelPanels }
+from "./ui/panels.js";
+
 
 console.log(
   "PaintlessUV starting..."
+
+  
 );
 
 
@@ -537,6 +545,22 @@ modelFileInput?.addEventListener(
 
       frameModel(
         currentModel
+      );
+
+           const analysis =
+        analyseModel(
+          model
+        );
+
+
+      updateModelPanels(
+        analysis
+      );
+
+
+      console.log(
+        "MODEL ANALYSIS:",
+        analysis
       );
 
 
