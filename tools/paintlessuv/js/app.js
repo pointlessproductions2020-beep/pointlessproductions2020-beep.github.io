@@ -28,12 +28,18 @@ const openModelButton =
     "open-model-button"
   );
 
+const openModelTopButton =
+  document.getElementById(
+    "open-model-top-button"
+  );
+
 const modelFileInput =
   document.getElementById(
     "model-file-input"
   );
 
-let currentModel = null;
+let currentModel =
+  null;
 
 
 /* =========================================================
@@ -65,6 +71,12 @@ camera.position.set(
   0,
   1.5,
   3
+);
+
+camera.lookAt(
+  0,
+  0.5,
+  0
 );
 
 
@@ -190,13 +202,11 @@ function resizeRenderer() {
       canvas.clientHeight
     );
 
-
   renderer.setSize(
     width,
     height,
     false
   );
-
 
   camera.aspect =
     width / height;
@@ -226,13 +236,17 @@ function animate() {
     animate
   );
 
+  if (
+    cube.parent
+  ) {
 
-  cube.rotation.x +=
-    0.004;
+    cube.rotation.x +=
+      0.004;
 
-  cube.rotation.y +=
-    0.01;
+    cube.rotation.y +=
+      0.01;
 
+  }
 
   renderer.render(
     scene,
@@ -240,6 +254,102 @@ function animate() {
   );
 
 }
+
+
+/* =========================================================
+   OPEN MODEL
+========================================================= */
+
+function requestModelFile() {
+
+  console.log(
+    "OPEN BUTTON CLICKED!"
+  );
+
+  modelFileInput.value =
+    "";
+
+  modelFileInput.click();
+
+}
+
+
+openModelButton?.addEventListener(
+  "click",
+  requestModelFile
+);
+
+openModelTopButton?.addEventListener(
+  "click",
+  requestModelFile
+);
+
+
+modelFileInput?.addEventListener(
+  "change",
+  async (event) => {
+
+    console.log(
+      "FILE SELECTED!"
+    );
+
+    const file =
+      event.target.files?.[0];
+
+    if (!file) {
+
+      return;
+
+    }
+
+    console.log(
+      file
+    );
+
+    try {
+
+      const model =
+        await loadModel(
+          file
+        );
+
+      console.log(
+        "MODEL LOADED!",
+        model
+      );
+
+      if (
+        currentModel
+      ) {
+
+        scene.remove(
+          currentModel
+        );
+
+      }
+
+      scene.remove(
+        cube
+      );
+
+      currentModel =
+        model.scene;
+
+      scene.add(
+        currentModel
+      );
+
+    } catch (error) {
+
+      console.error(
+        "PaintlessUV model load failed:",
+        error
+      );
+
+    }
+
+  }
+);
 
 
 /* =========================================================
@@ -251,7 +361,8 @@ function startPaintlessUV() {
   if (
     !canvas ||
     !emptyState ||
-    !viewports
+    !viewports ||
+    !modelFileInput
   ) {
 
     console.error(
@@ -262,7 +373,6 @@ function startPaintlessUV() {
 
   }
 
-
   emptyState.hidden =
     true;
 
@@ -270,23 +380,17 @@ function startPaintlessUV() {
     "is-hidden"
   );
 
-
   viewports.hidden =
     false;
-
-
-  /*
-   * Wait until the previously hidden viewport has received
-   * its real width and height before sizing Three.js.
-   */
 
   requestAnimationFrame(
     () => {
 
       resizeRenderer();
 
-
-      if (!animationStarted) {
+      if (
+        !animationStarted
+      ) {
 
         animationStarted =
           true;
@@ -300,63 +404,9 @@ function startPaintlessUV() {
 
 }
 
-/* =========================================================
-   OPEN MODEL
-========================================================= */
 
-console.log("Binding Open Model...");
-
-openModelButton.addEventListener(
-  "click",
-  () => {
-
-    console.log("OPEN BUTTON CLICKED!");
-
-    modelFileInput.click();
-
-  }
+console.log(
+  "Binding Open Model buttons..."
 );
 
-modelFileInput.addEventListener(
-  "change",
-  async (event) => {
-
-    console.log("FILE SELECTED!");
-
-    const file = event.target.files[0];
-
-    if (!file)
-      return;
-
-    console.log(file);
-
-    try {
-
-      const model =
-        await loadModel(file);
-
-      console.log("MODEL LOADED!");
-
-      if (currentModel) {
-
-        scene.remove(currentModel);
-
-      }
-
-      scene.remove(cube);
-
-      currentModel = model.scene;
-
-      scene.add(currentModel);
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-    }
-
-  }
-);
 startPaintlessUV();
