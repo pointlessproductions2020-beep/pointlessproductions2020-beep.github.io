@@ -1002,6 +1002,18 @@ modelFileInput?.addEventListener(
 
       await completeLoadingScreen();
 
+      emptyState.hidden =
+        true;
+
+      emptyState.classList.add(
+      "is-hidden"
+      );
+
+      viewports.hidden =
+      false;
+
+      resizeRenderer();
+
     } catch (
       error
     ) {
@@ -1066,15 +1078,14 @@ function startPaintlessUV() {
 
 
   emptyState.hidden =
-    true;
+  false;
 
-  emptyState.classList.add(
-    "is-hidden"
-  );
+emptyState.classList.remove(
+  "is-hidden"
+);
 
-
-  viewports.hidden =
-    false;
+viewports.hidden =
+  true;
 
 
   /*
