@@ -434,22 +434,8 @@ let animationStarted =
 
 function animate() {
 
-  initialiseUVViewer(
-  uvCanvas,
-  () => {
-
-    if (
-      currentModel
-    ) {
-
-      drawUVLayout(
-        currentModel,
-        uvCanvas
-      );
-
-    }
-
-  }
+ initialiseUVViewer(
+  uvCanvas
 );
 
   requestAnimationFrame(
