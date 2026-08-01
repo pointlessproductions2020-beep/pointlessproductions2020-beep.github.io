@@ -12,6 +12,9 @@ from "./model/analyser.js";
 import { updateModelPanels }
 from "./ui/panels.js";
 
+import { drawUVLayout }
+from "./uv/renderer.js";
+
 
 console.log(
   "PaintlessUV starting..."
@@ -555,6 +558,18 @@ modelFileInput?.addEventListener(
 
       updateModelPanels(
         analysis
+      );
+
+            const uvRenderResult =
+        drawUVLayout(
+          currentModel,
+          uvCanvas
+        );
+
+
+      console.log(
+        "UV LAYOUT DRAWN:",
+        uvRenderResult
       );
 
 
