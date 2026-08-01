@@ -1,7 +1,15 @@
 import * as THREE from "three";
-import { loadModel } from "./model/loader.js";
 
-console.log("PaintlessUV starting...");
+import { OrbitControls }
+from "three/addons/controls/OrbitControls.js";
+
+import { loadModel }
+from "./model/loader.js";
+
+
+console.log(
+  "PaintlessUV starting..."
+);
 
 
 /* =========================================================
@@ -37,6 +45,7 @@ const modelFileInput =
   document.getElementById(
     "model-file-input"
   );
+
 
 let currentModel =
   null;
@@ -102,14 +111,45 @@ renderer.setPixelRatio(
 
 
 /* =========================================================
+   ORBIT CONTROLS
+========================================================= */
+
+const controls =
+  new OrbitControls(
+    camera,
+    renderer.domElement
+  );
+
+controls.enableDamping =
+  true;
+
+controls.dampingFactor =
+  0.08;
+
+controls.enablePan =
+  true;
+
+controls.enableZoom =
+  true;
+
+controls.target.set(
+  0,
+  0.5,
+  0
+);
+
+controls.update();
+
+
+/* =========================================================
    LIGHTING
 ========================================================= */
 
 const hemisphereLight =
   new THREE.HemisphereLight(
     0xffffff,
-    0x222233,
-    2
+    0x333344,
+    2.5
   );
 
 scene.add(
@@ -120,17 +160,34 @@ scene.add(
 const directionalLight =
   new THREE.DirectionalLight(
     0xffffff,
-    2
+    3
   );
 
 directionalLight.position.set(
   4,
-  5,
-  3
+  6,
+  5
 );
 
 scene.add(
   directionalLight
+);
+
+
+const fillLight =
+  new THREE.DirectionalLight(
+    0xa84cff,
+    1.2
+  );
+
+fillLight.position.set(
+  -4,
+  3,
+  -4
+);
+
+scene.add(
+  fillLight
 );
 
 
@@ -202,11 +259,13 @@ function resizeRenderer() {
       canvas.clientHeight
     );
 
+
   renderer.setSize(
     width,
     height,
     false
   );
+
 
   camera.aspect =
     width / height;
@@ -223,6 +282,126 @@ window.addEventListener(
 
 
 /* =========================================================
+   FRAME MODEL
+========================================================= */
+
+function frameModel(
+  object
+) {
+
+  const box =
+    new THREE.Box3()
+      .setFromObject(
+        object
+      );
+
+
+  if (
+    box.isEmpty()
+  ) {
+
+    console.warn(
+      "PaintlessUV could not calculate model bounds."
+    );
+
+    return;
+
+  }
+
+
+  const center =
+    box.getCenter(
+      new THREE.Vector3()
+    );
+
+  const size =
+    box.getSize(
+      new THREE.Vector3()
+    );
+
+
+  const maximumSize =
+    Math.max(
+      size.x,
+      size.y,
+      size.z
+    );
+
+
+  const fieldOfView =
+    THREE.MathUtils.degToRad(
+      camera.fov
+    );
+
+
+  let distance =
+    maximumSize /
+    (
+      2 *
+      Math.tan(
+        fieldOfView / 2
+      )
+    );
+
+
+  distance *=
+    1.55;
+
+
+  const direction =
+    new THREE.Vector3(
+      1,
+      0.35,
+      1
+    ).normalize();
+
+
+  camera.position.copy(
+    center.clone().add(
+      direction.multiplyScalar(
+        distance
+      )
+    )
+  );
+
+
+  camera.near =
+    Math.max(
+      distance / 100,
+      0.01
+    );
+
+  camera.far =
+    Math.max(
+      distance * 100,
+      1000
+    );
+
+  camera.updateProjectionMatrix();
+
+
+  controls.target.copy(
+    center
+  );
+
+  controls.minDistance =
+    Math.max(
+      maximumSize * 0.05,
+      0.01
+    );
+
+  controls.maxDistance =
+    Math.max(
+      maximumSize * 20,
+      100
+    );
+
+  controls.update();
+
+}
+
+
+/* =========================================================
    ANIMATION
 ========================================================= */
 
@@ -236,6 +415,7 @@ function animate() {
     animate
   );
 
+
   if (
     cube.parent
   ) {
@@ -247,6 +427,10 @@ function animate() {
       0.01;
 
   }
+
+
+  controls.update();
+
 
   renderer.render(
     scene,
@@ -266,6 +450,7 @@ function requestModelFile() {
     "OPEN BUTTON CLICKED!"
   );
 
+
   modelFileInput.value =
     "";
 
@@ -278,6 +463,7 @@ openModelButton?.addEventListener(
   "click",
   requestModelFile
 );
+
 
 openModelTopButton?.addEventListener(
   "click",
@@ -293,8 +479,10 @@ modelFileInput?.addEventListener(
       "FILE SELECTED!"
     );
 
+
     const file =
       event.target.files?.[0];
+
 
     if (!file) {
 
@@ -302,9 +490,11 @@ modelFileInput?.addEventListener(
 
     }
 
+
     console.log(
       file
     );
+
 
     try {
 
@@ -313,10 +503,12 @@ modelFileInput?.addEventListener(
           file
         );
 
+
       console.log(
         "MODEL LOADED!",
         model
       );
+
 
       if (
         currentModel
@@ -328,15 +520,28 @@ modelFileInput?.addEventListener(
 
       }
 
+
       scene.remove(
         cube
       );
 
+
       currentModel =
         model.scene;
 
+
       scene.add(
         currentModel
+      );
+
+
+      frameModel(
+        currentModel
+      );
+
+
+      console.log(
+        `${model.name} framed and ready.`
       );
 
     } catch (error) {
@@ -373,6 +578,7 @@ function startPaintlessUV() {
 
   }
 
+
   emptyState.hidden =
     true;
 
@@ -380,13 +586,16 @@ function startPaintlessUV() {
     "is-hidden"
   );
 
+
   viewports.hidden =
     false;
+
 
   requestAnimationFrame(
     () => {
 
       resizeRenderer();
+
 
       if (
         !animationStarted
@@ -408,5 +617,6 @@ function startPaintlessUV() {
 console.log(
   "Binding Open Model buttons..."
 );
+
 
 startPaintlessUV();
