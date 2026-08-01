@@ -72,6 +72,31 @@ const modelFileInput =
 
 
 /* =========================================================
+   LOADING SCREEN DOM
+========================================================= */
+
+const loadingScreen =
+  document.getElementById(
+    "loading-screen"
+  );
+
+const loadingMessage =
+  document.getElementById(
+    "loading-message"
+  );
+
+const loadingProgress =
+  document.getElementById(
+    "loading-progress"
+  );
+
+const loadingPercentage =
+  document.getElementById(
+    "loading-percentage"
+  );
+
+
+/* =========================================================
    APPLICATION STATE
 ========================================================= */
 
@@ -86,6 +111,12 @@ let currentAnalysis =
 
 let currentPaintTexture =
   null;
+
+let loadingTimers =
+  [];
+
+let loadingSession =
+  0;
 
 
 /* =========================================================
@@ -276,6 +307,332 @@ cube.position.y =
 scene.add(
   cube
 );
+
+
+/* =========================================================
+   LOADING SCREEN
+========================================================= */
+
+const loadingStages =
+  [
+    {
+      delay:
+        0,
+
+      percentage:
+        0,
+
+      message:
+        "Opening model..."
+    },
+
+    {
+      delay:
+        900,
+
+      percentage:
+        18,
+
+      message:
+        "Making sure the kettle's on..."
+    },
+
+    {
+      delay:
+        2200,
+
+      percentage:
+        41,
+
+      message:
+        "Checking for hidden tea bags..."
+    },
+
+    {
+      delay:
+        4000,
+
+      percentage:
+        63,
+
+      message:
+        "Sharpening the paintbrushes..."
+    },
+
+    {
+      delay:
+        6200,
+
+      percentage:
+        81,
+
+      message:
+        "Putting the biscuits somewhere safe..."
+    }
+  ];
+
+
+/**
+ * Display the loading screen and begin staged progress.
+ *
+ * The percentages are intentionally staged rather than
+ * pretending to represent exact loader progress.
+ */
+function showLoadingScreen() {
+
+  if (
+    !loadingScreen
+  ) {
+
+    return;
+
+  }
+
+
+  clearLoadingTimers();
+
+
+  loadingSession +=
+    1;
+
+
+  const session =
+    loadingSession;
+
+
+  loadingScreen.hidden =
+    false;
+
+  loadingScreen.classList.remove(
+    "is-hiding"
+  );
+
+  loadingScreen.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+
+  setLoadingStage(
+    0,
+    "Opening model..."
+  );
+
+
+  for (
+    const stage of
+    loadingStages
+  ) {
+
+    const timer =
+      window.setTimeout(
+        () => {
+
+          if (
+            session !==
+            loadingSession
+          ) {
+
+            return;
+
+          }
+
+
+          setLoadingStage(
+            stage.percentage,
+            stage.message
+          );
+
+        },
+        stage.delay
+      );
+
+
+    loadingTimers.push(
+      timer
+    );
+
+  }
+
+}
+
+
+/**
+ * Complete loading only when all real model work has finished.
+ */
+async function completeLoadingScreen() {
+
+  clearLoadingTimers();
+
+
+  setLoadingStage(
+    100,
+    "Ready!"
+  );
+
+
+  await wait(
+    420
+  );
+
+
+  if (
+    !loadingScreen
+  ) {
+
+    return;
+
+  }
+
+
+  loadingScreen.classList.add(
+    "is-hiding"
+  );
+
+
+  await wait(
+    320
+  );
+
+
+  loadingScreen.hidden =
+    true;
+
+  loadingScreen.classList.remove(
+    "is-hiding"
+  );
+
+  loadingScreen.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+}
+
+
+/**
+ * Display an import failure before closing the overlay.
+ */
+async function showLoadingError(
+  message =
+    "Something went wrong while opening the model."
+) {
+
+  clearLoadingTimers();
+
+
+  setLoadingStage(
+    100,
+    message
+  );
+
+
+  await wait(
+    1300
+  );
+
+
+  if (
+    !loadingScreen
+  ) {
+
+    return;
+
+  }
+
+
+  loadingScreen.classList.add(
+    "is-hiding"
+  );
+
+
+  await wait(
+    320
+  );
+
+
+  loadingScreen.hidden =
+    true;
+
+  loadingScreen.classList.remove(
+    "is-hiding"
+  );
+
+  loadingScreen.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+}
+
+
+function setLoadingStage(
+  percentage,
+  message
+) {
+
+  const safePercentage =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        Number(
+          percentage
+        ) || 0
+      )
+    );
+
+
+  if (
+    loadingMessage
+  ) {
+
+    loadingMessage.textContent =
+      message;
+
+  }
+
+
+  if (
+    loadingProgress
+  ) {
+
+    loadingProgress.style.width =
+      `${safePercentage}%`;
+
+  }
+
+
+  if (
+    loadingPercentage
+  ) {
+
+    loadingPercentage.textContent =
+      `${safePercentage}%`;
+
+  }
+
+}
+
+
+function clearLoadingTimers() {
+
+  for (
+    const timer of
+    loadingTimers
+  ) {
+
+    window.clearTimeout(
+      timer
+    );
+
+  }
+
+
+  loadingTimers =
+    [];
+
+}
 
 
 /* =========================================================
@@ -483,11 +840,6 @@ function animate() {
 
 function requestModelFile() {
 
-  console.log(
-    "OPEN BUTTON CLICKED!"
-  );
-
-
   modelFileInput.value =
     "";
 
@@ -510,12 +862,9 @@ openModelTopButton?.addEventListener(
 
 modelFileInput?.addEventListener(
   "change",
-  async (event) => {
-
-    console.log(
-      "FILE SELECTED!"
-    );
-
+  async (
+    event
+  ) => {
 
     const file =
       event.target.files?.[0];
@@ -530,9 +879,15 @@ modelFileInput?.addEventListener(
     }
 
 
-    console.log(
-      file
-    );
+    showLoadingScreen();
+
+
+    /*
+     * Give the browser one frame to display the overlay before
+     * model parsing and UV work begin.
+     */
+
+    await waitForNextFrame();
 
 
     try {
@@ -541,12 +896,6 @@ modelFileInput?.addEventListener(
         await loadModel(
           file
         );
-
-
-      console.log(
-        "MODEL LOADED!",
-        model
-      );
 
 
       /*
@@ -599,11 +948,7 @@ modelFileInput?.addEventListener(
 
 
       /*
-       * Analyse the original model.
-       *
-       * We deliberately do not create a texture automatically.
-       * The missing-texture warning remains visible until the
-       * user presses the Fix button.
+       * Analyse the model without silently fixing anything.
        */
 
       currentAnalysis =
@@ -618,16 +963,11 @@ modelFileInput?.addEventListener(
 
 
       /*
-       * Reset the UV camera for the newly loaded model.
+       * Reset and build the cached UV layout.
        */
 
       resetUVView();
 
-
-      /*
-       * Build the expensive UV geometry once and place the
-       * finished image inside the off-screen cache.
-       */
 
       const uvRenderResult =
         drawUVLayout(
@@ -636,10 +976,6 @@ modelFileInput?.addEventListener(
         );
 
 
-      /*
-       * Display the cached UV using the current zoom and offset.
-       */
-
       drawCachedUV(
         uvCanvas,
         uvView
@@ -647,8 +983,8 @@ modelFileInput?.addEventListener(
 
 
       console.log(
-        "UV LAYOUT DRAWN:",
-        uvRenderResult
+        "MODEL LOADED:",
+        model
       );
 
 
@@ -659,8 +995,12 @@ modelFileInput?.addEventListener(
 
 
       console.log(
-        `${model.name} framed and ready.`
+        "UV LAYOUT DRAWN:",
+        uvRenderResult
       );
+
+
+      await completeLoadingScreen();
 
     } catch (
       error
@@ -669,6 +1009,11 @@ modelFileInput?.addEventListener(
       console.error(
         "PaintlessUV model load failed:",
         error
+      );
+
+
+      await showLoadingError(
+        "The model refused to cooperate."
       );
 
     }
@@ -700,6 +1045,26 @@ function startPaintlessUV() {
   }
 
 
+  /*
+   * Prevent the loading overlay appearing before a model
+   * has actually been selected.
+   */
+
+  if (
+    loadingScreen
+  ) {
+
+    loadingScreen.hidden =
+      true;
+
+    loadingScreen.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+  }
+
+
   emptyState.hidden =
     true;
 
@@ -713,10 +1078,7 @@ function startPaintlessUV() {
 
 
   /*
-   * Initialise the UV viewer once.
-   *
-   * Zooming and panning redraw only the cached UV bitmap.
-   * The model's thousands of triangles are not rebuilt.
+   * Initialise the cached UV viewer once.
    */
 
   initialiseUVViewer(
@@ -731,10 +1093,6 @@ function startPaintlessUV() {
     }
   );
 
-
-  /*
-   * Wait until the hidden viewports have real dimensions.
-   */
 
   requestAnimationFrame(
     () => {
@@ -759,9 +1117,45 @@ function startPaintlessUV() {
 }
 
 
-console.log(
-  "Binding Open Model buttons..."
-);
+function wait(
+  milliseconds
+) {
+
+  return new Promise(
+    (
+      resolve
+    ) => {
+
+      window.setTimeout(
+        resolve,
+        milliseconds
+      );
+
+    }
+  );
+
+}
+
+
+function waitForNextFrame() {
+
+  return new Promise(
+    (
+      resolve
+    ) => {
+
+      requestAnimationFrame(
+        () => {
+
+          resolve();
+
+        }
+      );
+
+    }
+  );
+
+}
 
 
 startPaintlessUV();
