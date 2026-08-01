@@ -1,5 +1,9 @@
-import { uvView }
-from "./viewer.js";
+import {
+  prepareUVCache,
+  getUVCacheCanvas
+}
+from "./cache.js";
+
 
 /* =========================================================
    PAINTLESSUV
@@ -8,7 +12,8 @@ from "./viewer.js";
 
 
 /**
- * Draw a model's UV triangles onto the UV canvas.
+ * Build the UV layout once inside an off-screen cache,
+ * then copy the cached image onto the visible UV canvas.
  *
  * @param {THREE.Object3D} modelScene
  * @param {HTMLCanvasElement} canvas
@@ -25,59 +30,72 @@ export function drawUVLayout(
   ) {
 
     return {
-      hasUV: false,
-      meshes: 0,
-      triangles: 0
+      hasUV:
+        false,
+
+      meshes:
+        0,
+
+      triangles:
+        0
     };
 
   }
 
 
-  const context =
+  const visibleContext =
     canvas.getContext(
       "2d"
     );
 
 
-  if (!context) {
+  if (
+    !visibleContext
+  ) {
 
     throw new Error(
-      "PaintlessUV could not access the UV canvas."
+      "PaintlessUV could not access the visible UV canvas."
     );
 
   }
 
 
-const width =
+  const width =
+    Math.max(
+      1,
+      Math.round(
+        canvas.clientWidth
+      )
+    );
+
+  const height =
+    Math.max(
+      1,
+      Math.round(
+        canvas.clientHeight
+      )
+    );
+
+
   canvas.width =
-  canvas.clientWidth;
+    width;
 
-const height =
   canvas.height =
-  canvas.clientHeight;
+    height;
 
-  context.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
 
-   context.save();
+  const cache =
+    prepareUVCache(
+      width,
+      height
+    );
 
-context.translate(
-  uvView.offsetX,
-  uvView.offsetY
-);
-
-context.scale(
-  uvView.zoom,
-  uvView.zoom
-);
+  const cacheContext =
+    cache.context;
 
 
   drawCheckerboard(
-    context,
+    cacheContext,
     width,
     height
   );
@@ -115,7 +133,9 @@ context.scale(
         );
 
 
-      if (!uv) {
+      if (
+        !uv
+      ) {
 
         return;
 
@@ -133,38 +153,57 @@ context.scale(
         geometry.getIndex();
 
 
-      context.save();
+      cacheContext.save();
 
-      context.strokeStyle =
+      cacheContext.strokeStyle =
         "rgba(125, 30, 225, 0.95)";
 
-      context.fillStyle =
+      cacheContext.fillStyle =
         "rgba(168, 76, 255, 0.055)";
 
-      context.lineWidth =
+      cacheContext.lineWidth =
         1.15;
 
-      context.lineJoin =
+      cacheContext.lineJoin =
         "round";
 
-      context.lineCap =
+      cacheContext.lineCap =
         "round";
 
 
-      if (index) {
+      /*
+       * Draw all triangles as one combined path.
+       *
+       * This is considerably faster than calling fill()
+       * and stroke() separately for every triangle.
+       */
+
+      cacheContext.beginPath();
+
+
+      if (
+        index
+      ) {
 
         for (
           let position = 0;
-          position + 2 < index.count;
+          position + 2 <
+            index.count;
           position += 3
         ) {
 
-          drawTriangle(
-            context,
+          addTriangleToPath(
+            cacheContext,
             uv,
-            index.getX(position),
-            index.getX(position + 1),
-            index.getX(position + 2),
+            index.getX(
+              position
+            ),
+            index.getX(
+              position + 1
+            ),
+            index.getX(
+              position + 2
+            ),
             width,
             height
           );
@@ -179,12 +218,13 @@ context.scale(
 
         for (
           let position = 0;
-          position + 2 < uv.count;
+          position + 2 <
+            uv.count;
           position += 3
         ) {
 
-          drawTriangle(
-            context,
+          addTriangleToPath(
+            cacheContext,
             uv,
             position,
             position + 1,
@@ -202,38 +242,121 @@ context.scale(
       }
 
 
-      context.restore();
+      cacheContext.fill();
+
+      cacheContext.stroke();
+
+      cacheContext.restore();
 
     }
   );
 
 
-  if (!hasUV) {
+  if (
+    !hasUV
+  ) {
 
     drawNoUVMessage(
-      context,
+      cacheContext,
       width,
       height
     );
 
   }
 
-   context.restore();
+
+  drawCachedUV(
+    canvas
+  );
+
 
   return {
     hasUV,
-    meshes: meshCount,
-    triangles: triangleCount
+
+    meshes:
+      meshCount,
+
+    triangles:
+      triangleCount
   };
 
 }
 
 
 /* =========================================================
-   DRAW UV TRIANGLE
+   DISPLAY CACHED UV
 ========================================================= */
 
-function drawTriangle(
+/**
+ * Copy the already-rendered cache onto the visible canvas.
+ *
+ * This function does not inspect the model or rebuild any
+ * triangles, so it will later be safe for zooming and panning.
+ *
+ * @param {HTMLCanvasElement} canvas
+ */
+export function drawCachedUV(
+  canvas
+) {
+
+  if (
+    !canvas
+  ) {
+
+    return;
+
+  }
+
+
+  const visibleContext =
+    canvas.getContext(
+      "2d"
+    );
+
+  const cachedCanvas =
+    getUVCacheCanvas();
+
+
+  if (
+    !visibleContext ||
+    !cachedCanvas
+  ) {
+
+    return;
+
+  }
+
+
+  visibleContext.setTransform(
+    1,
+    0,
+    0,
+    1,
+    0,
+    0
+  );
+
+  visibleContext.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  visibleContext.drawImage(
+    cachedCanvas,
+    0,
+    0
+  );
+
+}
+
+
+/* =========================================================
+   BUILD TRIANGLE PATH
+========================================================= */
+
+function addTriangleToPath(
   context,
   uv,
   indexA,
@@ -245,30 +368,40 @@ function drawTriangle(
 
   const pointA =
     convertUVToCanvas(
-      uv.getX(indexA),
-      uv.getY(indexA),
+      uv.getX(
+        indexA
+      ),
+      uv.getY(
+        indexA
+      ),
       width,
       height
     );
 
   const pointB =
     convertUVToCanvas(
-      uv.getX(indexB),
-      uv.getY(indexB),
+      uv.getX(
+        indexB
+      ),
+      uv.getY(
+        indexB
+      ),
       width,
       height
     );
 
   const pointC =
     convertUVToCanvas(
-      uv.getX(indexC),
-      uv.getY(indexC),
+      uv.getX(
+        indexC
+      ),
+      uv.getY(
+        indexC
+      ),
       width,
       height
     );
 
-
-  context.beginPath();
 
   context.moveTo(
     pointA.x,
@@ -287,10 +420,6 @@ function drawTriangle(
 
   context.closePath();
 
-  context.fill();
-
-  context.stroke();
-
 }
 
 
@@ -306,8 +435,12 @@ function convertUVToCanvas(
 ) {
 
   return {
-    x: u * width,
-    y: (1 - v) * height
+    x:
+      u * width,
+
+    y:
+      (1 - v) *
+      height
   };
 
 }
@@ -343,7 +476,9 @@ function drawCheckerboard(
         (
           x / squareSize +
           y / squareSize
-        ) % 2 === 0;
+        ) %
+        2 ===
+        0;
 
 
       context.fillStyle =
@@ -403,6 +538,7 @@ function drawNoUVMessage(
   context.font =
     "700 34px Arial, sans-serif";
 
+
   context.fillText(
     "No UV map found",
     width / 2,
@@ -415,6 +551,7 @@ function drawNoUVMessage(
 
   context.font =
     "500 20px Arial, sans-serif";
+
 
   context.fillText(
     "PaintlessUV will generate one automatically.",
