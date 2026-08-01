@@ -158,8 +158,8 @@ export function drawUVLayout(
       cacheContext.strokeStyle =
         "rgba(125, 30, 225, 0.95)";
 
-      cacheContext.fillStyle =
-        "rgba(168, 76, 255, 0.055)";
+      //cacheContext.fillStyle =
+       // "transparent";
 
       cacheContext.lineWidth =
         1.15;
@@ -241,8 +241,6 @@ export function drawUVLayout(
 
       }
 
-
-      cacheContext.fill();
 
       cacheContext.stroke();
 
