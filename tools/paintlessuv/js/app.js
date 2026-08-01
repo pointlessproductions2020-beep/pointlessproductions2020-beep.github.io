@@ -13,20 +13,21 @@ import { updateModelPanels }
 from "./ui/panels.js";
 
 import {
-  drawUVLayout
+  drawUVLayout,
+  drawCachedUV
 }
 from "./uv/renderer.js";
 
 import {
-  initialiseUVViewer
+  initialiseUVViewer,
+  resetUVView,
+  uvView
 }
 from "./uv/viewer.js";
 
 
 console.log(
   "PaintlessUV starting..."
-
-  
 );
 
 
@@ -37,6 +38,11 @@ console.log(
 const canvas =
   document.getElementById(
     "model-canvas"
+  );
+
+const uvCanvas =
+  document.getElementById(
+    "uv-canvas"
   );
 
 const emptyState =
@@ -64,13 +70,21 @@ const modelFileInput =
     "model-file-input"
   );
 
-const uvCanvas =
-  document.getElementById(
-    "uv-canvas"
-  );
 
+/* =========================================================
+   APPLICATION STATE
+========================================================= */
 
 let currentModel =
+  null;
+
+let currentLoadedModel =
+  null;
+
+let currentAnalysis =
+  null;
+
+let currentPaintTexture =
   null;
 
 
@@ -113,7 +127,7 @@ camera.lookAt(
 
 
 /* =========================================================
-   RENDERER
+   THREE.JS RENDERER
 ========================================================= */
 
 const renderer =
@@ -425,7 +439,7 @@ function frameModel(
 
 
 /* =========================================================
-   ANIMATION
+   ANIMATION LOOP
 ========================================================= */
 
 let animationStarted =
@@ -433,10 +447,6 @@ let animationStarted =
 
 
 function animate() {
-
- initialiseUVViewer(
-  uvCanvas
-);
 
   requestAnimationFrame(
     animate
@@ -511,7 +521,9 @@ modelFileInput?.addEventListener(
       event.target.files?.[0];
 
 
-    if (!file) {
+    if (
+      !file
+    ) {
 
       return;
 
@@ -537,6 +549,10 @@ modelFileInput?.addEventListener(
       );
 
 
+      /*
+       * Remove the previously loaded model.
+       */
+
       if (
         currentModel
       ) {
@@ -548,13 +564,28 @@ modelFileInput?.addEventListener(
       }
 
 
+      /*
+       * Remove the temporary test cube.
+       */
+
       scene.remove(
         cube
       );
 
 
+      /*
+       * Store the complete loader result for later preparation,
+       * painting and exporting.
+       */
+
+      currentLoadedModel =
+        model;
+
       currentModel =
         model.scene;
+
+      currentPaintTexture =
+        null;
 
 
       scene.add(
@@ -566,21 +597,53 @@ modelFileInput?.addEventListener(
         currentModel
       );
 
-           const analysis =
+
+      /*
+       * Analyse the original model.
+       *
+       * We deliberately do not create a texture automatically.
+       * The missing-texture warning remains visible until the
+       * user presses the Fix button.
+       */
+
+      currentAnalysis =
         analyseModel(
-          model
+          currentLoadedModel
         );
 
 
       updateModelPanels(
-        analysis
+        currentAnalysis
       );
 
-            const uvRenderResult =
+
+      /*
+       * Reset the UV camera for the newly loaded model.
+       */
+
+      resetUVView();
+
+
+      /*
+       * Build the expensive UV geometry once and place the
+       * finished image inside the off-screen cache.
+       */
+
+      const uvRenderResult =
         drawUVLayout(
           currentModel,
           uvCanvas
         );
+
+
+      /*
+       * Display the cached UV using the current zoom and offset.
+       */
+
+      drawCachedUV(
+        uvCanvas,
+        uvView
+      );
 
 
       console.log(
@@ -591,7 +654,7 @@ modelFileInput?.addEventListener(
 
       console.log(
         "MODEL ANALYSIS:",
-        analysis
+        currentAnalysis
       );
 
 
@@ -599,7 +662,9 @@ modelFileInput?.addEventListener(
         `${model.name} framed and ready.`
       );
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.error(
         "PaintlessUV model load failed:",
@@ -620,6 +685,7 @@ function startPaintlessUV() {
 
   if (
     !canvas ||
+    !uvCanvas ||
     !emptyState ||
     !viewports ||
     !modelFileInput
@@ -645,6 +711,30 @@ function startPaintlessUV() {
   viewports.hidden =
     false;
 
+
+  /*
+   * Initialise the UV viewer once.
+   *
+   * Zooming and panning redraw only the cached UV bitmap.
+   * The model's thousands of triangles are not rebuilt.
+   */
+
+  initialiseUVViewer(
+    uvCanvas,
+    () => {
+
+      drawCachedUV(
+        uvCanvas,
+        uvView
+      );
+
+    }
+  );
+
+
+  /*
+   * Wait until the hidden viewports have real dimensions.
+   */
 
   requestAnimationFrame(
     () => {
