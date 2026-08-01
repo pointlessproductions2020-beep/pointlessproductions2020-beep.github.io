@@ -12,8 +12,15 @@ from "./model/analyser.js";
 import { updateModelPanels }
 from "./ui/panels.js";
 
-import { drawUVLayout }
+import {
+  drawUVLayout
+}
 from "./uv/renderer.js";
+
+import {
+  initialiseUVViewer
+}
+from "./uv/viewer.js";
 
 
 console.log(
@@ -426,6 +433,24 @@ let animationStarted =
 
 
 function animate() {
+
+  initialiseUVViewer(
+  uvCanvas,
+  () => {
+
+    if (
+      currentModel
+    ) {
+
+      drawUVLayout(
+        currentModel,
+        uvCanvas
+      );
+
+    }
+
+  }
+);
 
   requestAnimationFrame(
     animate
