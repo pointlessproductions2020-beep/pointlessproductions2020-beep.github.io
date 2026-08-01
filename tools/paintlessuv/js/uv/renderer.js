@@ -1,3 +1,6 @@
+import { uvView }
+from "./viewer.js";
+
 /* =========================================================
    PAINTLESSUV
    UV LAYOUT RENDERER
@@ -45,12 +48,13 @@ export function drawUVLayout(
   }
 
 
-  const width =
-    canvas.width;
+const width =
+  canvas.width =
+  canvas.clientWidth;
 
-  const height =
-    canvas.height;
-
+const height =
+  canvas.height =
+  canvas.clientHeight;
 
   context.clearRect(
     0,
@@ -58,6 +62,18 @@ export function drawUVLayout(
     width,
     height
   );
+
+   context.save();
+
+context.translate(
+  uvView.offsetX,
+  uvView.offsetY
+);
+
+context.scale(
+  uvView.zoom,
+  uvView.zoom
+);
 
 
   drawCheckerboard(
@@ -202,6 +218,7 @@ export function drawUVLayout(
 
   }
 
+   context.restore();
 
   return {
     hasUV,
