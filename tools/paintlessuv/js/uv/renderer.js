@@ -164,10 +164,10 @@ export function drawUVLayout(
        */
 
       cacheContext.strokeStyle =
-        "rgba(125, 30, 225, 0.58)";
+      "rgba(125, 30, 225, 0.78)";
 
       cacheContext.lineWidth =
-        0.55;
+      0.9;
 
       cacheContext.lineJoin =
         "round";
@@ -480,6 +480,9 @@ export function drawCachedUV(
     view.zoom,
     view.zoom
   );
+
+  visibleContext.imageSmoothingEnabled =
+  false;
 
   visibleContext.drawImage(
     cachedCanvas,
