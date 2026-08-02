@@ -90,6 +90,12 @@ export function initialisePainter(
   painterState.painting =
     false;
 
+  painterState.lastX =
+    0;
+
+  painterState.lastY =
+    0;
+
 
   return getPainterState();
 
@@ -437,6 +443,12 @@ export function getPainterState() {
 
     painting:
       painterState.painting,
+
+    lastX:
+      painterState.lastX,
+
+    lastY:
+      painterState.lastY,
 
     colour:
       painterState.colour,
