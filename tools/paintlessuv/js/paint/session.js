@@ -38,6 +38,9 @@ const paintSession = {
   paintTexture:
     null,
 
+  brushCanvas:
+    null,
+
   brushCleanup:
     null
 
@@ -49,13 +52,16 @@ const paintSession = {
 ========================================================= */
 
 /**
- * Prepare a loaded model for painting and initialise the
- * painter and brush systems.
+ * Start painting with either:
+ *
+ * - an existing PaintlessUV paint texture; or
+ * - a newly prepared texture when one has not been created yet.
  *
  * @param {Object} options
  * @param {Object} options.loadedModel
  * @param {Object} options.analysis
  * @param {HTMLCanvasElement} options.brushCanvas
+ * @param {Object|null} options.paintTexture
  * @param {number} options.textureWidth
  * @param {number} options.textureHeight
  * @param {string} options.background
@@ -66,6 +72,7 @@ export function startPaintSession(
     loadedModel,
     analysis,
     brushCanvas,
+    paintTexture = null,
     textureWidth = 2048,
     textureHeight = 2048,
     background = "#ffffff"
@@ -108,41 +115,65 @@ export function startPaintSession(
   stopPaintSession();
 
 
-  const preparation =
-    prepareModelForPainting(
-      loadedModel,
-      analysis,
-      {
-        textureWidth,
-        textureHeight,
-        background
-      }
-    );
+  let preparation =
+    null;
 
+  let activePaintTexture =
+    paintTexture;
+
+
+  /*
+   * If the Prepare button has already created a texture,
+   * reuse it instead of preparing the model a second time.
+   */
 
   if (
-    !preparation.readyToPaint
+    !activePaintTexture
   ) {
 
-    return {
-      success:
-        false,
+    preparation =
+      prepareModelForPainting(
+        loadedModel,
+        analysis,
+        {
+          textureWidth,
+          textureHeight,
+          background
+        }
+      );
 
-      preparation,
 
-      paintTexture:
-        preparation.paintTexture,
+    if (
+      !preparation.readyToPaint
+    ) {
 
-      message:
-        preparation.warnings?.[0] ||
-        "The model is not ready to paint."
-    };
+      return {
+        success:
+          false,
+
+        preparation,
+
+        paintTexture:
+          preparation.paintTexture,
+
+        message:
+          preparation.warnings?.[0] ||
+          "The model is not ready to paint."
+      };
+
+    }
+
+
+    activePaintTexture =
+      preparation.paintTexture;
 
   }
 
 
   if (
-    !preparation.paintTexture
+    !isValidPaintTexture(
+      activePaintTexture
+    )
   ) {
 
     return {
@@ -155,14 +186,14 @@ export function startPaintSession(
         null,
 
       message:
-        "PaintlessUV could not create a paint texture."
+        "PaintlessUV could not find a writable paint texture."
     };
 
   }
 
 
   initialisePainter(
-    preparation.paintTexture
+    activePaintTexture
   );
 
 
@@ -182,7 +213,10 @@ export function startPaintSession(
     analysis;
 
   paintSession.paintTexture =
-    preparation.paintTexture;
+    activePaintTexture;
+
+  paintSession.brushCanvas =
+    brushCanvas;
 
   paintSession.brushCleanup =
     brushCleanup;
@@ -195,7 +229,7 @@ export function startPaintSession(
     preparation,
 
     paintTexture:
-      preparation.paintTexture,
+      activePaintTexture,
 
     message:
       "Ready to paint."
@@ -232,6 +266,9 @@ export function stopPaintSession() {
   paintSession.paintTexture =
     null;
 
+  paintSession.brushCanvas =
+    null;
+
   paintSession.brushCleanup =
     null;
 
@@ -262,7 +299,27 @@ export function getPaintSession() {
       paintSession.analysis,
 
     paintTexture:
-      paintSession.paintTexture
+      paintSession.paintTexture,
+
+    brushCanvas:
+      paintSession.brushCanvas
   };
+
+}
+
+
+/* =========================================================
+   VALIDATE PAINT TEXTURE
+========================================================= */
+
+function isValidPaintTexture(
+  paintTexture
+) {
+
+  return Boolean(
+    paintTexture?.canvas &&
+    paintTexture?.context &&
+    paintTexture?.texture?.isTexture
+  );
 
 }
