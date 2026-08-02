@@ -30,6 +30,11 @@ import {
 }
 from "./uv/viewer.js";
 
+import {
+  analyseUVLayout
+}
+from "./uv/analyser.js";
+
 
 console.log(
   "PaintlessUV starting..."
@@ -1039,9 +1044,21 @@ modelFileInput?.addEventListener(
        */
 
       currentAnalysis =
-        analyseModel(
-          currentLoadedModel
+  analyseModel(
+    currentLoadedModel
+  );
+
+
+      const uvAnalysis =
+        analyseUVLayout(
+          currentModel
         );
+
+
+      console.log(
+        "UV ANALYSIS:",
+        uvAnalysis
+      );
 
 
       updateModelPanels(
