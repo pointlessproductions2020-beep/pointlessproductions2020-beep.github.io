@@ -1064,6 +1064,10 @@ function prepareCurrentModel() {
         true
       );
 
+      activateTool(
+        "paint"
+      );
+
       prepareButton.classList.add(
         "is-active"
       );
