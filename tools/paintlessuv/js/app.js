@@ -1446,7 +1446,7 @@ registerToolButton(
 
   registerToolButton(
   "paint",
-  '[data-tool="paint"]'
+  '[data-tool="brush"]'
 );
 
 
