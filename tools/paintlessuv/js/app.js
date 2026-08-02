@@ -9,6 +9,11 @@ from "./model/loader.js";
 import { analyseModel }
 from "./model/analyser.js";
 
+import {
+  prepareModelForPainting
+}
+from "./model/prepare.js";
+
 import { updateModelPanels }
 from "./ui/panels.js";
 
@@ -845,6 +850,72 @@ function animate() {
 
 }
 
+/* =========================================================
+   PREPARE MODEL
+========================================================= */
+
+function prepareCurrentModel() {
+
+  if (
+    !currentLoadedModel ||
+    !currentAnalysis
+  ) {
+
+    console.warn(
+      "No model loaded."
+    );
+
+    return;
+
+  }
+
+
+  console.log(
+    "Preparing model..."
+  );
+
+
+  const result =
+    prepareModelForPainting(
+      currentLoadedModel,
+      currentAnalysis
+    );
+
+
+  console.log(
+    "Preparation Result:",
+    result
+  );
+
+
+  if (
+    result.paintTexture
+  ) {
+
+    currentPaintTexture =
+      result.paintTexture;
+
+  }
+
+
+  currentAnalysis.hasTexture =
+    true;
+
+  currentAnalysis.readyToPaint =
+    result.readyToPaint;
+
+
+  updateModelPanels(
+    currentAnalysis
+  );
+
+
+  console.log(
+    "READY TO PAINT"
+  );
+
+}
+
 
 /* =========================================================
    OPEN MODEL
@@ -976,6 +1047,20 @@ modelFileInput?.addEventListener(
       updateModelPanels(
         currentAnalysis
       );
+
+      const prepareButton =
+        document.getElementById(
+          "fix-model-button"
+      );
+
+    if (
+        prepareButton
+      ) {
+
+        prepareButton.onclick =
+          prepareCurrentModel;
+
+      }
 
 
       /*
