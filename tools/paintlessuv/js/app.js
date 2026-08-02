@@ -40,6 +40,23 @@ import {
 }
 from "./uv/analyser.js";
 
+import {
+  registerTool,
+  registerToolButton,
+  activateTool
+}
+from "./tools/controller.js";
+
+import {
+  createOrbitTool
+}
+from "./tools/orbit.js";
+
+import {
+  createPanTool
+}
+from "./tools/pan.js";
+
 
 console.log(
   "PaintlessUV starting..."
@@ -1357,6 +1374,36 @@ emptyState.classList.remove(
 
 viewports.hidden =
   true;
+
+  registerTool(
+  "orbit",
+  createOrbitTool(
+    controls
+  )
+);
+
+registerTool(
+  "pan",
+  createPanTool(
+    controls
+  )
+);
+
+
+registerToolButton(
+  "orbit",
+  '[data-tool="orbit"]'
+);
+
+registerToolButton(
+  "pan",
+  '[data-tool="pan"]'
+);
+
+
+activateTool(
+  "orbit"
+);
 
 
   /*
