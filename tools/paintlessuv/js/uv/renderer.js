@@ -13,6 +13,9 @@ from "./cache.js";
 const TRIANGLES_PER_BATCH =
   300;
 
+const FALLBACK_UV_SIZE =
+  1024;
+
 
 /**
  * Build the UV layout inside an off-screen cache,
@@ -63,21 +66,16 @@ export function drawUVLayout(
   }
 
 
-  const width =
-    Math.max(
-      1,
-      Math.round(
-        canvas.clientWidth
-      )
+  const dimensions =
+    getUVCanvasDimensions(
+      canvas
     );
 
+  const width =
+    dimensions.width;
+
   const height =
-    Math.max(
-      1,
-      Math.round(
-        canvas.clientHeight
-      )
-    );
+    dimensions.height;
 
 
   canvas.width =
@@ -115,7 +113,9 @@ export function drawUVLayout(
 
 
   modelScene.traverse(
-    (object) => {
+    (
+      object
+    ) => {
 
       if (
         !object.isMesh ||
@@ -158,16 +158,11 @@ export function drawUVLayout(
 
       cacheContext.save();
 
-      /*
-       * Thin, partially transparent lines prevent dense UV
-       * geometry from becoming one solid purple block.
-       */
-
       cacheContext.strokeStyle =
-      "rgba(125, 30, 225, 0.78)";
+        "rgba(125, 30, 225, 0.78)";
 
       cacheContext.lineWidth =
-      0.9;
+        0.9;
 
       cacheContext.lineJoin =
         "round";
@@ -240,6 +235,89 @@ export function drawUVLayout(
 
 
 /* =========================================================
+   CANVAS DIMENSIONS
+========================================================= */
+
+/**
+ * Obtain a usable UV canvas size even when the workspace is
+ * temporarily hidden during model loading.
+ *
+ * A hidden canvas reports a client size of zero. Rendering
+ * the complete UV map at 1 × 1 creates a solid purple pixel
+ * which is later stretched over the whole viewport.
+ *
+ * @param {HTMLCanvasElement} canvas
+ * @returns {{width: number, height: number}}
+ */
+function getUVCanvasDimensions(
+  canvas
+) {
+
+  const canvasRectangle =
+    canvas.getBoundingClientRect();
+
+  const parentRectangle =
+    canvas.parentElement
+      ?.getBoundingClientRect();
+
+
+  let width =
+    Math.round(
+      canvasRectangle.width ||
+      canvas.clientWidth ||
+      parentRectangle?.width ||
+      0
+    );
+
+  let height =
+    Math.round(
+      canvasRectangle.height ||
+      canvas.clientHeight ||
+      parentRectangle?.height ||
+      0
+    );
+
+
+  /*
+   * The editor may still be hidden while the loading overlay
+   * is active. Use a proper UV working resolution rather than
+   * allowing the cache to become 1 × 1.
+   */
+
+  if (
+    width <
+      64 ||
+    height <
+      64
+  ) {
+
+    width =
+      FALLBACK_UV_SIZE;
+
+    height =
+      FALLBACK_UV_SIZE;
+
+  }
+
+
+  return {
+    width:
+      Math.max(
+        64,
+        width
+      ),
+
+    height:
+      Math.max(
+        64,
+        height
+      )
+  };
+
+}
+
+
+/* =========================================================
    DRAW INDEXED GEOMETRY
 ========================================================= */
 
@@ -263,7 +341,8 @@ function drawIndexedGeometry(
 
   for (
     let position = 0;
-    position + 2 < index.count;
+    position + 2 <
+      index.count;
     position += 3
   ) {
 
@@ -310,7 +389,7 @@ function drawIndexedGeometry(
 
   if (
     trianglesInBatch >
-    0
+      0
   ) {
 
     context.stroke();
@@ -346,7 +425,8 @@ function drawNonIndexedGeometry(
 
   for (
     let position = 0;
-    position + 2 < uv.count;
+    position + 2 <
+      uv.count;
     position += 3
   ) {
 
@@ -387,7 +467,7 @@ function drawNonIndexedGeometry(
 
   if (
     trianglesInBatch >
-    0
+      0
   ) {
 
     context.stroke();
@@ -452,6 +532,27 @@ export function drawCachedUV(
   }
 
 
+  /*
+   * When the visible canvas was previously created while the
+   * workspace was hidden, make sure it is no longer 1 × 1.
+   */
+
+  if (
+    canvas.width <
+      64 ||
+    canvas.height <
+      64
+  ) {
+
+    canvas.width =
+      cachedCanvas.width;
+
+    canvas.height =
+      cachedCanvas.height;
+
+  }
+
+
   visibleContext.setTransform(
     1,
     0,
@@ -482,7 +583,7 @@ export function drawCachedUV(
   );
 
   visibleContext.imageSmoothingEnabled =
-  false;
+    false;
 
   visibleContext.drawImage(
     cachedCanvas,
@@ -579,7 +680,8 @@ function convertUVToCanvas(
 
   return {
     x:
-      u * width,
+      u *
+      width,
 
     y:
       (
@@ -607,22 +709,28 @@ function drawCheckerboard(
 
   for (
     let y = 0;
-    y < height;
-    y += squareSize
+    y <
+      height;
+    y +=
+      squareSize
   ) {
 
     for (
       let x = 0;
-      x < width;
-      x += squareSize
+      x <
+        width;
+      x +=
+        squareSize
     ) {
 
       const isLight =
         (
-          x / squareSize +
-          y / squareSize
+          x /
+            squareSize +
+          y /
+            squareSize
         ) %
-        2 ===
+          2 ===
         0;
 
 
