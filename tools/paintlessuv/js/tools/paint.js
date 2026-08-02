@@ -334,53 +334,102 @@ export function createPaintTool(
 ========================================================= */
 
   function handlePointerMove(
-    event
+  event
+) {
+
+  if (
+    !painting ||
+    event.pointerId !==
+      activePointerId
   ) {
 
-    if (
-      !painting ||
-      event.pointerId !==
-        activePointerId
-    ) {
+    return;
 
-      return;
-
-    }
+  }
 
 
-    event.preventDefault();
+  event.preventDefault();
 
-    event.stopPropagation();
-
-
-    const texturePoint =
-      getTexturePointFromPointer(
-        event
-      );
+  event.stopPropagation();
 
 
-    /*
-     * When the pointer temporarily leaves the model surface,
-     * skip that point rather than drawing a line across an
-     * unrelated part of the texture.
-     */
-
-    if (
-      !texturePoint
-    ) {
-
-      return;
-
-    }
+  const texturePoint =
+    getTexturePointFromPointer(
+      event
+    );
 
 
-    continuePaintStroke(
+  /*
+   * The pointer may leave the model or pass across a UV seam.
+   * End the current texture-space segment so the painter does
+   * not draw a giant line between unrelated UV islands.
+   */
+
+  if (
+    !texturePoint
+  ) {
+
+    endPaintStroke();
+
+    painting =
+      false;
+
+    return;
+
+  }
+
+
+  const painter =
+    getPainterState();
+
+
+  const previousX =
+    painter.lastX;
+
+  const previousY =
+    painter.lastY;
+
+
+  const jumpDistance =
+    Math.hypot(
+      texturePoint.x -
+        previousX,
+
+      texturePoint.y -
+        previousY
+    );
+
+
+  const maximumSafeJump =
+    Math.max(
+      painter.size * 4,
+      80
+    );
+
+
+  if (
+    jumpDistance >
+      maximumSafeJump
+  ) {
+
+    endPaintStroke();
+
+    beginPaintStroke(
       texturePoint.x,
       texturePoint.y
     );
 
+    return;
+
   }
 
+
+  continuePaintStroke(
+    texturePoint.x,
+    texturePoint.y
+  );
+
+}
 
 /* =========================================================
    POINTER UP
