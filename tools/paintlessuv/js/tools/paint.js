@@ -594,6 +594,12 @@ export function createPaintTool(
           candidate.uv
       );
 
+     console.log({
+          uv: intersection?.uv,
+          point: intersection?.point,
+          face: intersection?.faceIndex,
+          object: intersection?.object?.name
+      });
 
     if (
       !intersection?.uv
