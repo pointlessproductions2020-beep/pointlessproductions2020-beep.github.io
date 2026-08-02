@@ -43,7 +43,8 @@ from "./uv/analyser.js";
 import {
   registerTool,
   registerToolButton,
-  activateTool
+  activateTool,
+  setToolEnabled
 }
 from "./tools/controller.js";
 
@@ -56,6 +57,11 @@ import {
   createPanTool
 }
 from "./tools/pan.js";
+
+import {
+  createPaintTool
+}
+from "./tools/paint.js";
 
 
 console.log(
@@ -143,6 +149,9 @@ let currentAnalysis =
 
 let currentPaintTexture =
   null;
+
+let paintToolReady =
+  false;
 
 let loadingTimers =
   [];
@@ -1047,6 +1056,14 @@ function prepareCurrentModel() {
       prepareButton.textContent =
         "Painting Active";
 
+      paintToolReady =
+        true;
+
+      setToolEnabled(
+        "paint",
+        true
+      );
+
       prepareButton.classList.add(
         "is-active"
       );
@@ -1389,6 +1406,29 @@ registerTool(
   )
 );
 
+  registerTool(
+  "paint",
+  createPaintTool(
+    {
+      canvas:
+        canvas,
+
+      camera:
+        camera,
+
+      controls:
+        controls,
+
+      getModel() {
+
+        return currentModel;
+
+      }
+
+    }
+  )
+);
+
 
 registerToolButton(
   "orbit",
@@ -1400,9 +1440,19 @@ registerToolButton(
   '[data-tool="pan"]'
 );
 
+  registerToolButton(
+  "paint",
+  '[data-tool="paint"]'
+);
+
 
 activateTool(
   "orbit"
+);
+
+  setToolEnabled(
+  "paint",
+  false
 );
 
 
