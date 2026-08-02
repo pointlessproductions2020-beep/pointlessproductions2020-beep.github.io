@@ -10,9 +10,12 @@ from "./cache.js";
    UV LAYOUT RENDERER
 ========================================================= */
 
+const TRIANGLES_PER_BATCH =
+  300;
+
 
 /**
- * Build the UV layout once inside an off-screen cache,
+ * Build the UV layout inside an off-screen cache,
  * then copy the cached image onto the visible UV canvas.
  *
  * @param {THREE.Object3D} modelScene
@@ -155,14 +158,16 @@ export function drawUVLayout(
 
       cacheContext.save();
 
-      cacheContext.strokeStyle =
-        "rgba(125, 30, 225, 0.95)";
+      /*
+       * Thin, partially transparent lines prevent dense UV
+       * geometry from becoming one solid purple block.
+       */
 
-      //cacheContext.fillStyle =
-       // "transparent";
+      cacheContext.strokeStyle =
+        "rgba(125, 30, 225, 0.58)";
 
       cacheContext.lineWidth =
-        1.15;
+        0.55;
 
       cacheContext.lineJoin =
         "round";
@@ -171,78 +176,31 @@ export function drawUVLayout(
         "round";
 
 
-      /*
-       * Draw all triangles as one combined path.
-       *
-       * This is considerably faster than calling fill()
-       * and stroke() separately for every triangle.
-       */
-
-      cacheContext.beginPath();
-
-
       if (
         index
       ) {
 
-        for (
-          let position = 0;
-          position + 2 <
-            index.count;
-          position += 3
-        ) {
-
-          addTriangleToPath(
+        triangleCount +=
+          drawIndexedGeometry(
             cacheContext,
             uv,
-            index.getX(
-              position
-            ),
-            index.getX(
-              position + 1
-            ),
-            index.getX(
-              position + 2
-            ),
+            index,
             width,
             height
           );
-
-
-          triangleCount +=
-            1;
-
-        }
 
       } else {
 
-        for (
-          let position = 0;
-          position + 2 <
-            uv.count;
-          position += 3
-        ) {
-
-          addTriangleToPath(
+        triangleCount +=
+          drawNonIndexedGeometry(
             cacheContext,
             uv,
-            position,
-            position + 1,
-            position + 2,
             width,
             height
           );
 
-
-          triangleCount +=
-            1;
-
-        }
-
       }
 
-
-      cacheContext.stroke();
 
       cacheContext.restore();
 
@@ -282,23 +240,187 @@ export function drawUVLayout(
 
 
 /* =========================================================
+   DRAW INDEXED GEOMETRY
+========================================================= */
+
+function drawIndexedGeometry(
+  context,
+  uv,
+  index,
+  width,
+  height
+) {
+
+  let triangleCount =
+    0;
+
+  let trianglesInBatch =
+    0;
+
+
+  context.beginPath();
+
+
+  for (
+    let position = 0;
+    position + 2 < index.count;
+    position += 3
+  ) {
+
+    addTriangleToPath(
+      context,
+      uv,
+      index.getX(
+        position
+      ),
+      index.getX(
+        position + 1
+      ),
+      index.getX(
+        position + 2
+      ),
+      width,
+      height
+    );
+
+
+    triangleCount +=
+      1;
+
+    trianglesInBatch +=
+      1;
+
+
+    if (
+      trianglesInBatch >=
+      TRIANGLES_PER_BATCH
+    ) {
+
+      context.stroke();
+
+      context.beginPath();
+
+      trianglesInBatch =
+        0;
+
+    }
+
+  }
+
+
+  if (
+    trianglesInBatch >
+    0
+  ) {
+
+    context.stroke();
+
+  }
+
+
+  return triangleCount;
+
+}
+
+
+/* =========================================================
+   DRAW NON-INDEXED GEOMETRY
+========================================================= */
+
+function drawNonIndexedGeometry(
+  context,
+  uv,
+  width,
+  height
+) {
+
+  let triangleCount =
+    0;
+
+  let trianglesInBatch =
+    0;
+
+
+  context.beginPath();
+
+
+  for (
+    let position = 0;
+    position + 2 < uv.count;
+    position += 3
+  ) {
+
+    addTriangleToPath(
+      context,
+      uv,
+      position,
+      position + 1,
+      position + 2,
+      width,
+      height
+    );
+
+
+    triangleCount +=
+      1;
+
+    trianglesInBatch +=
+      1;
+
+
+    if (
+      trianglesInBatch >=
+      TRIANGLES_PER_BATCH
+    ) {
+
+      context.stroke();
+
+      context.beginPath();
+
+      trianglesInBatch =
+        0;
+
+    }
+
+  }
+
+
+  if (
+    trianglesInBatch >
+    0
+  ) {
+
+    context.stroke();
+
+  }
+
+
+  return triangleCount;
+
+}
+
+
+/* =========================================================
    DISPLAY CACHED UV
 ========================================================= */
 
 /**
- * Copy the already-rendered cache onto the visible canvas.
- *
- * This function does not inspect the model or rebuild any
- * triangles, so it will later be safe for zooming and panning.
+ * Copy the rendered UV cache onto the visible canvas.
  *
  * @param {HTMLCanvasElement} canvas
+ * @param {Object} view
  */
 export function drawCachedUV(
   canvas,
   view = {
-    zoom: 1,
-    offsetX: 0,
-    offsetY: 0
+    zoom:
+      1,
+
+    offsetX:
+      0,
+
+    offsetY:
+      0
   }
 ) {
 
@@ -346,25 +468,26 @@ export function drawCachedUV(
     canvas.height
   );
 
- visibleContext.save();
 
-visibleContext.translate(
-  view.offsetX,
-  view.offsetY
-);
+  visibleContext.save();
 
-visibleContext.scale(
-  view.zoom,
-  view.zoom
-);
+  visibleContext.translate(
+    view.offsetX,
+    view.offsetY
+  );
 
-visibleContext.drawImage(
-  cachedCanvas,
-  0,
-  0
-);
+  visibleContext.scale(
+    view.zoom,
+    view.zoom
+  );
 
-visibleContext.restore();
+  visibleContext.drawImage(
+    cachedCanvas,
+    0,
+    0
+  );
+
+  visibleContext.restore();
 
 }
 
@@ -456,7 +579,9 @@ function convertUVToCanvas(
       u * width,
 
     y:
-      (1 - v) *
+      (
+        1 - v
+      ) *
       height
   };
 
