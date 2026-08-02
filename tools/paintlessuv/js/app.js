@@ -14,6 +14,11 @@ import {
 }
 from "./model/prepare.js";
 
+import {
+  startPaintSession
+}
+from "./paint/session.js";
+
 import { updateModelPanels }
 from "./ui/panels.js";
 
@@ -856,18 +861,19 @@ function animate() {
 }
 
 /* =========================================================
-   PREPARE MODEL
+   PREPARE MODEL AND START PAINTING
 ========================================================= */
 
 function prepareCurrentModel() {
 
   if (
     !currentLoadedModel ||
+    !currentModel ||
     !currentAnalysis
   ) {
 
     console.warn(
-      "No model loaded."
+      "PaintlessUV cannot start painting without a loaded model."
     );
 
     return;
@@ -875,52 +881,199 @@ function prepareCurrentModel() {
   }
 
 
-  console.log(
-    "Preparing model..."
-  );
-
-
-  const result =
-    prepareModelForPainting(
-      currentLoadedModel,
-      currentAnalysis
+  const prepareButton =
+    document.getElementById(
+      "fix-model-button"
     );
 
 
-  console.log(
-    "Preparation Result:",
-    result
-  );
-
-
   if (
-    result.paintTexture
+    prepareButton
   ) {
 
-    currentPaintTexture =
-      result.paintTexture;
+    prepareButton.disabled =
+      true;
+
+    prepareButton.textContent =
+      "Preparing...";
 
   }
 
 
-  currentAnalysis.hasTexture =
-    true;
+  try {
 
-  currentAnalysis.readyToPaint =
-    result.readyToPaint;
+    /*
+     * Create the paint texture only when one has not already
+     * been created during this model session.
+     */
+
+    if (
+      !currentPaintTexture
+    ) {
+
+      const preparation =
+        prepareModelForPainting(
+          currentLoadedModel,
+          currentAnalysis
+        );
 
 
-  updateModelPanels(
-    currentAnalysis
-  );
+      console.log(
+        "PREPARATION RESULT:",
+        preparation
+      );
 
 
-  console.log(
-    "READY TO PAINT"
-  );
+      if (
+        !preparation.readyToPaint
+      ) {
+
+        throw new Error(
+          preparation.warnings?.[0] ||
+          "The model is not ready to paint."
+        );
+
+      }
+
+
+      if (
+        !preparation.paintTexture
+      ) {
+
+        throw new Error(
+          "PaintlessUV could not create a writable paint texture."
+        );
+
+      }
+
+
+      currentPaintTexture =
+        preparation.paintTexture;
+
+    }
+
+
+    /*
+     * Start the brush system using the texture that was just
+     * created. The visible UV canvas receives pointer input,
+     * while painter.js modifies the off-screen paint texture.
+     */
+
+    const paintSessionResult =
+      startPaintSession(
+        {
+          loadedModel:
+            currentLoadedModel,
+
+          analysis:
+            currentAnalysis,
+
+          brushCanvas:
+            uvCanvas,
+
+          paintTexture:
+            currentPaintTexture
+        }
+      );
+
+
+    if (
+      !paintSessionResult.success
+    ) {
+
+      throw new Error(
+        paintSessionResult.message ||
+        "PaintlessUV could not start the paint session."
+      );
+
+    }
+
+
+    /*
+     * Update the model analysis display so it reflects the new
+     * texture created by PaintlessUV.
+     */
+
+    currentAnalysis =
+      {
+        ...currentAnalysis,
+
+        hasTexture:
+          true,
+
+        textures:
+          Math.max(
+            1,
+            Number(
+              currentAnalysis.textures ||
+              0
+            )
+          ),
+
+        readyToPaint:
+          true
+      };
+
+
+    updateModelPanels(
+      currentAnalysis
+    );
+
+
+    if (
+      prepareButton
+    ) {
+
+      prepareButton.disabled =
+        false;
+
+      prepareButton.textContent =
+        "Painting Active";
+
+      prepareButton.classList.add(
+        "is-active"
+      );
+
+    }
+
+
+    console.log(
+      "PAINT SESSION ACTIVE:",
+      paintSessionResult
+    );
+
+
+    console.log(
+      "Drag across the UV panel to paint."
+    );
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "PaintlessUV could not begin painting:",
+      error
+    );
+
+
+    if (
+      prepareButton
+    ) {
+
+      prepareButton.disabled =
+        false;
+
+      prepareButton.textContent =
+        currentPaintTexture
+          ? "Ready to Paint"
+          : "Prepare Model";
+
+    }
+
+  }
 
 }
-
 
 /* =========================================================
    OPEN MODEL
