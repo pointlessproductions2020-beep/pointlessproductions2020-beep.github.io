@@ -1119,6 +1119,64 @@ function prepareCurrentModel() {
 }
 
 /* =========================================================
+   MODEL ANALYSIS FIX ACTIONS
+========================================================= */
+
+/*
+ * The analysis panel creates its own Fix buttons dynamically.
+ * Those buttons communicate through custom document events.
+ */
+
+document.addEventListener(
+  "paintlessuv:fixtexture",
+  () => {
+
+    console.log("🎨 FIX TEXTURE EVENT RECEIVED");
+
+    prepareCurrentModel();
+
+  }
+);
+
+
+document.addEventListener(
+  "paintlessuv:fixuv",
+  (
+    event
+  ) => {
+
+    const button =
+      event.detail?.button;
+
+
+    /*
+     * UV generation is not connected yet.
+     * Restore the button rather than leaving it stuck on
+     * "Fixing...".
+     */
+
+    console.warn(
+      "PaintlessUV UV generation has not been connected yet."
+    );
+
+
+    if (
+      button
+    ) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Fix";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
    OPEN MODEL
 ========================================================= */
 
