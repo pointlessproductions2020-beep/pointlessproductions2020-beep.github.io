@@ -36,6 +36,11 @@ import {
 from "./uv/viewer.js";
 
 import {
+  initialiseBrushControls
+}
+from "./ui/brush-controls.js";
+
+import {
   analyseUVLayout
 }
 from "./uv/analyser.js";
@@ -1458,6 +1463,8 @@ activateTool(
   "paint",
   false
 );
+
+  initialiseBrushControls();
 
 
   /*
