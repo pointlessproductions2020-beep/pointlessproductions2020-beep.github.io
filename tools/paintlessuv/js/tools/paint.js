@@ -601,6 +601,30 @@ export function createPaintTool(
           object: intersection?.object?.name
       });
 
+    const geometry =
+    intersection.object.geometry;
+
+const uvAttribute =
+    geometry.getAttribute("uv");
+
+const index =
+    geometry.getIndex();
+
+console.log(
+    "UV Attribute:",
+    uvAttribute
+);
+
+console.log(
+    "Index:",
+    index
+);
+
+console.log(
+    "Face Index:",
+    intersection.faceIndex
+);
+
     if (
       !intersection?.uv
     ) {
