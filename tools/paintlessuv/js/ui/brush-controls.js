@@ -12,6 +12,10 @@ import {
 }
 from "../paint/brush-library.js";
 
+console.log(
+  "NEW BRUSH CONTROLS LOADED"
+);
+
 
 /* =========================================================
    PAINTLESSUV
