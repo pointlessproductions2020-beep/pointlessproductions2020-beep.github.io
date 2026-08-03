@@ -13,6 +13,11 @@ import {
 }
 from "./brush-state.js";
 
+import {
+  drawBrushStamp
+}
+from "./brush-renderer.js";
+
 
 /* =========================================================
    PAINTLESSUV
@@ -380,56 +385,12 @@ function paintStamp(
   }
 
 
-  const radius =
-    Math.max(
-      0.5,
-      brush.size /
-      2
-    );
-
-
-  context.save();
-
-  context.globalAlpha =
-    brush.opacity;
-
-  context.globalCompositeOperation =
-    "source-over";
-
-
-  /*
-   * A hardness of 1 produces a solid circular brush.
-   * Lower hardness values produce a radial fade.
-   */
-
-  if (
-    brush.hardness >=
-      0.999
-  ) {
-
-    paintHardCircle(
-      context,
-      x,
-      y,
-      radius,
-      brush.colour
-    );
-
-  } else {
-
-    paintSoftCircle(
-      context,
-      x,
-      y,
-      radius,
-      brush.colour,
-      brush.hardness
-    );
-
-  }
-
-
-  context.restore();
+  drawBrushStamp(
+    context,
+    x,
+    y,
+    brush
+  );
 
 }
 
