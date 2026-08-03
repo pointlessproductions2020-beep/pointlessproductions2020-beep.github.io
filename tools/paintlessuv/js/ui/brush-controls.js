@@ -1,9 +1,16 @@
 import {
   getBrushState,
   setBrushColour,
+  updateBrushState,
   notifyBrushStateChanged
 }
 from "../paint/brush-state.js";
+
+import {
+  getBrushLibrary,
+  getBrushPresetDefaults
+}
+from "../paint/brush-library.js";
 
 
 /* =========================================================
@@ -32,8 +39,8 @@ const colourState = {
 ========================================================= */
 
 /**
- * Connect the existing PaintlessUV colour controls to the
- * shared brush state.
+ * Connect PaintlessUV brush controls to the shared brush
+ * state.
  *
  * @returns {Function} cleanup function
  */
@@ -74,7 +81,25 @@ export function initialiseBrushControls() {
 
 
   /*
-   * Begin with the current shared brush colour.
+   * Create the temporary preset selector automatically.
+   *
+   * This allows us to test every built-in brush before the
+   * full Paint sidebar is designed.
+   */
+
+  const presetControl =
+    createPresetControl();
+
+
+  const presetSelect =
+    presetControl?.querySelector(
+      "#brush-preset-select"
+    ) ||
+    null;
+
+
+  /*
+   * Begin with the current shared brush state.
    */
 
   const brush =
@@ -95,10 +120,90 @@ export function initialiseBrushControls() {
     colourState.primary;
 
 
+  if (
+    presetSelect
+  ) {
+
+    populatePresetSelect(
+      presetSelect
+    );
+
+    presetSelect.value =
+      brush.preset;
+
+  }
+
+
   updateColourControls(
     primaryInput,
     primaryChip,
     secondaryChip
+  );
+
+
+  /* =======================================================
+     BRUSH PRESET
+  ======================================================= */
+
+  function handlePresetChange(
+    event
+  ) {
+
+    const presetId =
+      String(
+        event.target.value ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const defaults =
+      getBrushPresetDefaults(
+        presetId
+      );
+
+
+    if (
+      !defaults
+    ) {
+
+      console.warn(
+        `PaintlessUV could not find brush preset: ${presetId}`
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * Preserve the user's currently selected colour.
+     *
+     * All other brush settings are replaced by the preset's
+     * defaults.
+     */
+
+    updateBrushState(
+      {
+        ...defaults,
+
+        colour:
+          colourState.primary
+      }
+    );
+
+
+    console.log(
+      `PaintlessUV brush preset: ${presetId}`
+    );
+
+  }
+
+
+  presetSelect?.addEventListener(
+    "change",
+    handlePresetChange
   );
 
 
@@ -262,12 +367,45 @@ export function initialiseBrushControls() {
     event
   ) {
 
-    const nextColour =
-      event.detail?.colour;
+    const nextBrush =
+      event.detail;
 
 
     if (
-      typeof nextColour !==
+      !nextBrush ||
+      typeof nextBrush !==
+        "object"
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+     * Synchronise the preset selector.
+     */
+
+    if (
+      presetSelect &&
+      typeof nextBrush.preset ===
+        "string" &&
+      presetSelect.value !==
+        nextBrush.preset
+    ) {
+
+      presetSelect.value =
+        nextBrush.preset;
+
+    }
+
+
+    /*
+     * Synchronise the active colour.
+     */
+
+    if (
+      typeof nextBrush.colour !==
         "string"
     ) {
 
@@ -278,7 +416,7 @@ export function initialiseBrushControls() {
 
     const normalisedColour =
       normaliseColour(
-        nextColour,
+        nextBrush.colour,
         colourState.primary
       );
 
@@ -322,6 +460,12 @@ export function initialiseBrushControls() {
 
   return function cleanupBrushControls() {
 
+    presetSelect?.removeEventListener(
+      "change",
+      handlePresetChange
+    );
+
+
     primaryInput.removeEventListener(
       "input",
       handlePrimaryInput
@@ -354,7 +498,242 @@ export function initialiseBrushControls() {
       handleBrushStateChange
     );
 
+
+    presetControl?.remove();
+
   };
+
+}
+
+
+/* =========================================================
+   CREATE PRESET CONTROL
+========================================================= */
+
+function createPresetControl() {
+
+  const existingControl =
+    document.getElementById(
+      "brush-preset-control"
+    );
+
+
+  if (
+    existingControl
+  ) {
+
+    return existingControl;
+
+  }
+
+
+  const optionsBar =
+    document.getElementById(
+      "tool-options-bar"
+    );
+
+
+  if (
+    !optionsBar
+  ) {
+
+    console.warn(
+      "PaintlessUV could not find the tool options bar."
+    );
+
+    return null;
+
+  }
+
+
+  const control =
+    document.createElement(
+      "label"
+    );
+
+
+  control.className =
+    "colour-control";
+
+  control.id =
+    "brush-preset-control";
+
+
+  const label =
+    document.createElement(
+      "span"
+    );
+
+
+  label.textContent =
+    "Brush";
+
+
+  const select =
+    document.createElement(
+      "select"
+    );
+
+
+  select.id =
+    "brush-preset-select";
+
+  select.setAttribute(
+    "aria-label",
+    "Brush preset"
+  );
+
+  select.title =
+    "Choose brush preset";
+
+
+  control.append(
+    label,
+    select
+  );
+
+
+  const colourControl =
+    optionsBar.querySelector(
+      ".colour-control"
+    );
+
+
+  if (
+    colourControl
+  ) {
+
+    optionsBar.insertBefore(
+      control,
+      colourControl
+    );
+
+  } else {
+
+    optionsBar.append(
+      control
+    );
+
+  }
+
+
+  return control;
+
+}
+
+
+/* =========================================================
+   POPULATE PRESET SELECT
+========================================================= */
+
+function populatePresetSelect(
+  select
+) {
+
+  select.innerHTML =
+    "";
+
+
+  const brushes =
+    getBrushLibrary();
+
+
+  const categories =
+    [
+      {
+        id:
+          "paint",
+
+        name:
+          "Paint Brushes"
+      },
+
+      {
+        id:
+          "shape",
+
+        name:
+          "Shape Brushes"
+      },
+
+      {
+        id:
+          "stamp",
+
+        name:
+          "Stamps"
+      }
+    ];
+
+
+  for (
+    const category of
+    categories
+  ) {
+
+    const categoryBrushes =
+      brushes.filter(
+        (
+          brush
+        ) =>
+          brush.category ===
+          category.id
+      );
+
+
+    if (
+      categoryBrushes.length ===
+        0
+    ) {
+
+      continue;
+
+    }
+
+
+    const group =
+      document.createElement(
+        "optgroup"
+      );
+
+
+    group.label =
+      category.name;
+
+
+    for (
+      const brush of
+      categoryBrushes
+    ) {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        brush.id;
+
+      option.textContent =
+        brush.name;
+
+      option.title =
+        brush.description;
+
+
+      group.append(
+        option
+      );
+
+    }
+
+
+    select.append(
+      group
+    );
+
+  }
 
 }
 
