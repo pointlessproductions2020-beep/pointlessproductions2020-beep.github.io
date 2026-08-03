@@ -4745,3 +4745,38 @@ select option:checked {
   display:
     none !important;
 }
+/* =========================================================
+   TEMPORARY BRUSH PRESET SELECTOR
+========================================================= */
+
+#brush-preset-control select {
+  min-width: 145px;
+  height: 31px;
+  padding: 5px 30px 5px 9px;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--surface-lighter),
+      var(--surface-light)
+    );
+
+  color: #ffffff;
+
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+#brush-preset-control select:hover {
+  border-color: var(--border-strong);
+}
+
+#brush-preset-control select:focus {
+  border-color: var(--purple-light);
+
+  box-shadow:
+    0 0 0 3px rgba(168, 76, 255, 0.11);
+}
