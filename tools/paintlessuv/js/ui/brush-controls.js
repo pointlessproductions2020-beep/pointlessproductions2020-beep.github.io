@@ -48,7 +48,13 @@ const colourState = {
  *
  * @returns {Function} cleanup function
  */
+
+
 export function initialiseBrushControls() {
+
+  console.log(
+  "INITIALISING BRUSH CONTROLS"
+);
 
   const primaryInput =
     document.getElementById(
@@ -91,8 +97,13 @@ export function initialiseBrushControls() {
    * full Paint sidebar is designed.
    */
 
-  const presetControl =
-    createPresetControl();
+        const presetControl =
+          createPresetControl();
+
+        console.log(
+        "PRESET CONTROL:",
+        presetControl
+      );
 
 
   const presetSelect =
