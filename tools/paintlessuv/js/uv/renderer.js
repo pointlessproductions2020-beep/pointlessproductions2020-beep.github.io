@@ -684,9 +684,7 @@ function convertUVToCanvas(
       width,
 
     y:
-      (
-        1 - v
-      ) *
+      v *
       height
   };
 
