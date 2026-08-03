@@ -722,10 +722,6 @@ function colourToTransparent(
     ).trim();
 
 
-  /*
-   * Six-digit hexadecimal.
-   */
-
   if (
     /^#[0-9a-f]{6}$/i.test(
       normalisedColour
@@ -736,10 +732,6 @@ function colourToTransparent(
 
   }
 
-
-  /*
-   * Three-digit hexadecimal.
-   */
 
   if (
     /^#[0-9a-f]{3}$/i.test(
@@ -763,14 +755,13 @@ function colourToTransparent(
 
 
   /*
-   * Modern canvas implementations support a colour followed
-   * by an alpha percentage using color-mix.
+   * The PaintlessUV colour picker will supply hexadecimal
+   * colours. Use transparent black only as a safe fallback.
    */
 
-  return `color-mix(in srgb, ${normalisedColour} 0%, transparent)`;
+  return "rgba(0, 0, 0, 0)";
 
 }
-
 
 /* =========================================================
    VALIDATION
