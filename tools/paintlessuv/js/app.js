@@ -1,12 +1,18 @@
 import * as THREE from "three";
 
-import { OrbitControls }
+import {
+  OrbitControls
+}
 from "three/addons/controls/OrbitControls.js";
 
-import { loadModel }
+import {
+  loadModel
+}
 from "./model/loader.js";
 
-import { analyseModel }
+import {
+  analyseModel
+}
 from "./model/analyser.js";
 
 import {
@@ -19,8 +25,24 @@ import {
 }
 from "./paint/session.js";
 
-import { updateModelPanels }
+import {
+  updateModelPanels
+}
 from "./ui/panels.js";
+
+import {
+  initialiseBrushControls
+}
+from "./ui/brush-controls.js";
+
+import {
+  initialisePaintWorkspace,
+  enterPrepareWorkspace,
+  enterPaintWorkspace,
+  enablePaintWorkspace,
+  disablePaintWorkspace
+}
+from "./ui/paint-workspace.js";
 
 import {
   drawUVLayout,
@@ -34,11 +56,6 @@ import {
   uvView
 }
 from "./uv/viewer.js";
-
-import {
-  initialiseBrushControls
-}
-from "./ui/brush-controls.js";
 
 import {
   analyseUVLayout
@@ -68,6 +85,11 @@ import {
 }
 from "./tools/paint.js";
 
+
+/* =========================================================
+   PAINTLESSUV
+   APPLICATION
+========================================================= */
 
 console.log(
   "PaintlessUV starting..."
@@ -155,14 +177,14 @@ let currentAnalysis =
 let currentPaintTexture =
   null;
 
-let paintToolReady =
-  false;
-
 let loadingTimers =
   [];
 
 let loadingSession =
   0;
+
+let animationStarted =
+  false;
 
 
 /* =========================================================
@@ -211,6 +233,7 @@ const renderer =
   new THREE.WebGLRenderer(
     {
       canvas,
+
       antialias:
         true
     }
@@ -218,7 +241,8 @@ const renderer =
 
 renderer.setPixelRatio(
   Math.min(
-    window.devicePixelRatio || 1,
+    window.devicePixelRatio ||
+    1,
     2
   )
 );
@@ -333,6 +357,7 @@ const cube =
       1,
       1
     ),
+
     new THREE.MeshStandardMaterial(
       {
         color:
@@ -419,10 +444,7 @@ const loadingStages =
 
 
 /**
- * Display the loading screen and begin staged progress.
- *
- * The percentages are intentionally staged rather than
- * pretending to represent exact loader progress.
+ * Show the model loading overlay.
  */
 function showLoadingScreen() {
 
@@ -447,15 +469,15 @@ function showLoadingScreen() {
 
 
   loadingScreen.hidden =
-  false;
+    false;
 
-loadingScreen.classList.add(
-  "is-visible"
-);
+  loadingScreen.classList.add(
+    "is-visible"
+  );
 
-loadingScreen.classList.remove(
-  "is-hiding"
-);
+  loadingScreen.classList.remove(
+    "is-hiding"
+  );
 
   loadingScreen.setAttribute(
     "aria-hidden",
@@ -508,7 +530,7 @@ loadingScreen.classList.remove(
 
 
 /**
- * Complete loading only when all real model work has finished.
+ * Complete and close the loading overlay.
  */
 async function completeLoadingScreen() {
 
@@ -545,16 +567,16 @@ async function completeLoadingScreen() {
   );
 
 
-loadingScreen.classList.remove(
-  "is-visible"
-);
-
-loadingScreen.hidden =
-  true;
+  loadingScreen.classList.remove(
+    "is-visible"
+  );
 
   loadingScreen.classList.remove(
     "is-hiding"
   );
+
+  loadingScreen.hidden =
+    true;
 
   loadingScreen.setAttribute(
     "aria-hidden",
@@ -565,7 +587,9 @@ loadingScreen.hidden =
 
 
 /**
- * Display an import failure before closing the overlay.
+ * Show a model loading error before closing the overlay.
+ *
+ * @param {string} message
  */
 async function showLoadingError(
   message =
@@ -605,16 +629,16 @@ async function showLoadingError(
   );
 
 
-  loadingScreen.hidden =
-    true;
-
   loadingScreen.classList.remove(
-  "is-visible"
-);
+    "is-visible"
+  );
 
   loadingScreen.classList.remove(
     "is-hiding"
   );
+
+  loadingScreen.hidden =
+    true;
 
   loadingScreen.setAttribute(
     "aria-hidden",
@@ -624,6 +648,12 @@ async function showLoadingError(
 }
 
 
+/**
+ * Update loading progress.
+ *
+ * @param {number} percentage
+ * @param {string} message
+ */
 function setLoadingStage(
   percentage,
   message
@@ -636,7 +666,8 @@ function setLoadingStage(
         0,
         Number(
           percentage
-        ) || 0
+        ) ||
+        0
       )
     );
 
@@ -673,6 +704,9 @@ function setLoadingStage(
 }
 
 
+/**
+ * Cancel outstanding loading timers.
+ */
 function clearLoadingTimers() {
 
   for (
@@ -699,6 +733,15 @@ function clearLoadingTimers() {
 
 function resizeRenderer() {
 
+  if (
+    !canvas
+  ) {
+
+    return;
+
+  }
+
+
   const width =
     Math.max(
       1,
@@ -720,7 +763,8 @@ function resizeRenderer() {
 
 
   camera.aspect =
-    width / height;
+    width /
+    height;
 
   camera.updateProjectionMatrix();
 
@@ -737,6 +781,11 @@ window.addEventListener(
    FRAME MODEL
 ========================================================= */
 
+/**
+ * Frame the loaded model in the camera.
+ *
+ * @param {THREE.Object3D} object
+ */
 function frameModel(
   object
 ) {
@@ -791,7 +840,8 @@ function frameModel(
     (
       2 *
       Math.tan(
-        fieldOfView / 2
+        fieldOfView /
+        2
       )
     );
 
@@ -805,27 +855,32 @@ function frameModel(
       1,
       0.35,
       1
-    ).normalize();
+    )
+      .normalize();
 
 
   camera.position.copy(
-    center.clone().add(
-      direction.multiplyScalar(
-        distance
+    center
+      .clone()
+      .add(
+        direction.multiplyScalar(
+          distance
+        )
       )
-    )
   );
 
 
   camera.near =
     Math.max(
-      distance / 100,
+      distance /
+      100,
       0.01
     );
 
   camera.far =
     Math.max(
-      distance * 100,
+      distance *
+      100,
       1000
     );
 
@@ -838,13 +893,15 @@ function frameModel(
 
   controls.minDistance =
     Math.max(
-      maximumSize * 0.05,
+      maximumSize *
+      0.05,
       0.01
     );
 
   controls.maxDistance =
     Math.max(
-      maximumSize * 20,
+      maximumSize *
+      20,
       100
     );
 
@@ -856,10 +913,6 @@ function frameModel(
 /* =========================================================
    ANIMATION LOOP
 ========================================================= */
-
-let animationStarted =
-  false;
-
 
 function animate() {
 
@@ -890,6 +943,66 @@ function animate() {
   );
 
 }
+
+
+/* =========================================================
+   PAINT TOOL FACTORY
+========================================================= */
+
+/**
+ * Create a paint-style tool using the protected model
+ * raycasting and UV painting implementation.
+ *
+ * Paint and Stamp currently share this tool engine.
+ *
+ * @returns {Object}
+ */
+function createModelPaintTool() {
+
+  return createPaintTool(
+    {
+      canvas,
+
+      camera,
+
+      controls,
+
+      getModel() {
+
+        return currentModel;
+
+      }
+    }
+  );
+
+}
+
+
+/* =========================================================
+   TOOL AVAILABILITY
+========================================================= */
+
+/**
+ * Enable or disable painting tools together.
+ *
+ * @param {boolean} enabled
+ */
+function setPaintingToolsEnabled(
+  enabled
+) {
+
+  setToolEnabled(
+    "paint",
+    enabled
+  );
+
+  setToolEnabled(
+    "stamp",
+    enabled
+  );
+
+}
+
 
 /* =========================================================
    PREPARE MODEL AND START PAINTING
@@ -934,8 +1047,7 @@ function prepareCurrentModel() {
   try {
 
     /*
-     * Create the paint texture only when one has not already
-     * been created during this model session.
+     * Create the writable texture only once per model session.
      */
 
     if (
@@ -985,9 +1097,7 @@ function prepareCurrentModel() {
 
 
     /*
-     * Start the brush system using the texture that was just
-     * created. The visible UV canvas receives pointer input,
-     * while painter.js modifies the off-screen paint texture.
+     * Start the existing protected paint session.
      */
 
     const paintSessionResult =
@@ -1020,11 +1130,6 @@ function prepareCurrentModel() {
     }
 
 
-    /*
-     * Update the model analysis display so it reflects the new
-     * texture created by PaintlessUV.
-     */
-
     currentAnalysis =
       {
         ...currentAnalysis,
@@ -1051,6 +1156,22 @@ function prepareCurrentModel() {
     );
 
 
+    setPaintingToolsEnabled(
+      true
+    );
+
+
+    enablePaintWorkspace();
+
+
+    activateTool(
+      "paint"
+    );
+
+
+    enterPaintWorkspace();
+
+
     if (
       prepareButton
     ) {
@@ -1060,18 +1181,6 @@ function prepareCurrentModel() {
 
       prepareButton.textContent =
         "Painting Active";
-
-      paintToolReady =
-        true;
-
-      setToolEnabled(
-        "paint",
-        true
-      );
-
-      activateTool(
-        "paint"
-      );
 
       prepareButton.classList.add(
         "is-active"
@@ -1087,7 +1196,7 @@ function prepareCurrentModel() {
 
 
     console.log(
-      "Drag across the UV panel to paint."
+      "Drag across the model or UV panel to paint."
     );
 
   } catch (
@@ -1098,6 +1207,14 @@ function prepareCurrentModel() {
       "PaintlessUV could not begin painting:",
       error
     );
+
+
+    setPaintingToolsEnabled(
+      false
+    );
+
+
+    disablePaintWorkspace();
 
 
     if (
@@ -1118,20 +1235,19 @@ function prepareCurrentModel() {
 
 }
 
+
 /* =========================================================
    MODEL ANALYSIS FIX ACTIONS
 ========================================================= */
-
-/*
- * The analysis panel creates its own Fix buttons dynamically.
- * Those buttons communicate through custom document events.
- */
 
 document.addEventListener(
   "paintlessuv:fixtexture",
   () => {
 
-    console.log("🎨 FIX TEXTURE EVENT RECEIVED");
+    console.log(
+      "🎨 FIX TEXTURE EVENT RECEIVED"
+    );
+
 
     prepareCurrentModel();
 
@@ -1148,12 +1264,6 @@ document.addEventListener(
     const button =
       event.detail?.button;
 
-
-    /*
-     * UV generation is not connected yet.
-     * Restore the button rather than leaving it stuck on
-     * "Fixing...".
-     */
 
     console.warn(
       "PaintlessUV UV generation has not been connected yet."
@@ -1181,6 +1291,15 @@ document.addEventListener(
 ========================================================= */
 
 function requestModelFile() {
+
+  if (
+    !modelFileInput
+  ) {
+
+    return;
+
+  }
+
 
   modelFileInput.value =
     "";
@@ -1225,15 +1344,14 @@ modelFileInput?.addEventListener(
 
 
     /*
-     * Give the browser one frame to display the overlay before
-     * model parsing and UV work begin.
+     * Give the browser time to paint the loading overlay.
      */
 
-      await wait(
-        100
-      );
+    await wait(
+      100
+    );
 
-      await waitForNextFrame();
+    await waitForNextFrame();
 
 
     try {
@@ -1245,7 +1363,7 @@ modelFileInput?.addEventListener(
 
 
       /*
-       * Remove the previously loaded model.
+       * Remove the previous model.
        */
 
       if (
@@ -1269,8 +1387,7 @@ modelFileInput?.addEventListener(
 
 
       /*
-       * Store the complete loader result for later preparation,
-       * painting and exporting.
+       * Reset painting and workspace state.
        */
 
       currentLoadedModel =
@@ -1283,6 +1400,20 @@ modelFileInput?.addEventListener(
         null;
 
 
+      setPaintingToolsEnabled(
+        false
+      );
+
+
+      disablePaintWorkspace();
+
+      enterPrepareWorkspace();
+
+
+      /*
+       * Add and frame the new model.
+       */
+
       scene.add(
         currentModel
       );
@@ -1294,13 +1425,13 @@ modelFileInput?.addEventListener(
 
 
       /*
-       * Analyse the model without silently fixing anything.
+       * Analyse without silently changing the model.
        */
 
       currentAnalysis =
-  analyseModel(
-    currentLoadedModel
-  );
+        analyseModel(
+          currentLoadedModel
+        );
 
 
       const uvAnalysis =
@@ -1319,23 +1450,29 @@ modelFileInput?.addEventListener(
         currentAnalysis
       );
 
+
       const prepareButton =
         document.getElementById(
           "fix-model-button"
-      );
+        );
 
-    if (
+
+      if (
         prepareButton
       ) {
 
         prepareButton.onclick =
           prepareCurrentModel;
 
+        prepareButton.classList.remove(
+          "is-active"
+        );
+
       }
 
 
       /*
-       * Reset and build the cached UV layout.
+       * Build and display the UV layout.
        */
 
       resetUVView();
@@ -1374,15 +1511,17 @@ modelFileInput?.addEventListener(
 
       await completeLoadingScreen();
 
+
       emptyState.hidden =
         true;
 
       emptyState.classList.add(
-      "is-hidden"
+        "is-hidden"
       );
 
       viewports.hidden =
-      false;
+        false;
+
 
       resizeRenderer();
 
@@ -1430,8 +1569,7 @@ function startPaintlessUV() {
 
 
   /*
-   * Prevent the loading overlay appearing before a model
-   * has actually been selected.
+   * Keep the loading screen hidden until a model is selected.
    */
 
   if (
@@ -1440,6 +1578,14 @@ function startPaintlessUV() {
 
     loadingScreen.hidden =
       true;
+
+    loadingScreen.classList.remove(
+      "is-visible"
+    );
+
+    loadingScreen.classList.remove(
+      "is-hiding"
+    );
 
     loadingScreen.setAttribute(
       "aria-hidden",
@@ -1450,83 +1596,104 @@ function startPaintlessUV() {
 
 
   emptyState.hidden =
-  false;
+    false;
 
-emptyState.classList.remove(
-  "is-hidden"
-);
+  emptyState.classList.remove(
+    "is-hidden"
+  );
 
-viewports.hidden =
-  true;
+  viewports.hidden =
+    true;
 
-  registerTool(
-  "orbit",
-  createOrbitTool(
-    controls
-  )
-);
 
-registerTool(
-  "pan",
-  createPanTool(
-    controls
-  )
-);
+  /*
+   * Register navigation tools.
+   */
 
   registerTool(
-  "paint",
-  createPaintTool(
-    {
-      canvas:
-        canvas,
-
-      camera:
-        camera,
-
-      controls:
-        controls,
-
-      getModel() {
-
-        return currentModel;
-
-      }
-
-    }
-  )
-);
+    "orbit",
+    createOrbitTool(
+      controls
+    )
+  );
 
 
-registerToolButton(
-  "orbit",
-  '[data-tool="orbit"]'
-);
+  registerTool(
+    "pan",
+    createPanTool(
+      controls
+    )
+  );
 
-registerToolButton(
-  "pan",
-  '[data-tool="pan"]'
-);
+
+  /*
+   * Register Paint and Stamp separately.
+   *
+   * Both currently use the protected paint raycasting engine.
+   * The selected brush preset determines what is rendered.
+   */
+
+  registerTool(
+    "paint",
+    createModelPaintTool()
+  );
+
+
+  registerTool(
+    "stamp",
+    createModelPaintTool()
+  );
+
+
+  /*
+   * Connect toolbar buttons.
+   */
 
   registerToolButton(
-  "paint",
-  '[data-tool="brush"]'
-);
+    "orbit",
+    '[data-tool="orbit"]'
+  );
 
 
-activateTool(
-  "orbit"
-);
+  registerToolButton(
+    "pan",
+    '[data-tool="pan"]'
+  );
 
-  setToolEnabled(
-  "paint",
-  false
-);
+
+  registerToolButton(
+    "paint",
+    '[data-tool="brush"]'
+  );
+
+
+  registerToolButton(
+    "stamp",
+    '[data-tool="stamp"]'
+  );
+
+
+  /*
+   * Begin in navigation/prepare mode.
+   */
+
+  activateTool(
+    "orbit"
+  );
+
+
+  setPaintingToolsEnabled(
+    false
+  );
+
+
+  initialisePaintWorkspace();
 
   initialiseBrushControls();
 
 
   /*
-   * Initialise the cached UV viewer once.
+   * Initialise the cached UV viewer.
    */
 
   initialiseUVViewer(
@@ -1564,6 +1731,10 @@ activateTool(
 
 }
 
+
+/* =========================================================
+   ASYNC HELPERS
+========================================================= */
 
 function wait(
   milliseconds
@@ -1606,4 +1777,9 @@ function waitForNextFrame() {
 }
 
 
+/* =========================================================
+   START
+========================================================= */
+
 startPaintlessUV();
+
