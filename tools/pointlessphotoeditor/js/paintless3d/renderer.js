@@ -123,7 +123,7 @@
       0,
 
     ultraTiltDegrees:
-      0.5,
+      0,
 
     ultraTiltControlInstalled:
       false
@@ -1762,12 +1762,77 @@
       eyeDirection !== 0
     ) {
 
-      context.rotate(
-        rendererState.ultraTiltDegrees *
-        eyeDirection *
-        Math.PI /
-        180
-      );
+      if (layer.ultraRotationEnabled) {
+
+        context.rotate(
+          clamp(layer.ultraRotationAmount || 0, -30, 30) *
+          eyeDirection *
+          Math.PI /
+          180
+        );
+
+      }
+
+
+      if (layer.ultraSkewEnabled) {
+
+        const skewRadians =
+          clamp(layer.ultraSkewAmount || 0, -30, 30) *
+          eyeDirection *
+          Math.PI /
+          180;
+
+        context.transform(
+          1,
+          0,
+          Math.tan(skewRadians),
+          1,
+          0,
+          0
+        );
+
+      }
+
+
+      if (layer.ultraPerspectiveEnabled) {
+
+        const perspectiveScale =
+          clamp(
+            1 +
+            (
+              clamp(layer.ultraPerspectiveAmount || 0, -30, 30) *
+              eyeDirection /
+              100
+            ),
+            0.7,
+            1.3
+          );
+
+        context.scale(
+          perspectiveScale,
+          1
+        );
+
+      }
+
+
+      if (layer.ultraWarpEnabled) {
+
+        const warp =
+          clamp(layer.ultraWarpAmount || 0, -30, 30) *
+          eyeDirection /
+          100;
+
+        context.transform(
+          1,
+          warp,
+          0,
+          1,
+          0,
+          0
+        );
+
+      }
 
     }
 
@@ -3134,9 +3199,6 @@
 
 
     installStyles();
-
-    installUltraTiltTester();
-
 
     if (
       !installPreviewCanvas()
