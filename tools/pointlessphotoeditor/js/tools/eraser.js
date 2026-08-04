@@ -109,7 +109,10 @@
       0.35,
 
     strokeCounter:
-      0
+      0,
+
+    lastAnchorPoint:
+      null
 
   };
 
@@ -1889,10 +1892,31 @@
     clearEraserCursor();
 
 
-    stampEraser(
-      layer.context,
-      point
-    );
+    if (
+      payload.shiftKey &&
+      eraserState.lastAnchorPoint
+    ) {
+
+      drawInterpolatedSegment(
+        layer.context,
+        eraserState.lastAnchorPoint,
+        point
+      );
+
+
+      stampEraser(
+        layer.context,
+        point
+      );
+
+    } else {
+
+      stampEraser(
+        layer.context,
+        point
+      );
+
+    }
 
 
     eraserState.changed =
@@ -2061,6 +2085,12 @@
 
     const changed =
       eraserState.changed;
+
+
+    eraserState.lastAnchorPoint =
+      copyPoint(
+        finalPoint
+      );
 
 
     eraserState.erasing =
@@ -2569,13 +2599,27 @@
 
     document.addEventListener(
       "paintless:history-restored",
-      cancelStroke
+      () => {
+
+        cancelStroke();
+
+        eraserState.lastAnchorPoint =
+          null;
+
+      }
     );
 
 
     document.addEventListener(
       "paintless:document-reset",
-      cancelStroke
+      () => {
+
+        cancelStroke();
+
+        eraserState.lastAnchorPoint =
+          null;
+
+      }
     );
 
 
@@ -2584,6 +2628,9 @@
       () => {
 
         cancelStroke();
+
+        eraserState.lastAnchorPoint =
+          null;
 
         synchroniseCursorOverlay();
 
