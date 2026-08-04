@@ -264,6 +264,31 @@ this.rotation =
     ? Number(rotation)
     : 0;
 
+
+this.ultraRotationEnabled =
+  Boolean(ultraRotationEnabled);
+
+this.ultraRotationAmount =
+  clamp(ultraRotationAmount, -30, 30);
+
+this.ultraSkewEnabled =
+  Boolean(ultraSkewEnabled);
+
+this.ultraSkewAmount =
+  clamp(ultraSkewAmount, -30, 30);
+
+this.ultraPerspectiveEnabled =
+  Boolean(ultraPerspectiveEnabled);
+
+this.ultraPerspectiveAmount =
+  clamp(ultraPerspectiveAmount, -30, 30);
+
+this.ultraWarpEnabled =
+  Boolean(ultraWarpEnabled);
+
+this.ultraWarpAmount =
+  clamp(ultraWarpAmount, -30, 30);
+
       this.canvas =
         document.createElement(
           "canvas"
@@ -503,6 +528,30 @@ scaleY:
 
 rotation:
   this.rotation,
+
+ultraRotationEnabled:
+  this.ultraRotationEnabled,
+
+ultraRotationAmount:
+  this.ultraRotationAmount,
+
+ultraSkewEnabled:
+  this.ultraSkewEnabled,
+
+ultraSkewAmount:
+  this.ultraSkewAmount,
+
+ultraPerspectiveEnabled:
+  this.ultraPerspectiveEnabled,
+
+ultraPerspectiveAmount:
+  this.ultraPerspectiveAmount,
+
+ultraWarpEnabled:
+  this.ultraWarpEnabled,
+
+ultraWarpAmount:
+  this.ultraWarpAmount,
 
 width:
   this.canvas.width,
@@ -3199,7 +3248,31 @@ scaleY:
   savedLayer.scaleY ?? 1,
 
 rotation:
-  savedLayer.rotation ?? 0
+  savedLayer.rotation ?? 0,
+
+ultraRotationEnabled:
+  savedLayer.ultraRotationEnabled ?? false,
+
+ultraRotationAmount:
+  savedLayer.ultraRotationAmount ?? 0,
+
+ultraSkewEnabled:
+  savedLayer.ultraSkewEnabled ?? false,
+
+ultraSkewAmount:
+  savedLayer.ultraSkewAmount ?? 0,
+
+ultraPerspectiveEnabled:
+  savedLayer.ultraPerspectiveEnabled ?? false,
+
+ultraPerspectiveAmount:
+  savedLayer.ultraPerspectiveAmount ?? 0,
+
+ultraWarpEnabled:
+  savedLayer.ultraWarpEnabled ?? false,
+
+ultraWarpAmount:
+  savedLayer.ultraWarpAmount ?? 0
           });
 
 
