@@ -2983,8 +2983,32 @@
       null;
 
 
+    let brushSizeRepeatDelayTimer =
+      null;
+
+
+    let brushSizeRepeatActive =
+      false;
+
+
     const stopBrushSizeRepeat =
       () => {
+
+        brushSizeRepeatActive =
+          false;
+
+
+        if (
+          brushSizeRepeatDelayTimer !==
+          null
+        ) {
+
+          window.clearTimeout(
+            brushSizeRepeatDelayTimer
+          );
+
+        }
+
 
         if (
           brushSizeRepeatTimer !==
@@ -2996,6 +3020,10 @@
           );
 
         }
+
+
+        brushSizeRepeatDelayTimer =
+          null;
 
 
         brushSizeRepeatTimer =
@@ -3010,39 +3038,58 @@
         stopBrushSizeRepeat();
 
 
+        brushSizeRepeatActive =
+          true;
+
+
         changeBrushSizeBy(
           amount
         );
 
 
-        window.setTimeout(
-          () => {
+        brushSizeRepeatDelayTimer =
+          window.setTimeout(
+            () => {
 
-            if (
-              brushSizeRepeatTimer !==
-              null
-            ) {
-
-              return;
-
-            }
+              brushSizeRepeatDelayTimer =
+                null;
 
 
-            brushSizeRepeatTimer =
-              window.setInterval(
-                () => {
+              if (
+                !brushSizeRepeatActive
+              ) {
 
-                  changeBrushSizeBy(
-                    amount
-                  );
+                return;
 
-                },
-                75
-              );
+              }
 
-          },
-          320
-        );
+
+              brushSizeRepeatTimer =
+                window.setInterval(
+                  () => {
+
+                    if (
+                      !brushSizeRepeatActive
+                    ) {
+
+                      stopBrushSizeRepeat();
+
+                      return;
+
+                    }
+
+
+                    changeBrushSizeBy(
+                      amount
+                    );
+
+                  },
+                  75
+                );
+
+            },
+            320
+          );
 
       };
 
@@ -3075,6 +3122,26 @@
 
         }
       );
+
+
+    window.addEventListener(
+      "pointerup",
+      stopBrushSizeRepeat,
+      true
+    );
+
+
+    window.addEventListener(
+      "pointercancel",
+      stopBrushSizeRepeat,
+      true
+    );
+
+
+    window.addEventListener(
+      "blur",
+      stopBrushSizeRepeat
+    );
 
 
     [
