@@ -179,6 +179,16 @@
   }
 
 
+  function getSelectionApi() {
+
+    return (
+      window.PaintlessSelection ||
+      null
+    );
+
+  }
+
+
   /* =======================================================
      5. GENERIC HELPERS
   ======================================================= */
@@ -1100,6 +1110,20 @@
     point
   ) {
 
+    const selection =
+      getSelectionApi();
+
+    const hasSelection =
+      typeof selection?.hasSelection === "function" &&
+      selection.hasSelection();
+
+    if (hasSelection) {
+      context.save();
+      if (typeof selection.clipContext === "function") {
+        selection.clipContext(context);
+      }
+    }
+
     if (
       !context ||
       !point
@@ -1147,23 +1171,29 @@
       0.985
     ) {
 
-      return stampHardEraser(
+      const result = stampHardEraser(
         context,
         point,
         radius,
         opacity
       );
+      if (hasSelection) context.restore();
+      return result;
 
     }
 
 
-    return stampSoftEraser(
+    const result = stampSoftEraser(
       context,
       point,
       radius,
       opacity,
       hardness
     );
+
+    if (hasSelection) context.restore();
+
+    return result;
 
   }
 
