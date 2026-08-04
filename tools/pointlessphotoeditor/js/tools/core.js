@@ -153,6 +153,15 @@
     brushSizeOutput:
       null,
 
+    brushSizeDecreaseButton:
+      null,
+
+    brushSizeIncreaseButton:
+      null,
+
+    brushSizeNumberInput:
+      null,
+
     toolOpacityInput:
       null,
 
@@ -1868,6 +1877,273 @@
 
 
   /* =======================================================
+     11. PRECISE BRUSH SIZE CONTROLS
+  ======================================================= */
+
+  function installPreciseBrushSizeControls() {
+
+    if (
+      !dom.brushSizeInput ||
+      document.getElementById(
+        "paintless-brush-size-stepper"
+      )
+    ) {
+
+      return false;
+
+    }
+
+
+    const wrapper =
+      document.createElement(
+        "div"
+      );
+
+
+    wrapper.id =
+      "paintless-brush-size-stepper";
+
+    wrapper.className =
+      "paintless-brush-size-stepper";
+
+
+    const decreaseButton =
+      document.createElement(
+        "button"
+      );
+
+
+    decreaseButton.type =
+      "button";
+
+    decreaseButton.className =
+      "paintless-brush-size-step-button";
+
+    decreaseButton.textContent =
+      "−";
+
+    decreaseButton.title =
+      "Decrease brush size by 1";
+
+    decreaseButton.setAttribute(
+      "aria-label",
+      "Decrease brush size by 1"
+    );
+
+
+    const numberInput =
+      document.createElement(
+        "input"
+      );
+
+
+    numberInput.type =
+      "number";
+
+    numberInput.className =
+      "paintless-brush-size-number";
+
+    numberInput.min =
+      "1";
+
+    numberInput.max =
+      "200";
+
+    numberInput.step =
+      "1";
+
+    numberInput.inputMode =
+      "numeric";
+
+    numberInput.title =
+      "Exact brush size";
+
+    numberInput.setAttribute(
+      "aria-label",
+      "Exact brush size"
+    );
+
+
+    const increaseButton =
+      document.createElement(
+        "button"
+      );
+
+
+    increaseButton.type =
+      "button";
+
+    increaseButton.className =
+      "paintless-brush-size-step-button";
+
+    increaseButton.textContent =
+      "+";
+
+    increaseButton.title =
+      "Increase brush size by 1";
+
+    increaseButton.setAttribute(
+      "aria-label",
+      "Increase brush size by 1"
+    );
+
+
+    wrapper.append(
+      decreaseButton,
+      numberInput,
+      increaseButton
+    );
+
+
+    dom.brushSizeInput.insertAdjacentElement(
+      "afterend",
+      wrapper
+    );
+
+
+    dom.brushSizeDecreaseButton =
+      decreaseButton;
+
+    dom.brushSizeIncreaseButton =
+      increaseButton;
+
+    dom.brushSizeNumberInput =
+      numberInput;
+
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+
+    style.id =
+      "paintless-brush-size-stepper-styles";
+
+
+    style.textContent = `
+      .paintless-brush-size-stepper {
+        display: grid;
+        grid-template-columns: 30px minmax(54px, 72px) 30px;
+        align-items: center;
+        gap: 6px;
+        margin-top: 7px;
+      }
+
+      .paintless-brush-size-step-button {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 28px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 6px;
+        color: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.055);
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .paintless-brush-size-step-button:hover {
+        border-color: rgba(168, 76, 255, 0.78);
+        background: rgba(168, 76, 255, 0.16);
+      }
+
+      .paintless-brush-size-step-button:active {
+        transform: translateY(1px);
+      }
+
+      .paintless-brush-size-number {
+        width: 100%;
+        height: 28px;
+        padding: 3px 5px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 6px;
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.045);
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+        outline: none;
+      }
+
+      .paintless-brush-size-number:focus {
+        border-color: rgba(168, 76, 255, 0.9);
+        box-shadow: 0 0 0 3px rgba(168, 76, 255, 0.12);
+      }
+    `;
+
+
+    document.head.appendChild(
+      style
+    );
+
+
+    return true;
+
+  }
+
+
+  function synchronisePreciseBrushSizeControls(
+    value
+  ) {
+
+    const size =
+      Math.round(
+        clamp(
+          value,
+          1,
+          200
+        )
+      );
+
+
+    if (
+      dom.brushSizeNumberInput &&
+      dom.brushSizeNumberInput !==
+        document.activeElement
+    ) {
+
+      dom.brushSizeNumberInput.value =
+        String(
+          size
+        );
+
+    }
+
+
+    return size;
+
+  }
+
+
+  function changeBrushSizeBy(
+    amount
+  ) {
+
+    const currentSize =
+      Number(
+        tools.getState(
+          "brushSize"
+        )
+      ) ||
+      Number(
+        dom.brushSizeInput?.value
+      ) ||
+      20;
+
+
+    return setBrushSize(
+      currentSize +
+      amount
+    );
+
+  }
+
+
+  /* =======================================================
      11. TOOL SETTINGS
   ======================================================= */
 
@@ -1913,6 +2189,11 @@
         )} px`;
 
     }
+
+
+    synchronisePreciseBrushSizeControls(
+      size
+    );
 
 
     return size;
@@ -2694,6 +2975,204 @@
   ======================================================= */
 
   function connectCoreControls() {
+
+    installPreciseBrushSizeControls();
+
+
+    let brushSizeRepeatTimer =
+      null;
+
+
+    const stopBrushSizeRepeat =
+      () => {
+
+        if (
+          brushSizeRepeatTimer !==
+          null
+        ) {
+
+          window.clearInterval(
+            brushSizeRepeatTimer
+          );
+
+        }
+
+
+        brushSizeRepeatTimer =
+          null;
+
+      };
+
+
+    const beginBrushSizeRepeat =
+      (amount) => {
+
+        stopBrushSizeRepeat();
+
+
+        changeBrushSizeBy(
+          amount
+        );
+
+
+        window.setTimeout(
+          () => {
+
+            if (
+              brushSizeRepeatTimer !==
+              null
+            ) {
+
+              return;
+
+            }
+
+
+            brushSizeRepeatTimer =
+              window.setInterval(
+                () => {
+
+                  changeBrushSizeBy(
+                    amount
+                  );
+
+                },
+                75
+              );
+
+          },
+          320
+        );
+
+      };
+
+
+    dom.brushSizeDecreaseButton
+      ?.addEventListener(
+        "pointerdown",
+        (event) => {
+
+          event.preventDefault();
+
+          beginBrushSizeRepeat(
+            -1
+          );
+
+        }
+      );
+
+
+    dom.brushSizeIncreaseButton
+      ?.addEventListener(
+        "pointerdown",
+        (event) => {
+
+          event.preventDefault();
+
+          beginBrushSizeRepeat(
+            1
+          );
+
+        }
+      );
+
+
+    [
+      "pointerup",
+      "pointercancel",
+      "pointerleave"
+    ].forEach(
+      (eventName) => {
+
+        dom.brushSizeDecreaseButton
+          ?.addEventListener(
+            eventName,
+            stopBrushSizeRepeat
+          );
+
+
+        dom.brushSizeIncreaseButton
+          ?.addEventListener(
+            eventName,
+            stopBrushSizeRepeat
+          );
+
+      }
+    );
+
+
+    dom.brushSizeNumberInput
+      ?.addEventListener(
+        "input",
+        () => {
+
+          setBrushSize(
+            dom.brushSizeNumberInput.value
+          );
+
+        }
+      );
+
+
+    dom.brushSizeNumberInput
+      ?.addEventListener(
+        "change",
+        () => {
+
+          const size =
+            setBrushSize(
+              dom.brushSizeNumberInput.value
+            );
+
+
+          dom.brushSizeNumberInput.value =
+            String(
+              Math.round(
+                size
+              )
+            );
+
+        }
+      );
+
+
+    const handleBrushSizeWheel =
+      (event) => {
+
+        event.preventDefault();
+
+
+        changeBrushSizeBy(
+          event.deltaY <
+            0
+            ? 1
+            : -1
+        );
+
+      };
+
+
+    dom.brushSizeInput
+      ?.addEventListener(
+        "wheel",
+        handleBrushSizeWheel,
+        {
+          passive:
+            false
+        }
+      );
+
+
+    dom.brushSizeNumberInput
+      ?.addEventListener(
+        "wheel",
+        handleBrushSizeWheel,
+        {
+          passive:
+            false
+        }
+      );
+
 
     dom.brushSizeInput
       ?.addEventListener(
