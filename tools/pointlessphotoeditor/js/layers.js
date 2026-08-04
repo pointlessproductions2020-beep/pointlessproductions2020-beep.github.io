@@ -1220,6 +1220,70 @@ width:
   }
 
 
+  function bringLayerToFront(
+    layerId = activeLayerId
+  ) {
+
+    if (
+      getLayerIndex(
+        layerId
+      ) <
+      0
+    ) {
+
+      return false;
+
+    }
+
+
+    return moveLayer(
+      layerId,
+      layers.length -
+      1
+    );
+
+  }
+
+
+  function sendLayerToBack(
+    layerId = activeLayerId
+  ) {
+
+    if (
+      getLayerIndex(
+        layerId
+      ) <
+      0
+    ) {
+
+      return false;
+
+    }
+
+
+    return moveLayer(
+      layerId,
+      0
+    );
+
+  }
+
+
+  function requestLayerOrderHistory(
+    reason =
+      "Reorder layer"
+  ) {
+
+    dispatchLayerEvent(
+      "paintless:history-requested",
+      {
+        reason
+      }
+    );
+
+  }
+
+
   /* =======================================================
      11. VISIBILITY
   ======================================================= */
@@ -2415,6 +2479,18 @@ function renderLayerList() {
           layer.id;
 
 
+        layerItem.dataset.layerIndex =
+          String(
+            getLayerIndex(
+              layer.id
+            )
+          );
+
+
+        layerItem.draggable =
+          true;
+
+
         layerItem.setAttribute(
           "role",
           "listitem"
@@ -2468,6 +2544,43 @@ function renderLayerList() {
                 : ""
             }${escapeHtml(layer.name)}
           </button>
+
+          <span
+            class="paintless-layer-order-controls"
+            aria-label="Layer order controls"
+          >
+            <button
+              class="paintless-layer-order-button"
+              type="button"
+              data-layer-order-up="${layer.id}"
+              aria-label="Bring ${escapeHtml(layer.name)} forward"
+              title="Bring forward"
+              ${
+                getLayerIndex(layer.id) >=
+                layers.length - 1
+                  ? "disabled"
+                  : ""
+              }
+            >
+              ▲
+            </button>
+
+            <button
+              class="paintless-layer-order-button"
+              type="button"
+              data-layer-order-down="${layer.id}"
+              aria-label="Send ${escapeHtml(layer.name)} backward"
+              title="Send backward"
+              ${
+                getLayerIndex(layer.id) <=
+                0
+                  ? "disabled"
+                  : ""
+              }
+            >
+              ▼
+            </button>
+          </span>
 
           ${
   is3DMode
@@ -2565,6 +2678,74 @@ function renderLayerList() {
               return;
 
             }
+
+          const orderUpButton =
+              event.target.closest(
+                "[data-layer-order-up]"
+              );
+
+
+            if (orderUpButton) {
+
+              event.preventDefault();
+
+              event.stopPropagation();
+
+
+              selectThisLayer();
+
+
+              if (
+                moveLayerUp(
+                  layer.id
+                )
+              ) {
+
+                requestLayerOrderHistory(
+                  "Bring layer forward"
+                );
+
+              }
+
+
+              return;
+
+            }
+
+
+            const orderDownButton =
+              event.target.closest(
+                "[data-layer-order-down]"
+              );
+
+
+            if (orderDownButton) {
+
+              event.preventDefault();
+
+              event.stopPropagation();
+
+
+              selectThisLayer();
+
+
+              if (
+                moveLayerDown(
+                  layer.id
+                )
+              ) {
+
+                requestLayerOrderHistory(
+                  "Send layer backward"
+                );
+
+              }
+
+
+              return;
+
+            }
+
 
           const stereoButton =
               event.target.closest(
@@ -2725,6 +2906,148 @@ function renderLayerList() {
         depthSlider?.addEventListener(
           "change",
           commitDepthHistory
+        );
+
+
+        layerItem.addEventListener(
+          "dragstart",
+          (event) => {
+
+            selectThisLayer();
+
+
+            event.dataTransfer.effectAllowed =
+              "move";
+
+
+            event.dataTransfer.setData(
+              "text/plain",
+              layer.id
+            );
+
+
+            layerItem.classList.add(
+              "is-dragging"
+            );
+
+          }
+        );
+
+
+        layerItem.addEventListener(
+          "dragend",
+          () => {
+
+            layerItem.classList.remove(
+              "is-dragging"
+            );
+
+
+            layerList
+              ?.querySelectorAll(
+                ".is-drag-over"
+              )
+              .forEach(
+                (item) => {
+
+                  item.classList.remove(
+                    "is-drag-over"
+                  );
+
+                }
+              );
+
+          }
+        );
+
+
+        layerItem.addEventListener(
+          "dragover",
+          (event) => {
+
+            event.preventDefault();
+
+
+            event.dataTransfer.dropEffect =
+              "move";
+
+
+            layerItem.classList.add(
+              "is-drag-over"
+            );
+
+          }
+        );
+
+
+        layerItem.addEventListener(
+          "dragleave",
+          () => {
+
+            layerItem.classList.remove(
+              "is-drag-over"
+            );
+
+          }
+        );
+
+
+        layerItem.addEventListener(
+          "drop",
+          (event) => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            layerItem.classList.remove(
+              "is-drag-over"
+            );
+
+
+            const draggedLayerId =
+              event.dataTransfer.getData(
+                "text/plain"
+              );
+
+
+            if (
+              !draggedLayerId ||
+              draggedLayerId ===
+                layer.id
+            ) {
+
+              return;
+
+            }
+
+
+            const targetIndex =
+              getLayerIndex(
+                layer.id
+              );
+
+
+            if (
+              moveLayer(
+                draggedLayerId,
+                targetIndex
+              )
+            ) {
+
+              selectLayer(
+                draggedLayerId
+              );
+
+
+              requestLayerOrderHistory(
+                "Drag layer"
+              );
+
+            }
+
+          }
         );
 
 
@@ -3299,6 +3622,7 @@ restoredLayer.context.putImageData(
     32px
     minmax(0, 1fr)
     24px
+    24px
     minmax(60px, 90px)
     48px;
   align-items: center;
@@ -3326,7 +3650,8 @@ restoredLayer.context.putImageData(
     grid-template-columns:
         24px
         32px
-        minmax(0, 1fr);
+        minmax(0, 1fr)
+        24px;
 }
 
 .layer-item.paintless-layer-row.is-active {
@@ -3480,6 +3805,58 @@ restoredLayer.context.putImageData(
       rgba(255, 255, 255, 0.62);
   }
 
+  .paintless-layer-order-controls {
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    width: 24px;
+    height: 32px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .paintless-layer-order-button {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-width: 0;
+    height: 15px;
+    padding: 0;
+    border: 0;
+    color: rgba(255, 255, 255, 0.72);
+    background: transparent;
+    font-size: 8px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .paintless-layer-order-button + .paintless-layer-order-button {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .paintless-layer-order-button:hover:not(:disabled) {
+    color: #ffffff;
+    background: rgba(168, 76, 255, 0.18);
+  }
+
+  .paintless-layer-order-button:disabled {
+    opacity: 0.22;
+    cursor: default;
+  }
+
+  .paintless-layer-row.is-dragging {
+    opacity: 0.42;
+  }
+
+  .paintless-layer-row.is-drag-over {
+    border-color: #25e6ff;
+    background: rgba(37, 230, 255, 0.10);
+    box-shadow:
+      inset 0 0 0 1px rgba(37, 230, 255, 0.18),
+      0 0 10px rgba(37, 230, 255, 0.10);
+  }
+
   .paintless-layer-row:focus-visible,
   .paintless-layer-row button:focus-visible,
   .paintless-depth-slider:focus-visible {
@@ -3497,6 +3874,7 @@ restoredLayer.context.putImageData(
     30px
     minmax(0, 1fr)
     22px
+    22px
     minmax(48px, 70px)
     43px;
   gap: 4px;
@@ -3506,7 +3884,8 @@ restoredLayer.context.putImageData(
     grid-template-columns:
         22px
         30px
-        minmax(0, 1fr);
+        minmax(0, 1fr)
+        22px;
 }
     .paintless-layer-row
     .layer-thumbnail {
@@ -3598,6 +3977,10 @@ window.PaintlessLayers = {
   moveLayerUp,
 
   moveLayerDown,
+
+  bringLayerToFront,
+
+  sendLayerToBack,
 
   setLayerVisibility,
 
