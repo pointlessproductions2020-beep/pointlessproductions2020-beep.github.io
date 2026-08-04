@@ -425,6 +425,19 @@
         <button
           class="tool-button"
           type="button"
+          data-tool="stamp"
+          title="Paint using shapes and texture stamps"
+          aria-label="Stamp tool"
+          aria-pressed="false"
+          disabled
+        >
+          <span aria-hidden="true">◆</span>
+          <small>Stamp</small>
+        </button>
+
+        <button
+          class="tool-button"
+          type="button"
           data-tool="eraser"
           title="Erase painted texture"
           aria-label="Eraser"
@@ -749,6 +762,252 @@
         class="right-sidebar"
         aria-label="PaintlessUV panels"
       >
+
+
+        <!-- PAINT TOOLS PANEL -->
+
+        <section
+          class="editor-panel paint-tools-panel"
+          id="paint-tools-panel"
+          hidden
+        >
+
+          <header class="panel-header">
+
+            <div>
+
+              <span
+                class="paint-tools-panel__eyebrow"
+                id="paint-tools-panel-eyebrow"
+              >
+                Paint Tool
+              </span>
+
+              <h2 id="paint-tools-panel-title">
+                Paint Brush
+              </h2>
+
+            </div>
+
+          </header>
+
+
+          <div class="paint-tool-tabs">
+
+            <button
+              class="paint-tool-tab is-active"
+              id="paint-brush-tab"
+              type="button"
+              data-paint-panel-mode="paint"
+              aria-pressed="true"
+            >
+              Brushes
+            </button>
+
+            <button
+              class="paint-tool-tab"
+              id="paint-stamp-tab"
+              type="button"
+              data-paint-panel-mode="stamp"
+              aria-pressed="false"
+            >
+              Stamps
+            </button>
+
+          </div>
+
+
+          <div
+            class="paint-preset-grid"
+            id="paint-preset-grid"
+            aria-label="Paint presets"
+          ></div>
+
+
+          <div class="paint-brush-preview">
+
+            <span>
+              Preview
+            </span>
+
+            <canvas
+              id="paint-brush-preview-canvas"
+              width="220"
+              height="110"
+              aria-label="Current brush preview"
+            ></canvas>
+
+          </div>
+
+
+          <div class="paint-setting-list">
+
+            <label class="paint-setting-control">
+
+              <span>
+                Size
+              </span>
+
+              <output id="paint-size-output">
+                48 px
+              </output>
+
+              <input
+                id="paint-size-control"
+                type="range"
+                min="1"
+                max="512"
+                step="1"
+                value="48"
+              >
+
+            </label>
+
+
+            <label class="paint-setting-control">
+
+              <span>
+                Opacity
+              </span>
+
+              <output id="paint-opacity-output">
+                100%
+              </output>
+
+              <input
+                id="paint-opacity-control"
+                type="range"
+                min="1"
+                max="100"
+                step="1"
+                value="100"
+              >
+
+            </label>
+
+
+            <label class="paint-setting-control">
+
+              <span>
+                Feather
+              </span>
+
+              <output id="paint-feather-output">
+                15%
+              </output>
+
+              <input
+                id="paint-feather-control"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="15"
+              >
+
+            </label>
+
+
+            <label class="paint-setting-control">
+
+              <span>
+                Spacing
+              </span>
+
+              <output id="paint-spacing-output">
+                20%
+              </output>
+
+              <input
+                id="paint-spacing-control"
+                type="range"
+                min="1"
+                max="400"
+                step="1"
+                value="20"
+              >
+
+            </label>
+
+
+            <label class="paint-setting-control">
+
+              <span>
+                Rotation
+              </span>
+
+              <output id="paint-rotation-output">
+                0°
+              </output>
+
+              <input
+                id="paint-rotation-control"
+                type="range"
+                min="0"
+                max="359"
+                step="1"
+                value="0"
+              >
+
+            </label>
+
+          </div>
+
+
+          <div class="paint-option-list">
+
+            <label class="paint-option-toggle">
+
+              <input
+                id="paint-follow-stroke-control"
+                type="checkbox"
+              >
+
+              <span>
+                Follow stroke
+              </span>
+
+            </label>
+
+
+            <label class="paint-option-toggle">
+
+              <input
+                id="paint-random-rotation-control"
+                type="checkbox"
+              >
+
+              <span>
+                Random rotation
+              </span>
+
+            </label>
+
+          </div>
+
+
+          <label class="paint-setting-control">
+
+            <span>
+              Scale variation
+            </span>
+
+            <output id="paint-scale-jitter-output">
+              0%
+            </output>
+
+            <input
+              id="paint-scale-jitter-control"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value="0"
+            >
+
+          </label>
+
+        </section>
 
 
         <!-- MODEL PANEL -->
