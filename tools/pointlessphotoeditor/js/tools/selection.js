@@ -1263,30 +1263,6 @@
         combinedMask
       );
 
-
-    console.log(
-      "PAINTLESS SELECTION MASK",
-      {
-        mode:
-          selectionState.mode,
-
-        layer:
-          selectionState.layer?.name ||
-          selectionState.layerId,
-
-        width:
-          selectionState.maskWidth,
-
-        height:
-          selectionState.maskHeight,
-
-        selectedPixelCount:
-          selectionState.selectedPixelCount,
-
-        combinationMode
-      }
-    );
-
     selectionState.outlineDirty =
       true;
 
@@ -2640,10 +2616,9 @@
   function animateMarchingAnts() {
 
     /*
-     * Selection animation is intentionally disabled for now.
-     * A stable outline is much more useful than an outline that
-     * intermittently disappears while the selection engine is
-     * being validated.
+     * Keep the selection continuously visible.
+     * Animation can return later once the core selection flow
+     * is fully stable.
      */
 
     selectionState.animationFrame =
@@ -2892,16 +2867,6 @@
       !hasSelection()
     ) {
 
-      console.warn(
-        "Paintless could not clear pixels because no live selection mask exists."
-      );
-
-
-      sendStatusMessage(
-        "No live selection exists."
-      );
-
-
       return false;
 
     }
@@ -3086,6 +3051,8 @@
     saveSelectionHistory(
       "Clear selected pixels"
     );
+
+
 
 
     sendStatusMessage(
@@ -3736,6 +3703,7 @@
           );
 
 
+
           dom.selectionModeInput.blur();
 
         }
@@ -3840,8 +3808,6 @@
 
           event.preventDefault();
 
-          event.stopPropagation();
-
 
           const cleared =
             clearSelectedPixels();
@@ -3884,8 +3850,6 @@
         }
 
       }
-       },
-      true
     );
 
 
