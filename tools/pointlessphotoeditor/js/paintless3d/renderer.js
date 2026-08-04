@@ -120,7 +120,13 @@
       null,
 
     renderDebounce:
-      0
+      0,
+
+    ultraTiltDegrees:
+      0.5,
+
+    ultraTiltControlInstalled:
+      false
 
   };
 
@@ -144,6 +150,15 @@
       null,
 
     previewCanvas:
+      null,
+
+    ultraTiltControl:
+      null,
+
+    ultraTiltSlider:
+      null,
+
+    ultraTiltValue:
       null,
 
     styles:
@@ -1106,6 +1121,58 @@
       #paintless3d-preview-canvas {
         filter: brightness(0.99);
       }
+
+      #paintless3d-ultra-tilt-tester {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 99999;
+        display: none;
+        width: 250px;
+        padding: 10px 12px;
+        border: 1px solid rgba(255,255,255,.16);
+        border-radius: 12px;
+        color: #fff;
+        background: rgba(14,9,22,.96);
+        box-shadow: 0 12px 30px rgba(0,0,0,.45);
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+
+      html[data-paintless-mode="3d"] #paintless3d-ultra-tilt-tester,
+      body.paintless-3d-mode #paintless3d-ultra-tilt-tester,
+      body.paintless3d-editor-active #paintless3d-ultra-tilt-tester {
+        display: block;
+      }
+
+      #paintless3d-ultra-tilt-tester strong {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 11px;
+      }
+
+      #paintless3d-ultra-tilt-tester .row {
+        display: grid;
+        grid-template-columns: minmax(0,1fr) 55px;
+        gap: 8px;
+        align-items: center;
+      }
+
+      #paintless3d-ultra-tilt-tester input {
+        width: 100%;
+      }
+
+      #paintless3d-ultra-tilt-tester output {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      #paintless3d-ultra-tilt-tester small {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255,255,255,.55);
+        font-size: 9px;
+      }
     `;
 
 
@@ -1121,6 +1188,73 @@
     rendererState.stylesInstalled =
       true;
 
+
+    return true;
+
+  }
+
+
+  function installUltraTiltTester() {
+
+    if (
+      rendererState.ultraTiltControlInstalled ||
+      document.getElementById("paintless3d-ultra-tilt-tester")
+    ) {
+
+      rendererState.ultraTiltControlInstalled = true;
+      return true;
+
+    }
+
+
+    const control = document.createElement("section");
+    control.id = "paintless3d-ultra-tilt-tester";
+
+    const title = document.createElement("strong");
+    title.textContent = "Ultra Anaglyph Tilt Test";
+
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = "-2";
+    slider.max = "2";
+    slider.step = "0.05";
+    slider.value = String(rendererState.ultraTiltDegrees);
+
+    const value = document.createElement("output");
+    value.textContent =
+      `${rendererState.ultraTiltDegrees.toFixed(2)}°`;
+
+    const hint = document.createElement("small");
+    hint.textContent =
+      "Negative = away, positive = towards, zero = normal flat stereo.";
+
+    slider.addEventListener(
+      "input",
+      () => {
+
+        rendererState.ultraTiltDegrees =
+          clamp(slider.value, -2, 2);
+
+        value.textContent =
+          `${rendererState.ultraTiltDegrees.toFixed(2)}°`;
+
+        requestRender("ultra-tilt-tester");
+
+      }
+    );
+
+    row.append(slider, value);
+    control.append(title, row, hint);
+    document.body.appendChild(control);
+
+    dom.ultraTiltControl = control;
+    dom.ultraTiltSlider = slider;
+    dom.ultraTiltValue = value;
+
+    rendererState.ultraTiltControlInstalled = true;
 
     return true;
 
@@ -1444,7 +1578,8 @@
     layer,
     offsetX,
     width,
-    height
+    height,
+    eyeDirection = 0
   ) {
 
     const layerCanvas =
@@ -1622,6 +1757,21 @@
     );
 
 
+    if (
+      layerStereoIsEnabled(layer) &&
+      eyeDirection !== 0
+    ) {
+
+      context.rotate(
+        rendererState.ultraTiltDegrees *
+        eyeDirection *
+        Math.PI /
+        180
+      );
+
+    }
+
+
     context.scale(
       layerScaleX *
       renderScaleX,
@@ -1709,12 +1859,23 @@
           );
 
 
+        const settings =
+          getStereoSettings();
+
+        const leftEyeDirection =
+          settings.swapEyes ? 1 : -1;
+
+        const rightEyeDirection =
+          settings.swapEyes ? -1 : 1;
+
+
         drawLayerToEye(
           internal.leftContext,
           layer,
           offsets.leftOffset,
           width,
-          height
+          height,
+          leftEyeDirection
         );
 
 
@@ -1723,7 +1884,8 @@
           layer,
           offsets.rightOffset,
           width,
-          height
+          height,
+          rightEyeDirection
         );
 
       }
@@ -2973,6 +3135,8 @@
 
     installStyles();
 
+    installUltraTiltTester();
+
 
     if (
       !installPreviewCanvas()
@@ -3230,6 +3394,41 @@
 
       return rendererState
         .automaticRendering;
+
+    },
+
+
+    setUltraTilt(
+      value
+    ) {
+
+      rendererState.ultraTiltDegrees =
+        clamp(
+          value,
+          -2,
+          2
+        );
+
+      if (dom.ultraTiltSlider) {
+        dom.ultraTiltSlider.value =
+          String(rendererState.ultraTiltDegrees);
+      }
+
+      if (dom.ultraTiltValue) {
+        dom.ultraTiltValue.textContent =
+          `${rendererState.ultraTiltDegrees.toFixed(2)}°`;
+      }
+
+      requestRender("ultra-tilt-api");
+
+      return rendererState.ultraTiltDegrees;
+
+    },
+
+
+    getUltraTilt() {
+
+      return rendererState.ultraTiltDegrees;
 
     },
 
