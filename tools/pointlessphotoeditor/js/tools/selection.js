@@ -1345,6 +1345,118 @@
   }
 
 
+  function clipContext(
+    context,
+    layer =
+      getActiveLayer()
+  ) {
+
+    if (
+      !context ||
+      !hasSelection() ||
+      layer !==
+        selectionState.layer
+    ) {
+
+      return false;
+
+    }
+
+
+    const mask =
+      selectionState.mask;
+
+    const width =
+      selectionState.maskWidth;
+
+    const height =
+      selectionState.maskHeight;
+
+
+    context.beginPath();
+
+
+    for (
+      let y = 0;
+      y < height;
+      y += 1
+    ) {
+
+      const rowOffset =
+        y *
+        width;
+
+
+      let x =
+        0;
+
+
+      while (
+        x < width
+      ) {
+
+        while (
+          x < width &&
+          !mask[
+            rowOffset +
+            x
+          ]
+        ) {
+
+          x +=
+            1;
+
+        }
+
+
+        if (
+          x >= width
+        ) {
+
+          break;
+
+        }
+
+
+        const runStart =
+          x;
+
+
+        while (
+          x < width &&
+          mask[
+            rowOffset +
+            x
+          ]
+        ) {
+
+          x +=
+            1;
+
+        }
+
+
+        context.rect(
+          runStart,
+          y,
+          x -
+            runStart,
+          1
+        );
+
+      }
+
+    }
+
+
+    context.clip();
+
+
+    return true;
+
+  }
+
+
   function isPixelSelected(
     x,
     y
@@ -4082,6 +4194,8 @@
     hasSelection,
 
     getSelectionMask,
+
+    clipContext,
 
     isPixelSelected,
 
