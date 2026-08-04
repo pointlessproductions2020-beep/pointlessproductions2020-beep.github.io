@@ -704,6 +704,14 @@
     renderLayers();
 
 
+    drawEraserCursor(
+      payload.point,
+      normalisePressure(
+        payload
+      )
+    );
+
+
     return true;
 
   }
@@ -1590,7 +1598,6 @@
 
     if (
       !eraserState.active ||
-      eraserState.erasing ||
       !overlayContext ||
       !point
     ) {
@@ -1959,6 +1966,14 @@
 
 
       renderLayers();
+
+
+      drawEraserCursor(
+        payload.point,
+        normalisePressure(
+          payload
+        )
+      );
 
 
       document.dispatchEvent(
