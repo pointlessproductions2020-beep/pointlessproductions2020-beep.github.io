@@ -1263,6 +1263,30 @@
         combinedMask
       );
 
+
+    console.log(
+      "PAINTLESS SELECTION MASK",
+      {
+        mode:
+          selectionState.mode,
+
+        layer:
+          selectionState.layer?.name ||
+          selectionState.layerId,
+
+        width:
+          selectionState.maskWidth,
+
+        height:
+          selectionState.maskHeight,
+
+        selectedPixelCount:
+          selectionState.selectedPixelCount,
+
+        combinationMode
+      }
+    );
+
     selectionState.outlineDirty =
       true;
 
@@ -2576,31 +2600,30 @@
     );
 
     overlayContext.lineWidth =
-      1;
+      2;
 
     overlayContext.setLineDash(
       [
         5,
-        5
+        4
       ]
     );
 
     overlayContext.lineDashOffset =
-      selectionState.dashOffset;
+      0;
 
     overlayContext.strokeStyle =
-      "#ffffff";
+      "rgba(0, 0, 0, 0.95)";
 
     overlayContext.stroke(
       path
     );
 
-    overlayContext.lineDashOffset =
-      selectionState.dashOffset +
-      5;
+    overlayContext.lineWidth =
+      1;
 
     overlayContext.strokeStyle =
-      "#000000";
+      "rgba(255, 255, 255, 0.98)";
 
     overlayContext.stroke(
       path
@@ -2614,69 +2637,37 @@
   }
 
 
-  function animateMarchingAnts(
-    timestamp
-  ) {
+  function animateMarchingAnts() {
 
-    if (
-      !hasSelection()
-    ) {
-
-      selectionState.animationFrame =
-        null;
-
-      return;
-
-    }
-
-
-    if (
-      timestamp -
-      selectionState.lastAnimationTime >=
-      OUTLINE_FRAME_INTERVAL
-    ) {
-
-      selectionState.lastAnimationTime =
-        timestamp;
-
-      selectionState.dashOffset -=
-        selectionState.marchingAntsSpeed;
-
-      drawSelectionOutline();
-
-    }
-
+    /*
+     * Selection animation is intentionally disabled for now.
+     * A stable outline is much more useful than an outline that
+     * intermittently disappears while the selection engine is
+     * being validated.
+     */
 
     selectionState.animationFrame =
-      requestAnimationFrame(
-        animateMarchingAnts
-      );
+      null;
+
+
+    drawSelectionOutline();
 
   }
 
 
   function startMarchingAnts() {
 
-    if (
-      selectionState.animationFrame !==
-      null
-    ) {
-
-      return;
-
-    }
+    stopMarchingAnts();
 
 
     selectionState.lastAnimationTime =
       0;
 
+    selectionState.dashOffset =
+      0;
+
+
     drawSelectionOutline();
-
-
-    selectionState.animationFrame =
-      requestAnimationFrame(
-        animateMarchingAnts
-      );
 
   }
 
@@ -2901,6 +2892,16 @@
       !hasSelection()
     ) {
 
+      console.warn(
+        "Paintless could not clear pixels because no live selection mask exists."
+      );
+
+
+      sendStatusMessage(
+        "No live selection exists."
+      );
+
+
       return false;
 
     }
@@ -3084,21 +3085,6 @@
 
     saveSelectionHistory(
       "Clear selected pixels"
-    );
-
-
-    document.dispatchEvent(
-      new CustomEvent(
-        "paintless:artwork-changed",
-        {
-          detail: {
-            reason:
-              "selection-clear",
-
-            layer
-          }
-        }
-      )
     );
 
 
@@ -3343,7 +3329,10 @@
           true,
 
         clearOverlay:
-          !changed
+          false,
+
+        selectionChanged:
+          changed
 
       };
 
