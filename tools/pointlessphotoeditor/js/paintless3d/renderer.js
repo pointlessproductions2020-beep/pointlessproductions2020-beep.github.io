@@ -1479,6 +1479,115 @@
     }
 
 
+    /*
+     * Paintless stores every layer on a document-sized canvas
+     * and keeps movement, scaling and rotation as layer state.
+     *
+     * The 2D renderer applies those values around the centre of
+     * the layer canvas. Paintless3D must use the same transform
+     * pipeline, then add only the stereo eye offset.
+     *
+     * This keeps:
+     *
+     * - the 2D editor;
+     * - the live 3D preview;
+     * - left and right eye renders; and
+     * - full-resolution 3D exports
+     *
+     * visually identical.
+     */
+
+    const sourceWidth =
+      Math.max(
+        1,
+        layerCanvas.width
+      );
+
+    const sourceHeight =
+      Math.max(
+        1,
+        layerCanvas.height
+      );
+
+
+    const renderScaleX =
+      width /
+      sourceWidth;
+
+    const renderScaleY =
+      height /
+      sourceHeight;
+
+
+    const centreX =
+      sourceWidth /
+      2;
+
+    const centreY =
+      sourceHeight /
+      2;
+
+
+    const transformX =
+      Number.isFinite(
+        Number(
+          layer.transformX
+        )
+      )
+        ? Number(
+            layer.transformX
+          )
+        : 0;
+
+    const transformY =
+      Number.isFinite(
+        Number(
+          layer.transformY
+        )
+      )
+        ? Number(
+            layer.transformY
+          )
+        : 0;
+
+
+    const layerScaleX =
+      Number.isFinite(
+        Number(
+          layer.scaleX
+        )
+      )
+        ? Number(
+            layer.scaleX
+          )
+        : 1;
+
+    const layerScaleY =
+      Number.isFinite(
+        Number(
+          layer.scaleY
+        )
+      )
+        ? Number(
+            layer.scaleY
+          )
+        : 1;
+
+
+    const rotation =
+      Number.isFinite(
+        Number(
+          layer.rotation
+        )
+      )
+        ? Number(
+            layer.rotation
+          ) *
+          Math.PI /
+          180
+        : 0;
+
+
     context.save();
 
 
@@ -1492,12 +1601,40 @@
       );
 
 
+    context.translate(
+      offsetX +
+      (
+        transformX +
+        centreX
+      ) *
+      renderScaleX,
+
+      (
+        transformY +
+        centreY
+      ) *
+      renderScaleY
+    );
+
+
+    context.rotate(
+      rotation
+    );
+
+
+    context.scale(
+      layerScaleX *
+      renderScaleX,
+
+      layerScaleY *
+      renderScaleY
+    );
+
+
     context.drawImage(
       layerCanvas,
-      offsetX,
-      0,
-      width,
-      height
+      -centreX,
+      -centreY
     );
 
 
@@ -2698,6 +2835,7 @@
       "paintless:layer-visibility-changed",
       "paintless:layer-opacity-changed",
       "paintless:layer-blend-changed",
+      "paintless:layer-transformed",
       "paintless:layer-cleared",
       "paintless:layers-merged",
       "paintless:image-flattened",
@@ -2775,6 +2913,7 @@
       "paintless:layer-visibility-changed",
       "paintless:layer-opacity-changed",
       "paintless:layer-blend-changed",
+      "paintless:layer-transformed",
       "paintless:layer-cleared",
       "paintless:layers-merged",
       "paintless:image-flattened",
