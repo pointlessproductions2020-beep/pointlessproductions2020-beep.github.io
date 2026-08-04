@@ -1097,9 +1097,7 @@ width:
 
     /*
      * Duplicating a layer is a complete user action and must
-     * create its own Undo point. Without this snapshot, the next
-     * edit can undo all the way back to before the duplicate
-     * existed.
+     * create its own Undo point.
      */
     requestLayerOrderHistory(
       "Duplicate layer"
@@ -2499,7 +2497,7 @@ function renderLayerList() {
 
 
         layerItem.draggable =
-          true;
+          false;
 
 
         layerItem.setAttribute(
@@ -2920,146 +2918,10 @@ function renderLayerList() {
         );
 
 
-        layerItem.addEventListener(
-          "dragstart",
-          (event) => {
-
-            selectThisLayer();
-
-
-            event.dataTransfer.effectAllowed =
-              "move";
-
-
-            event.dataTransfer.setData(
-              "text/plain",
-              layer.id
-            );
-
-
-            layerItem.classList.add(
-              "is-dragging"
-            );
-
-          }
-        );
-
-
-        layerItem.addEventListener(
-          "dragend",
-          () => {
-
-            layerItem.classList.remove(
-              "is-dragging"
-            );
-
-
-            layerList
-              ?.querySelectorAll(
-                ".is-drag-over"
-              )
-              .forEach(
-                (item) => {
-
-                  item.classList.remove(
-                    "is-drag-over"
-                  );
-
-                }
-              );
-
-          }
-        );
-
-
-        layerItem.addEventListener(
-          "dragover",
-          (event) => {
-
-            event.preventDefault();
-
-
-            event.dataTransfer.dropEffect =
-              "move";
-
-
-            layerItem.classList.add(
-              "is-drag-over"
-            );
-
-          }
-        );
-
-
-        layerItem.addEventListener(
-          "dragleave",
-          () => {
-
-            layerItem.classList.remove(
-              "is-drag-over"
-            );
-
-          }
-        );
-
-
-        layerItem.addEventListener(
-          "drop",
-          (event) => {
-
-            event.preventDefault();
-
-            event.stopPropagation();
-
-
-            layerItem.classList.remove(
-              "is-drag-over"
-            );
-
-
-            const draggedLayerId =
-              event.dataTransfer.getData(
-                "text/plain"
-              );
-
-
-            if (
-              !draggedLayerId ||
-              draggedLayerId ===
-                layer.id
-            ) {
-
-              return;
-
-            }
-
-
-            const targetIndex =
-              getLayerIndex(
-                layer.id
-              );
-
-
-            if (
-              moveLayer(
-                draggedLayerId,
-                targetIndex
-              )
-            ) {
-
-              selectLayer(
-                draggedLayerId
-              );
-
-
-              requestLayerOrderHistory(
-                "Drag layer"
-              );
-
-            }
-
-          }
-        );
+        /*
+         * Layer drag-and-drop is intentionally disabled.
+         * Reorder layers only with the ▲ and ▼ buttons.
+         */
 
 
         layerItem.addEventListener(
