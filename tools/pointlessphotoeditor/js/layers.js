@@ -2237,10 +2237,10 @@ width:
 
 
     thumbnailCanvas.width =
-      84;
+      22;
 
     thumbnailCanvas.height =
-      72;
+      22;
 
 
     const thumbnailContext =
@@ -2340,9 +2340,9 @@ width:
           [
             "center",
             "0 0",
-            "0 6px",
-            "6px -6px",
-            "-6px 0"
+            "0 3px",
+            "3px -3px",
+            "-3px 0"
           ].join(",");
 
 
@@ -2359,10 +2359,10 @@ width:
         thumbnail.style.backgroundSize =
           [
             "contain",
-            "12px 12px",
-            "12px 12px",
-            "12px 12px",
-            "12px 12px"
+            "6px 6px",
+            "6px 6px",
+            "6px 6px",
+            "6px 6px"
           ].join(",");
 
       }
