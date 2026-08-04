@@ -2,20 +2,26 @@
 
 /* =========================================================
    PAINTLESS
-   SELECTION TOOL — v1.1
+   SELECTION TOOL — v1.0
 
    File:
    js/tools/selection.js
 
-   Fixes:
-   - Magic Wand now samples the transformed active layer
-   - Selections remain attached to the active layer
-   - Stable cached marching-ants outline
-   - Shift adds to the current selection
-   - Alt subtracts from the current selection
-   - Shift + Alt intersects with the current selection
-   - Delete / Backspace clears selected pixels
-   - Rectangle selection works with moved, scaled and rotated layers
+   Features:
+   - Rectangular selections
+   - Magic Wand selections
+   - Adjustable colour tolerance
+   - Contiguous or global Magic Wand matching
+   - Animated selection outline
+   - Deselect button support
+   - Invert selection through the public API
+   - Delete clears selected pixels on the active layer
+   - Escape deselects
+   - Selection remains available to Crop and future tools
+   - No history entry until pixels are actually changed
+
+   Loaded automatically by:
+   js/tools.js
 ========================================================= */
 
 (() => {
@@ -44,18 +50,7 @@
 
 
   /* =======================================================
-     2. CONSTANTS
-  ======================================================= */
-
-  const OUTLINE_FRAME_INTERVAL =
-    1000 / 12;
-
-  const DEFAULT_TOLERANCE =
-    24;
-
-
-  /* =======================================================
-     3. STATE
+     2. SELECTION STATE
   ======================================================= */
 
   const selectionState = {
@@ -94,7 +89,7 @@
       0,
 
     tolerance:
-      DEFAULT_TOLERANCE,
+      24,
 
     contiguous:
       true,
@@ -102,38 +97,20 @@
     inverted:
       false,
 
-    layer:
-      null,
-
-    layerId:
-      null,
-
-    combinationMode:
-      "replace",
-
     animationFrame:
       null,
-
-    lastAnimationTime:
-      0,
 
     dashOffset:
       0,
 
     marchingAntsSpeed:
-      1,
-
-    outlinePath:
-      null,
-
-    outlineDirty:
-      true
+      0.7
 
   };
 
 
   /* =======================================================
-     4. DOM
+     3. DOM REFERENCES
   ======================================================= */
 
   const dom = {
@@ -142,6 +119,9 @@
       null,
 
     overlayCanvas:
+      null,
+
+    selectionOverlayCanvas:
       null,
 
     selectionModeInput:
@@ -167,7 +147,7 @@
 
 
   /* =======================================================
-     5. SHARED APIS
+     4. SHARED APIS
   ======================================================= */
 
   function getCore() {
@@ -200,87 +180,8 @@
   }
 
 
-  function getActiveLayer() {
-
-    return (
-      getCore()
-        ?.getActiveLayer?.() ||
-
-      getLayersApi()
-        ?.getActiveLayer?.() ||
-
-      null
-    );
-
-  }
-
-
-  function renderLayers() {
-
-    if (
-      typeof getLayersApi()
-        ?.renderLayers ===
-        "function"
-    ) {
-
-      getLayersApi()
-        .renderLayers();
-
-      return;
-
-    }
-
-
-    getCore()
-      ?.renderLayers?.();
-
-  }
-
-
-  function clearOverlay() {
-
-    getCore()
-      ?.clearOverlay?.();
-
-  }
-
-
-  function sendStatusMessage(
-    message
-  ) {
-
-    if (
-      typeof getCore()
-        ?.sendStatusMessage ===
-        "function"
-    ) {
-
-      getCore()
-        .sendStatusMessage(
-          message
-        );
-
-      return;
-
-    }
-
-
-    document.dispatchEvent(
-      new CustomEvent(
-        "paintless:status-message",
-        {
-          detail: {
-            message
-          }
-        }
-      )
-    );
-
-  }
-
-
   /* =======================================================
-     6. GENERAL HELPERS
+     5. GENERIC HELPERS
   ======================================================= */
 
   function clamp(
@@ -289,7 +190,7 @@
     maximum
   ) {
 
-    const number =
+    const numericValue =
       Number(
         value
       );
@@ -297,7 +198,7 @@
 
     if (
       !Number.isFinite(
-        number
+        numericValue
       )
     ) {
 
@@ -310,29 +211,9 @@
       maximum,
       Math.max(
         minimum,
-        number
+        numericValue
       )
     );
-
-  }
-
-
-  function normaliseNumber(
-    value,
-    fallback = 0
-  ) {
-
-    const number =
-      Number(
-        value
-      );
-
-
-    return Number.isFinite(
-      number
-    )
-      ? number
-      : fallback;
 
   }
 
@@ -351,16 +232,16 @@
     return {
 
       x:
-        normaliseNumber(
-          point.x,
-          0
-        ),
+        Number(
+          point.x
+        ) ||
+        0,
 
       y:
-        normaliseNumber(
-          point.y,
-          0
-        ),
+        Number(
+          point.y
+        ) ||
+        0,
 
       inside:
         Boolean(
@@ -408,301 +289,254 @@
   }
 
 
-  function getLayerIdentifier(
-    layer
+  function sendStatusMessage(
+    message
   ) {
 
+    if (
+      typeof getCore()
+        ?.sendStatusMessage ===
+      "function"
+    ) {
+
+      getCore()
+        .sendStatusMessage(
+          message
+        );
+
+
+      return;
+
+    }
+
+
+    document.dispatchEvent(
+      new CustomEvent(
+        "paintless:status-message",
+        {
+          detail: {
+            message
+          }
+        }
+      )
+    );
+
+  }
+
+
+  function createSelectionOverlayCanvas() {
+
+    const existingCanvas =
+      document.getElementById(
+        "selection-overlay-canvas"
+      );
+
+
+    if (existingCanvas) {
+
+      return existingCanvas;
+
+    }
+
+
+    if (
+      !dom.overlayCanvas ||
+      !dom.overlayCanvas.parentElement
+    ) {
+
+      return null;
+
+    }
+
+
+    const canvas =
+      document.createElement(
+        "canvas"
+      );
+
+
+    canvas.id =
+      "selection-overlay-canvas";
+
+
+    canvas.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
+    canvas.style.position =
+      "absolute";
+
+    canvas.style.left =
+      "0";
+
+    canvas.style.top =
+      "0";
+
+    canvas.style.pointerEvents =
+      "none";
+
+    canvas.style.touchAction =
+      "none";
+
+    canvas.style.userSelect =
+      "none";
+
+    canvas.style.zIndex =
+      "18";
+
+
+    dom.overlayCanvas.parentElement
+      .insertBefore(
+        canvas,
+        dom.overlayCanvas
+      );
+
+
+    return canvas;
+
+  }
+
+
+  function synchroniseSelectionOverlay() {
+
+    if (
+      !dom.selectionOverlayCanvas ||
+      !dom.editorCanvas
+    ) {
+
+      return false;
+
+    }
+
+
+    dom.selectionOverlayCanvas.width =
+      dom.editorCanvas.width;
+
+    dom.selectionOverlayCanvas.height =
+      dom.editorCanvas.height;
+
+
+    const editorStyle =
+      window.getComputedStyle(
+        dom.editorCanvas
+      );
+
+
+    dom.selectionOverlayCanvas.style.width =
+      editorStyle.width;
+
+    dom.selectionOverlayCanvas.style.height =
+      editorStyle.height;
+
+    dom.selectionOverlayCanvas.style.transform =
+      editorStyle.transform ===
+        "none"
+        ? ""
+        : editorStyle.transform;
+
+    dom.selectionOverlayCanvas.style.transformOrigin =
+      editorStyle.transformOrigin;
+
+    dom.selectionOverlayCanvas.style.borderRadius =
+      editorStyle.borderRadius;
+
+
+    return true;
+
+  }
+
+
+  function clearOverlay() {
+
+    if (
+      !dom.selectionOverlayCanvas ||
+      !overlayContext
+    ) {
+
+      return;
+
+    }
+
+
+    overlayContext.save();
+
+
+    overlayContext.setTransform(
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    );
+
+
+    overlayContext.globalAlpha =
+      1;
+
+
+    overlayContext.globalCompositeOperation =
+      "source-over";
+
+
+    overlayContext.setLineDash(
+      []
+    );
+
+
+    overlayContext.clearRect(
+      0,
+      0,
+      dom.selectionOverlayCanvas.width,
+      dom.selectionOverlayCanvas.height
+    );
+
+
+    overlayContext.restore();
+
+  }
+
+
+  function getActiveLayer() {
+
     return (
-      layer?.id ??
-      layer?.uuid ??
-      layer?.name ??
+      getCore()
+        ?.getActiveLayer?.() ||
+      getLayersApi()
+        ?.getActiveLayer?.() ||
       null
     );
 
   }
 
 
-  function isEditableLayer(
-    layer
-  ) {
-
-    return Boolean(
-      layer &&
-      layer.canvas &&
-      layer.context &&
-      layer.visible !==
-        false &&
-      !layer.locked
-    );
-
-  }
-
-
-  function getCombinationMode(
-    payload
-  ) {
-
-    const shiftKey =
-      Boolean(
-        payload?.shiftKey
-      );
-
-    const altKey =
-      Boolean(
-        payload?.altKey
-      );
-
+  function renderLayers() {
 
     if (
-      shiftKey &&
-      altKey
+      typeof getLayersApi()
+        ?.renderLayers ===
+      "function"
     ) {
 
-      return "intersect";
+      getLayersApi()
+        .renderLayers();
+
+
+      return;
 
     }
 
 
-    if (shiftKey) {
-
-      return "add";
-
-    }
-
-
-    if (altKey) {
-
-      return "subtract";
-
-    }
-
-
-    return "replace";
+    getCore()
+      ?.renderLayers?.();
 
   }
 
 
   /* =======================================================
-     7. LAYER TRANSFORMS
-  ======================================================= */
-
-  function getLayerTransform(
-    layer
-  ) {
-
-    const width =
-      Math.max(
-        1,
-        layer?.canvas?.width ||
-        1
-      );
-
-    const height =
-      Math.max(
-        1,
-        layer?.canvas?.height ||
-        1
-      );
-
-
-    return {
-
-      width,
-
-      height,
-
-      centreX:
-        normaliseNumber(
-          layer?.transformX,
-          0
-        ) +
-        width /
-        2,
-
-      centreY:
-        normaliseNumber(
-          layer?.transformY,
-          0
-        ) +
-        height /
-        2,
-
-      scaleX:
-        normaliseNumber(
-          layer?.scaleX,
-          1
-        ) ||
-        1,
-
-      scaleY:
-        normaliseNumber(
-          layer?.scaleY,
-          1
-        ) ||
-        1,
-
-      rotation:
-        normaliseNumber(
-          layer?.rotation,
-          0
-        ) *
-        Math.PI /
-        180
-
-    };
-
-  }
-
-
-  function documentPointToLayerPoint(
-    point,
-    layer
-  ) {
-
-    const transform =
-      getLayerTransform(
-        layer
-      );
-
-
-    const offsetX =
-      point.x -
-      transform.centreX;
-
-    const offsetY =
-      point.y -
-      transform.centreY;
-
-
-    const cosine =
-      Math.cos(
-        -transform.rotation
-      );
-
-    const sine =
-      Math.sin(
-        -transform.rotation
-      );
-
-
-    const rotatedX =
-      offsetX *
-      cosine -
-      offsetY *
-      sine;
-
-    const rotatedY =
-      offsetX *
-      sine +
-      offsetY *
-      cosine;
-
-
-    return {
-
-      x:
-        rotatedX /
-        transform.scaleX +
-        transform.width /
-        2,
-
-      y:
-        rotatedY /
-        transform.scaleY +
-        transform.height /
-        2,
-
-      inside:
-        true
-
-    };
-
-  }
-
-
-  function layerPointToDocumentPoint(
-    point,
-    layer
-  ) {
-
-    const transform =
-      getLayerTransform(
-        layer
-      );
-
-
-    const localX =
-      (
-        point.x -
-        transform.width /
-        2
-      ) *
-      transform.scaleX;
-
-    const localY =
-      (
-        point.y -
-        transform.height /
-        2
-      ) *
-      transform.scaleY;
-
-
-    const cosine =
-      Math.cos(
-        transform.rotation
-      );
-
-    const sine =
-      Math.sin(
-        transform.rotation
-      );
-
-
-    return {
-
-      x:
-        transform.centreX +
-        localX *
-        cosine -
-        localY *
-        sine,
-
-      y:
-        transform.centreY +
-        localX *
-        sine +
-        localY *
-        cosine
-
-    };
-
-  }
-
-
-  function pointIsInsideLayer(
-    point,
-    layer
-  ) {
-
-    return Boolean(
-      point &&
-      layer?.canvas &&
-      point.x >=
-        0 &&
-      point.y >=
-        0 &&
-      point.x <
-        layer.canvas.width &&
-      point.y <
-        layer.canvas.height
-    );
-
-  }
-
-
-  /* =======================================================
-     8. SETTINGS
+     6. SETTINGS
   ======================================================= */
 
   function getSelectionMode() {
@@ -746,9 +580,7 @@
       mode;
 
 
-    if (
-      dom.selectionModeInput
-    ) {
+    if (dom.selectionModeInput) {
 
       dom.selectionModeInput.value =
         mode;
@@ -762,8 +594,8 @@
     sendStatusMessage(
       mode ===
         "magic-wand"
-        ? "Magic Wand ready. Shift adds, Alt subtracts."
-        : "Rectangle selection ready. Shift adds, Alt subtracts."
+        ? "Magic Wand ready."
+        : "Rectangle selection ready."
     );
 
 
@@ -795,9 +627,7 @@
       );
 
 
-    if (
-      dom.toleranceInput
-    ) {
+    if (dom.toleranceInput) {
 
       dom.toleranceInput.value =
         String(
@@ -807,9 +637,7 @@
     }
 
 
-    if (
-      dom.toleranceOutput
-    ) {
+    if (dom.toleranceOutput) {
 
       dom.toleranceOutput.textContent =
         String(
@@ -836,9 +664,7 @@
       );
 
 
-    if (
-      dom.contiguousInput
-    ) {
+    if (dom.contiguousInput) {
 
       dom.contiguousInput.checked =
         selectionState.contiguous;
@@ -852,7 +678,7 @@
 
 
   /* =======================================================
-     9. MASK HELPERS
+     7. MASK HELPERS
   ======================================================= */
 
   function createEmptyMask(
@@ -868,141 +694,6 @@
   }
 
 
-  function countSelectedPixels(
-    mask
-  ) {
-
-    if (!mask) {
-
-      return 0;
-
-    }
-
-
-    let count =
-      0;
-
-
-    for (
-      let index = 0;
-      index <
-      mask.length;
-      index +=
-      1
-    ) {
-
-      count +=
-        mask[
-          index
-        ]
-          ? 1
-          : 0;
-
-    }
-
-
-    return count;
-
-  }
-
-
-  function combineMasks(
-    currentMask,
-    nextMask,
-    mode
-  ) {
-
-    if (
-      !currentMask ||
-      currentMask.length !==
-        nextMask.length ||
-      mode ===
-        "replace"
-    ) {
-
-      return nextMask;
-
-    }
-
-
-    const output =
-      new Uint8Array(
-        nextMask.length
-      );
-
-
-    for (
-      let index = 0;
-      index <
-      output.length;
-      index +=
-      1
-    ) {
-
-      const current =
-        Boolean(
-          currentMask[
-            index
-          ]
-        );
-
-      const next =
-        Boolean(
-          nextMask[
-            index
-          ]
-        );
-
-
-      if (
-        mode ===
-        "add"
-      ) {
-
-        output[
-          index
-        ] =
-          current ||
-          next
-            ? 1
-            : 0;
-
-      } else if (
-        mode ===
-        "subtract"
-      ) {
-
-        output[
-          index
-        ] =
-          current &&
-          !next
-            ? 1
-            : 0;
-
-      } else if (
-        mode ===
-        "intersect"
-      ) {
-
-        output[
-          index
-        ] =
-          current &&
-          next
-            ? 1
-            : 0;
-
-      }
-
-    }
-
-
-    return output;
-
-  }
-
-
   function setSelectionMask(
     mask,
     width,
@@ -1012,77 +703,46 @@
         null,
 
       inverted =
-        false,
-
-      layer =
-        getActiveLayer(),
-
-      combinationMode =
-        "replace"
+        false
     } = {}
   ) {
 
-    if (
-      !layer ||
-      !mask ||
-      mask.length !==
-        width *
-        height
-    ) {
-
-      return false;
-
-    }
-
-
-    const sameLayer =
-      selectionState.layer ===
-        layer;
-
-
-    const combinedMask =
-      combineMasks(
-        sameLayer
-          ? selectionState.mask
-          : null,
-        mask,
-        combinationMode
-      );
-
-
     selectionState.mask =
-      combinedMask;
+      mask;
+
 
     selectionState.maskWidth =
       width;
 
+
     selectionState.maskHeight =
       height;
+
 
     selectionState.rectangle =
       rectangle;
 
+
     selectionState.inverted =
       inverted;
 
-    selectionState.layer =
-      layer;
-
-    selectionState.layerId =
-      getLayerIdentifier(
-        layer
-      );
 
     selectionState.selectedPixelCount =
-      countSelectedPixels(
-        combinedMask
-      );
-
-    selectionState.outlineDirty =
-      true;
-
-    selectionState.outlinePath =
-      null;
+      mask
+        ? mask.reduce(
+            (
+              count,
+              value
+            ) =>
+              count +
+              (
+                value
+                  ? 1
+                  : 0
+              ),
+            0
+          )
+        : 0;
 
 
     if (
@@ -1106,7 +766,6 @@
         "paintless:selection-changed",
         {
           detail: {
-
             mask:
               selectionState.mask,
 
@@ -1123,13 +782,7 @@
               selectionState.selectedPixelCount,
 
             inverted:
-              selectionState.inverted,
-
-            layer:
-              selectionState.layer,
-
-            combinationMode
-
+              selectionState.inverted
           }
         }
       )
@@ -1145,7 +798,6 @@
 
     return Boolean(
       selectionState.mask &&
-      selectionState.layer &&
       selectionState.selectedPixelCount >
         0
     );
@@ -1194,15 +846,13 @@
 
 
   /* =======================================================
-     10. RECTANGLE SELECTION
+     8. RECTANGLE SELECTION
   ======================================================= */
 
   function createRectangleMask(
     rectangle,
     width,
-    height,
-    layer =
-      getActiveLayer()
+    height
   ) {
 
     const mask =
@@ -1212,104 +862,20 @@
       );
 
 
-    if (!layer) {
-
-      return mask;
-
-    }
-
-
-    const corners =
-      [
-        {
-          x:
-            rectangle.x,
-          y:
-            rectangle.y
-        },
-        {
-          x:
-            rectangle.x +
-            rectangle.width,
-          y:
-            rectangle.y
-        },
-        {
-          x:
-            rectangle.x +
-            rectangle.width,
-          y:
-            rectangle.y +
-            rectangle.height
-        },
-        {
-          x:
-            rectangle.x,
-          y:
-            rectangle.y +
-            rectangle.height
-        }
-      ]
-        .map(
-          (point) =>
-            documentPointToLayerPoint(
-              point,
-              layer
-            )
-        );
-
-
-    const minimumX =
+    const left =
       clamp(
         Math.floor(
-          Math.min(
-            ...corners.map(
-              (point) =>
-                point.x
-            )
-          )
+          rectangle.x
         ),
         0,
         width
       );
 
-    const maximumX =
-      clamp(
-        Math.ceil(
-          Math.max(
-            ...corners.map(
-              (point) =>
-                point.x
-            )
-          )
-        ),
-        0,
-        width
-      );
 
-    const minimumY =
+    const top =
       clamp(
         Math.floor(
-          Math.min(
-            ...corners.map(
-              (point) =>
-                point.y
-            )
-          )
-        ),
-        0,
-        height
-      );
-
-    const maximumY =
-      clamp(
-        Math.ceil(
-          Math.max(
-            ...corners.map(
-              (point) =>
-                point.y
-            )
-          )
+          rectangle.y
         ),
         0,
         height
@@ -1317,21 +883,31 @@
 
 
     const right =
-      rectangle.x +
-      rectangle.width;
+      clamp(
+        Math.ceil(
+          rectangle.x +
+          rectangle.width
+        ),
+        0,
+        width
+      );
+
 
     const bottom =
-      rectangle.y +
-      rectangle.height;
+      clamp(
+        Math.ceil(
+          rectangle.y +
+          rectangle.height
+        ),
+        0,
+        height
+      );
 
 
     for (
-      let y =
-        minimumY;
-      y <
-        maximumY;
-      y +=
-        1
+      let y = top;
+      y < bottom;
+      y += 1
     ) {
 
       const rowOffset =
@@ -1340,47 +916,16 @@
 
 
       for (
-        let x =
-          minimumX;
-        x <
-          maximumX;
-        x +=
-          1
+        let x = left;
+        x < right;
+        x += 1
       ) {
 
-        const documentPoint =
-          layerPointToDocumentPoint(
-            {
-              x:
-                x +
-                0.5,
-
-              y:
-                y +
-                0.5
-            },
-            layer
-          );
-
-
-        if (
-          documentPoint.x >=
-            rectangle.x &&
-          documentPoint.x <=
-            right &&
-          documentPoint.y >=
-            rectangle.y &&
-          documentPoint.y <=
-            bottom
-        ) {
-
-          mask[
-            rowOffset +
-            x
-          ] =
-            1;
-
-        }
+        mask[
+          rowOffset +
+          x
+        ] =
+          1;
 
       }
 
@@ -1394,24 +939,14 @@
 
   function commitRectangleSelection(
     startPoint,
-    endPoint,
-    options = {}
+    endPoint
   ) {
 
-    const layer =
-      options.layer ||
-      getActiveLayer();
+    const canvas =
+      dom.editorCanvas;
 
 
-    if (
-      !isEditableLayer(
-        layer
-      )
-    ) {
-
-      sendStatusMessage(
-        "Select an editable layer first."
-      );
+    if (!canvas) {
 
       return false;
 
@@ -1432,6 +967,8 @@
         1
     ) {
 
+      deselect();
+
       return false;
 
     }
@@ -1440,44 +977,37 @@
     const mask =
       createRectangleMask(
         rectangle,
-        layer.canvas.width,
-        layer.canvas.height,
-        layer
+        canvas.width,
+        canvas.height
       );
 
 
     setSelectionMask(
       mask,
-      layer.canvas.width,
-      layer.canvas.height,
+      canvas.width,
+      canvas.height,
       {
-        rectangle,
-        layer,
-        combinationMode:
-          options.combinationMode ||
-          "replace"
+        rectangle
       }
     );
 
 
     sendStatusMessage(
-      `${selectionState.selectedPixelCount.toLocaleString()} pixel${
-        selectionState.selectedPixelCount ===
-          1
-          ? ""
-          : "s"
-      } selected.`
+      `${Math.round(
+        rectangle.width
+      )} × ${Math.round(
+        rectangle.height
+      )} px selected.`
     );
 
 
-    return selectionState.selectedPixelCount >
-      0;
+    return true;
 
   }
 
 
   /* =======================================================
-     11. MAGIC WAND
+     9. MAGIC WAND SELECTION
   ======================================================= */
 
   function coloursMatch(
@@ -1487,57 +1017,36 @@
     tolerance
   ) {
 
-    const redDifference =
-      pixels[
-        pixelIndex
-      ] -
-      target.red;
-
-    const greenDifference =
-      pixels[
-        pixelIndex +
-        1
-      ] -
-      target.green;
-
-    const blueDifference =
-      pixels[
-        pixelIndex +
-        2
-      ] -
-      target.blue;
-
-    const alphaDifference =
-      pixels[
-        pixelIndex +
-        3
-      ] -
-      target.alpha;
-
-
-    const colourDistance =
-      Math.sqrt(
-        redDifference *
-        redDifference +
-        greenDifference *
-        greenDifference +
-        blueDifference *
-        blueDifference
-      );
-
-
-    const maximumColourDistance =
-      tolerance *
-      Math.sqrt(
-        3
-      );
-
-
     return (
-      colourDistance <=
-        maximumColourDistance &&
       Math.abs(
-        alphaDifference
+        pixels[
+          pixelIndex
+        ] -
+        target.red
+      ) <=
+        tolerance &&
+      Math.abs(
+        pixels[
+          pixelIndex +
+          1
+        ] -
+        target.green
+      ) <=
+        tolerance &&
+      Math.abs(
+        pixels[
+          pixelIndex +
+          2
+        ] -
+        target.blue
+      ) <=
+        tolerance &&
+      Math.abs(
+        pixels[
+          pixelIndex +
+          3
+        ] -
+        target.alpha
       ) <=
         tolerance
     );
@@ -1555,19 +1064,21 @@
     const width =
       imageData.width;
 
+
     const height =
       imageData.height;
+
 
     const pixels =
       imageData.data;
 
-    const startPixelNumber =
-      startY *
-      width +
-      startX;
 
     const startPixelIndex =
-      startPixelNumber *
+      (
+        startY *
+        width +
+        startX
+      ) *
       4;
 
 
@@ -1605,47 +1116,28 @@
         height
       );
 
+
     const visited =
       new Uint8Array(
         width *
         height
       );
 
-    const queue =
-      new Int32Array(
-        width *
-        height
-      );
 
-
-    let queueStart =
-      0;
-
-    let queueEnd =
-      0;
-
-
-    queue[
-      queueEnd
-    ] =
-      startPixelNumber;
-
-    queueEnd +=
-      1;
+    const stack = [
+      startY *
+      width +
+      startX
+    ];
 
 
     while (
-      queueStart <
-      queueEnd
+      stack.length >
+      0
     ) {
 
       const pixelNumber =
-        queue[
-          queueStart
-        ];
-
-      queueStart +=
-        1;
+        stack.pop();
 
 
       if (
@@ -1663,6 +1155,18 @@
         pixelNumber
       ] =
         1;
+
+
+      const x =
+        pixelNumber %
+        width;
+
+
+      const y =
+        Math.floor(
+          pixelNumber /
+          width
+        );
 
 
       const pixelIndex =
@@ -1690,30 +1194,15 @@
         1;
 
 
-      const x =
-        pixelNumber %
-        width;
-
-      const y =
-        Math.floor(
-          pixelNumber /
-          width
-        );
-
-
       if (
         x >
         0
       ) {
 
-        queue[
-          queueEnd
-        ] =
+        stack.push(
           pixelNumber -
-          1;
-
-        queueEnd +=
-          1;
+          1
+        );
 
       }
 
@@ -1724,14 +1213,10 @@
         1
       ) {
 
-        queue[
-          queueEnd
-        ] =
+        stack.push(
           pixelNumber +
-          1;
-
-        queueEnd +=
-          1;
+          1
+        );
 
       }
 
@@ -1741,14 +1226,10 @@
         0
       ) {
 
-        queue[
-          queueEnd
-        ] =
+        stack.push(
           pixelNumber -
-          width;
-
-        queueEnd +=
-          1;
+          width
+        );
 
       }
 
@@ -1759,14 +1240,10 @@
         1
       ) {
 
-        queue[
-          queueEnd
-        ] =
+        stack.push(
           pixelNumber +
-          width;
-
-        queueEnd +=
-          1;
+          width
+        );
 
       }
 
@@ -1788,11 +1265,14 @@
     const width =
       imageData.width;
 
+
     const height =
       imageData.height;
 
+
     const pixels =
       imageData.data;
+
 
     const startPixelIndex =
       (
@@ -1841,17 +1321,16 @@
     for (
       let pixelNumber = 0;
       pixelNumber <
-      width *
-      height;
-      pixelNumber +=
-      1
+        width *
+        height;
+      pixelNumber += 1
     ) {
 
       if (
         coloursMatch(
           pixels,
           pixelNumber *
-          4,
+            4,
           target,
           tolerance
         )
@@ -1873,47 +1352,22 @@
 
 
   function commitMagicWandSelection(
-    documentPoint,
-    options = {}
+    point
   ) {
 
     const layer =
-      options.layer ||
       getActiveLayer();
 
 
     if (
-      !isEditableLayer(
-        layer
-      )
+      !layer?.context ||
+      !layer?.canvas
     ) {
 
       sendStatusMessage(
-        "There is no editable active layer to sample."
+        "There is no active layer to sample."
       );
 
-      return false;
-
-    }
-
-
-    const localPoint =
-      documentPointToLayerPoint(
-        documentPoint,
-        layer
-      );
-
-
-    if (
-      !pointIsInsideLayer(
-        localPoint,
-        layer
-      )
-    ) {
-
-      sendStatusMessage(
-        "Click inside the active layer."
-      );
 
       return false;
 
@@ -1923,60 +1377,40 @@
     const width =
       layer.canvas.width;
 
+
     const height =
       layer.canvas.height;
+
 
     const x =
       clamp(
         Math.floor(
-          localPoint.x
+          point.x
         ),
         0,
         width -
-        1
+          1
       );
+
 
     const y =
       clamp(
         Math.floor(
-          localPoint.y
+          point.y
         ),
         0,
         height -
-        1
+          1
       );
 
 
-    let imageData;
-
-
-    try {
-
-      imageData =
-        layer.context.getImageData(
-          0,
-          0,
-          width,
-          height
-        );
-
-    } catch (
-      error
-    ) {
-
-      console.error(
-        "Paintless Magic Wand could not read the active layer:",
-        error
+    const imageData =
+      layer.context.getImageData(
+        0,
+        0,
+        width,
+        height
       );
-
-
-      sendStatusMessage(
-        "The Magic Wand could not read this layer."
-      );
-
-      return false;
-
-    }
 
 
     const tolerance =
@@ -2002,20 +1436,14 @@
     setSelectionMask(
       mask,
       width,
-      height,
-      {
-        layer,
-        combinationMode:
-          options.combinationMode ||
-          "replace"
-      }
+      height
     );
 
 
     sendStatusMessage(
       `${selectionState.selectedPixelCount.toLocaleString()} matching pixel${
         selectionState.selectedPixelCount ===
-          1
+        1
           ? ""
           : "s"
       } selected.`
@@ -2029,7 +1457,7 @@
 
 
   /* =======================================================
-     12. PREVIEW
+     10. PREVIEW
   ======================================================= */
 
   function drawRectanglePreview(
@@ -2060,14 +1488,18 @@
 
     overlayContext.save();
 
+
     overlayContext.globalAlpha =
       1;
+
 
     overlayContext.globalCompositeOperation =
       "source-over";
 
+
     overlayContext.fillStyle =
       "rgba(168, 76, 255, 0.14)";
+
 
     overlayContext.fillRect(
       rectangle.x,
@@ -2076,11 +1508,14 @@
       rectangle.height
     );
 
+
     overlayContext.lineWidth =
       1;
 
+
     overlayContext.strokeStyle =
-      "rgba(255, 255, 255, 0.96)";
+      "rgba(255, 255, 255, 0.95)";
+
 
     overlayContext.setLineDash(
       [
@@ -2089,14 +1524,16 @@
       ]
     );
 
+
     overlayContext.strokeRect(
       rectangle.x +
-      0.5,
+        0.5,
       rectangle.y +
-      0.5,
+        0.5,
       rectangle.width,
       rectangle.height
     );
+
 
     overlayContext.restore();
 
@@ -2107,45 +1544,74 @@
 
 
   /* =======================================================
-     13. STABLE MARCHING ANTS
+     11. MARCHING ANTS
   ======================================================= */
 
-  function buildSelectionOutlinePath() {
+  function drawSelectionOutline() {
 
     if (
-      !hasSelection()
+      !hasSelection() ||
+      !overlayContext
     ) {
 
-      selectionState.outlinePath =
-        null;
-
-      selectionState.outlineDirty =
-        false;
-
-      return null;
+      return;
 
     }
+
+
+    clearOverlay();
 
 
     const width =
       selectionState.maskWidth;
 
+
     const height =
       selectionState.maskHeight;
+
 
     const mask =
       selectionState.mask;
 
-    const path =
-      new Path2D();
+
+    overlayContext.save();
+
+
+    overlayContext.globalAlpha =
+      1;
+
+
+    overlayContext.globalCompositeOperation =
+      "source-over";
+
+
+    overlayContext.lineWidth =
+      1;
+
+
+    overlayContext.setLineDash(
+      [
+        5,
+        5
+      ]
+    );
+
+
+    overlayContext.lineDashOffset =
+      selectionState.dashOffset;
+
+
+    overlayContext.strokeStyle =
+      "#ffffff";
+
+
+    overlayContext.beginPath();
 
 
     for (
       let y = 0;
-      y <
-      height;
-      y +=
-      1
+      y < height;
+      y += 1
     ) {
 
       const row =
@@ -2155,10 +1621,8 @@
 
       for (
         let x = 0;
-        x <
-        width;
-        x +=
-        1
+        x < width;
+        x += 1
       ) {
 
         const index =
@@ -2185,6 +1649,7 @@
             1
           ];
 
+
         const rightSelected =
           x <
             width -
@@ -2194,6 +1659,7 @@
             1
           ];
 
+
         const topSelected =
           y >
             0 &&
@@ -2201,6 +1667,7 @@
             index -
             width
           ];
+
 
         const bottomSelected =
           y <
@@ -2214,14 +1681,15 @@
 
         if (!topSelected) {
 
-          path.moveTo(
+          overlayContext.moveTo(
             x,
             y
           );
 
-          path.lineTo(
+
+          overlayContext.lineTo(
             x +
-            1,
+              1,
             y
           );
 
@@ -2230,17 +1698,18 @@
 
         if (!rightSelected) {
 
-          path.moveTo(
+          overlayContext.moveTo(
             x +
-            1,
+              1,
             y
           );
 
-          path.lineTo(
+
+          overlayContext.lineTo(
             x +
-            1,
+              1,
             y +
-            1
+              1
           );
 
         }
@@ -2248,17 +1717,18 @@
 
         if (!bottomSelected) {
 
-          path.moveTo(
+          overlayContext.moveTo(
             x +
-            1,
+              1,
             y +
-            1
+              1
           );
 
-          path.lineTo(
+
+          overlayContext.lineTo(
             x,
             y +
-            1
+              1
           );
 
         }
@@ -2266,13 +1736,14 @@
 
         if (!leftSelected) {
 
-          path.moveTo(
+          overlayContext.moveTo(
             x,
             y +
-            1
+              1
           );
 
-          path.lineTo(
+
+          overlayContext.lineTo(
             x,
             y
           );
@@ -2284,184 +1755,46 @@
     }
 
 
-    selectionState.outlinePath =
-      path;
+    overlayContext.stroke();
 
-    selectionState.outlineDirty =
-      false;
-
-
-    return path;
-
-  }
-
-
-  function applyLayerTransformToOverlay(
-    layer
-  ) {
-
-    const transform =
-      getLayerTransform(
-        layer
-      );
-
-
-    overlayContext.translate(
-      transform.centreX,
-      transform.centreY
-    );
-
-    overlayContext.rotate(
-      transform.rotation
-    );
-
-    overlayContext.scale(
-      transform.scaleX,
-      transform.scaleY
-    );
-
-    overlayContext.translate(
-      -transform.width /
-      2,
-      -transform.height /
-      2
-    );
-
-  }
-
-
-  function drawSelectionOutline() {
-
-    if (
-      !selectionState.active ||
-      !hasSelection() ||
-      !overlayContext
-    ) {
-
-      return false;
-
-    }
-
-
-    const layer =
-      selectionState.layer;
-
-
-    if (
-      !layer ||
-      layer.visible ===
-        false
-    ) {
-
-      clearOverlay();
-
-      return false;
-
-    }
-
-
-    const path =
-      selectionState.outlineDirty ||
-      !selectionState.outlinePath
-        ? buildSelectionOutlinePath()
-        : selectionState.outlinePath;
-
-
-    if (!path) {
-
-      clearOverlay();
-
-      return false;
-
-    }
-
-
-    clearOverlay();
-
-
-    overlayContext.save();
-
-    overlayContext.globalAlpha =
-      1;
-
-    overlayContext.globalCompositeOperation =
-      "source-over";
-
-    applyLayerTransformToOverlay(
-      layer
-    );
-
-    overlayContext.lineWidth =
-      1;
-
-    overlayContext.setLineDash(
-      [
-        5,
-        5
-      ]
-    );
-
-    overlayContext.lineDashOffset =
-      selectionState.dashOffset;
-
-    overlayContext.strokeStyle =
-      "#ffffff";
-
-    overlayContext.stroke(
-      path
-    );
 
     overlayContext.lineDashOffset =
       selectionState.dashOffset +
       5;
 
+
     overlayContext.strokeStyle =
       "#000000";
 
-    overlayContext.stroke(
-      path
-    );
+
+    overlayContext.stroke();
+
 
     overlayContext.restore();
-
-
-    return true;
 
   }
 
 
-  function animateMarchingAnts(
-    timestamp
-  ) {
+  function animateMarchingAnts() {
 
     if (
-      !selectionState.active ||
       !hasSelection()
     ) {
 
       selectionState.animationFrame =
         null;
 
+
       return;
 
     }
 
 
-    if (
-      timestamp -
-      selectionState.lastAnimationTime >=
-      OUTLINE_FRAME_INTERVAL
-    ) {
+    selectionState.dashOffset -=
+      selectionState.marchingAntsSpeed;
 
-      selectionState.lastAnimationTime =
-        timestamp;
 
-      selectionState.dashOffset -=
-        selectionState.marchingAntsSpeed;
-
-      drawSelectionOutline();
-
-    }
+    drawSelectionOutline();
 
 
     selectionState.animationFrame =
@@ -2482,12 +1815,6 @@
       return;
 
     }
-
-
-    selectionState.lastAnimationTime =
-      0;
-
-    drawSelectionOutline();
 
 
     selectionState.animationFrame =
@@ -2515,14 +1842,11 @@
     selectionState.animationFrame =
       null;
 
-    selectionState.lastAnimationTime =
-      0;
-
   }
 
 
   /* =======================================================
-     14. DESELECT AND INVERT
+     12. DESELECT AND INVERT
   ======================================================= */
 
   function deselect({
@@ -2536,44 +1860,37 @@
     selectionState.selecting =
       false;
 
+
     selectionState.startPoint =
       null;
+
 
     selectionState.currentPoint =
       null;
 
+
     selectionState.rectangle =
       null;
+
 
     selectionState.mask =
       null;
 
+
     selectionState.maskWidth =
       0;
+
 
     selectionState.maskHeight =
       0;
 
+
     selectionState.selectedPixelCount =
       0;
 
+
     selectionState.inverted =
       false;
-
-    selectionState.layer =
-      null;
-
-    selectionState.layerId =
-      null;
-
-    selectionState.combinationMode =
-      "replace";
-
-    selectionState.outlinePath =
-      null;
-
-    selectionState.outlineDirty =
-      true;
 
 
     clearOverlay();
@@ -2602,13 +1919,21 @@
 
   function invertSelection() {
 
-    const layer =
-      selectionState.layer ||
-      getActiveLayer();
+    const width =
+      dom.editorCanvas?.width ||
+      0;
+
+
+    const height =
+      dom.editorCanvas?.height ||
+      0;
 
 
     if (
-      !layer?.canvas
+      width <=
+        0 ||
+      height <=
+        0
     ) {
 
       return false;
@@ -2616,18 +1941,20 @@
     }
 
 
-    const width =
-      layer.canvas.width;
+    let mask =
+      selectionState.mask;
 
-    const height =
-      layer.canvas.height;
 
-    const mask =
-      selectionState.mask ||
-      createEmptyMask(
-        width,
-        height
-      );
+    if (!mask) {
+
+      mask =
+        createEmptyMask(
+          width,
+          height
+        );
+
+    }
+
 
     const invertedMask =
       new Uint8Array(
@@ -2639,9 +1966,8 @@
     for (
       let index = 0;
       index <
-      invertedMask.length;
-      index +=
-      1
+        invertedMask.length;
+      index += 1
     ) {
 
       invertedMask[
@@ -2662,12 +1988,7 @@
       height,
       {
         inverted:
-          !selectionState.inverted,
-
-        layer,
-
-        combinationMode:
-          "replace"
+          !selectionState.inverted
       }
     );
 
@@ -2683,7 +2004,7 @@
 
 
   /* =======================================================
-     15. CLEAR SELECTED PIXELS
+     13. DELETE SELECTED PIXELS
   ======================================================= */
 
   function saveSelectionHistory(
@@ -2693,7 +2014,7 @@
     if (
       typeof getHistoryApi()
         ?.saveHistory ===
-        "function"
+      "function"
     ) {
 
       return getHistoryApi()
@@ -2714,9 +2035,7 @@
 
   function clearSelectedPixels() {
 
-    if (
-      !hasSelection()
-    ) {
+    if (!hasSelection()) {
 
       return false;
 
@@ -2724,39 +2043,20 @@
 
 
     const layer =
-      selectionState.layer;
+      getActiveLayer();
 
 
     if (
-      !isEditableLayer(
-        layer
-      )
+      !layer ||
+      layer.locked ||
+      !layer.context ||
+      !layer.canvas
     ) {
 
       sendStatusMessage(
-        "The selected layer cannot be edited."
+        "The active layer cannot be edited."
       );
 
-      return false;
-
-    }
-
-
-    if (
-      selectionState.maskWidth !==
-        layer.canvas.width ||
-      selectionState.maskHeight !==
-        layer.canvas.height
-    ) {
-
-      sendStatusMessage(
-        "The selection no longer matches this layer."
-      );
-
-      deselect({
-        announce:
-          false
-      });
 
       return false;
 
@@ -2771,8 +2071,10 @@
         layer.canvas.height
       );
 
+
     const pixels =
       imageData.data;
+
 
     let changedPixels =
       0;
@@ -2781,9 +2083,8 @@
     for (
       let index = 0;
       index <
-      selectionState.mask.length;
-      index +=
-      1
+        selectionState.mask.length;
+      index += 1
     ) {
 
       if (
@@ -2820,17 +2121,20 @@
       ] =
         0;
 
+
       pixels[
         pixelIndex +
         1
       ] =
         0;
 
+
       pixels[
         pixelIndex +
         2
       ] =
         0;
+
 
       pixels[
         pixelIndex +
@@ -2854,6 +2158,7 @@
         "The selected pixels are already transparent."
       );
 
+
       return false;
 
     }
@@ -2867,11 +2172,6 @@
 
 
     renderLayers();
-
-
-    saveSelectionHistory(
-      "Clear selected pixels"
-    );
 
 
     document.dispatchEvent(
@@ -2889,10 +2189,15 @@
     );
 
 
+    saveSelectionHistory(
+      "Clear selected pixels"
+    );
+
+
     sendStatusMessage(
       `${changedPixels.toLocaleString()} selected pixel${
         changedPixels ===
-          1
+        1
           ? ""
           : "s"
       } cleared.`
@@ -2905,60 +2210,31 @@
 
 
   /* =======================================================
-     16. SELECTION LIFECYCLE
+     14. SELECTION LIFECYCLE
   ======================================================= */
 
   function beginRectangleSelection(
     payload
   ) {
 
-    const layer =
-      getActiveLayer();
-
-
-    if (
-      !isEditableLayer(
-        layer
-      )
-    ) {
-
-      sendStatusMessage(
-        "Select an editable layer first."
-      );
-
-      return false;
-
-    }
-
-
     selectionState.selecting =
       true;
+
 
     selectionState.startPoint =
       copyPoint(
         payload.point
       );
 
+
     selectionState.currentPoint =
       copyPoint(
         payload.point
       );
 
-    selectionState.layer =
-      layer;
-
-    selectionState.layerId =
-      getLayerIdentifier(
-        layer
-      );
-
-    selectionState.combinationMode =
-      getCombinationMode(
-        payload
-      );
-
 
     stopMarchingAnts();
+
 
     clearOverlay();
 
@@ -3019,28 +2295,20 @@
     const changed =
       commitRectangleSelection(
         selectionState.startPoint,
-        selectionState.currentPoint,
-        {
-          layer:
-            selectionState.layer,
-
-          combinationMode:
-            selectionState.combinationMode
-        }
+        selectionState.currentPoint
       );
 
 
     selectionState.selecting =
       false;
 
+
     selectionState.startPoint =
       null;
 
+
     selectionState.currentPoint =
       null;
-
-    selectionState.combinationMode =
-      "replace";
 
 
     return changed;
@@ -3053,22 +2321,19 @@
     selectionState.selecting =
       false;
 
+
     selectionState.startPoint =
       null;
 
+
     selectionState.currentPoint =
       null;
-
-    selectionState.combinationMode =
-      "replace";
 
 
     clearOverlay();
 
 
-    if (
-      hasSelection()
-    ) {
+    if (hasSelection()) {
 
       startMarchingAnts();
 
@@ -3081,7 +2346,7 @@
 
 
   /* =======================================================
-     17. POINTER HANDLERS
+     15. POINTER HANDLERS
   ======================================================= */
 
   function pointerDown(
@@ -3108,13 +2373,7 @@
 
       const changed =
         commitMagicWandSelection(
-          payload.point,
-          {
-            combinationMode:
-              getCombinationMode(
-                payload
-              )
-          }
+          payload.point
         );
 
 
@@ -3137,17 +2396,9 @@
     }
 
 
-    const started =
-      beginRectangleSelection(
-        payload
-      );
-
-
-    if (!started) {
-
-      return false;
-
-    }
+    beginRectangleSelection(
+      payload
+    );
 
 
     return {
@@ -3216,7 +2467,6 @@
 
         releasePointer:
           true
-
       };
 
     }
@@ -3255,14 +2505,13 @@
 
       releasePointer:
         true
-
     };
 
   }
 
 
   /* =======================================================
-     18. TOOL ACTIVATION
+     16. TOOL ACTIVATION
   ======================================================= */
 
   function activate() {
@@ -3285,9 +2534,7 @@
       );
 
 
-    if (
-      hasSelection()
-    ) {
+    if (hasSelection()) {
 
       startMarchingAnts();
 
@@ -3297,8 +2544,8 @@
     sendStatusMessage(
       getSelectionMode() ===
         "magic-wand"
-        ? "Magic Wand ready. Shift adds, Alt subtracts."
-        : "Rectangle selection ready. Shift adds, Alt subtracts."
+        ? "Magic Wand ready."
+        : "Rectangle selection ready."
     );
 
 
@@ -3313,11 +2560,29 @@
       false;
 
 
-    cancelCurrentSelection();
+    selectionState.selecting =
+      false;
 
-    stopMarchingAnts();
 
-    clearOverlay();
+    selectionState.startPoint =
+      null;
+
+
+    selectionState.currentPoint =
+      null;
+
+
+    if (
+      hasSelection()
+    ) {
+
+      startMarchingAnts();
+
+    } else {
+
+      clearOverlay();
+
+    }
 
 
     return true;
@@ -3326,7 +2591,7 @@
 
 
   /* =======================================================
-     19. DOM AND EVENTS
+     17. DOM AND EVENTS
   ======================================================= */
 
   function collectDomReferences() {
@@ -3336,30 +2601,43 @@
         "editor-canvas"
       );
 
+
     dom.overlayCanvas =
       document.getElementById(
         "overlay-canvas"
       );
+
+
+    dom.selectionOverlayCanvas =
+      createSelectionOverlayCanvas();
+
+
+    synchroniseSelectionOverlay();
+
 
     dom.selectionModeInput =
       document.getElementById(
         "selection-mode"
       );
 
+
     dom.toleranceInput =
       document.getElementById(
         "wand-tolerance"
       );
+
 
     dom.toleranceOutput =
       document.getElementById(
         "wand-tolerance-output"
       );
 
+
     dom.contiguousInput =
       document.getElementById(
         "wand-contiguous"
       );
+
 
     dom.deselectButton =
       document.getElementById(
@@ -3368,53 +2646,11 @@
 
 
     overlayContext =
-      dom.overlayCanvas
+      dom.selectionOverlayCanvas
         ?.getContext(
           "2d"
         ) ||
       null;
-
-  }
-
-
-  function handleActiveLayerChanged() {
-
-    const activeLayer =
-      getActiveLayer();
-
-
-    if (
-      hasSelection() &&
-      activeLayer !==
-        selectionState.layer
-    ) {
-
-      deselect({
-        announce:
-          false
-      });
-
-    }
-
-  }
-
-
-  function handleLayerTransformed(
-    event
-  ) {
-
-    if (
-      hasSelection() &&
-      (
-        !event.detail?.layer ||
-        event.detail.layer ===
-          selectionState.layer
-      )
-    ) {
-
-      drawSelectionOutline();
-
-    }
 
   }
 
@@ -3487,13 +2723,15 @@
 
         if (
           event.key ===
-            "Escape" &&
+          "Escape" &&
           hasSelection()
         ) {
 
           event.preventDefault();
 
+
           deselect();
+
 
           return;
 
@@ -3512,7 +2750,9 @@
 
           event.preventDefault();
 
+
           clearSelectedPixels();
+
 
           return;
 
@@ -3531,6 +2771,7 @@
 
           event.preventDefault();
 
+
           invertSelection();
 
         }
@@ -3540,41 +2781,63 @@
 
 
     document.addEventListener(
-      "paintless:active-layer-changed",
-      handleActiveLayerChanged
+      "paintless:history-restored",
+      () => {
+
+        deselect({
+          announce:
+            false
+        });
+
+      }
     );
 
 
     document.addEventListener(
-      "paintless:layer-transformed",
-      handleLayerTransformed
+      "paintless:document-reset",
+      () => {
+
+        deselect({
+          announce:
+            false
+        });
+
+      }
     );
 
 
-    [
-      "paintless:history-restored",
-      "paintless:document-reset",
+    document.addEventListener(
       "paintless:document-resized",
-      "paintless:layers-restored"
-    ].forEach(
-      (eventName) => {
+      () => {
 
-        document.addEventListener(
-          eventName,
-          () => {
-
-            deselect({
-              announce:
-                false
-            });
-
-          }
-        );
+        deselect({
+          announce:
+            false
+        });
 
       }
     );
 
   }
+
+
+  window.addEventListener(
+    "resize",
+    () => {
+
+      synchroniseSelectionOverlay();
+
+
+      if (
+        hasSelection()
+      ) {
+
+        drawSelectionOutline();
+
+      }
+
+    }
+  );
 
 
   function initialiseSettings() {
@@ -3583,22 +2846,18 @@
       getSelectionMode();
 
 
-    if (
-      dom.toleranceInput
-    ) {
+    if (dom.toleranceInput) {
 
       selectionState.tolerance =
         Number(
           dom.toleranceInput.value
         ) ||
-        DEFAULT_TOLERANCE;
+        24;
 
     }
 
 
-    if (
-      dom.contiguousInput
-    ) {
+    if (dom.contiguousInput) {
 
       selectionState.contiguous =
         Boolean(
@@ -3612,6 +2871,7 @@
       selectionState.tolerance
     );
 
+
     setContiguous(
       selectionState.contiguous
     );
@@ -3620,7 +2880,7 @@
 
 
   /* =======================================================
-     20. MODULE
+     18. SELECTION MODULE
   ======================================================= */
 
   const selectionModule = {
@@ -3652,6 +2912,7 @@
       if (
         !dom.editorCanvas ||
         !dom.overlayCanvas ||
+        !dom.selectionOverlayCanvas ||
         !overlayContext
       ) {
 
@@ -3670,13 +2931,14 @@
       selectionState.initialised =
         true;
 
+
       this.initialised =
         true;
 
 
       if (
         tools.getActiveTool() ===
-          "select"
+        "select"
       ) {
 
         activate();
@@ -3728,7 +2990,7 @@
 
 
   /* =======================================================
-     21. PUBLIC API
+     19. PUBLIC API
   ======================================================= */
 
   const publicApi = {
@@ -3811,13 +3073,7 @@
           selectionState.selectedPixelCount,
 
         inverted:
-          selectionState.inverted,
-
-        layer:
-          selectionState.layer,
-
-        layerId:
-          selectionState.layerId
+          selectionState.inverted
 
       };
 
@@ -3835,7 +3091,7 @@
 
 
   /* =======================================================
-     22. REGISTER
+     20. REGISTER MODULE
   ======================================================= */
 
   tools.registerModule(
