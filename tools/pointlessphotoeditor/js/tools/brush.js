@@ -109,7 +109,10 @@
       0.28,
 
     strokeCounter:
-      0
+      0,
+
+    lastAnchorPoint:
+      null
 
   };
 
@@ -1607,10 +1610,31 @@
     clearBrushCursor();
 
 
-    stampBrush(
-      layer.context,
-      point
-    );
+    if (
+      payload.shiftKey &&
+      brushState.lastAnchorPoint
+    ) {
+
+      drawInterpolatedSegment(
+        layer.context,
+        brushState.lastAnchorPoint,
+        point
+      );
+
+
+      stampBrush(
+        layer.context,
+        point
+      );
+
+    } else {
+
+      stampBrush(
+        layer.context,
+        point
+      );
+
+    }
 
 
     brushState.changed =
@@ -1771,6 +1795,12 @@
 
     const changed =
       brushState.changed;
+
+
+    brushState.lastAnchorPoint =
+      copyPoint(
+        finalPoint
+      );
 
 
     brushState.drawing =
@@ -2208,6 +2238,9 @@
 
         cancelStroke();
 
+        brushState.lastAnchorPoint =
+          null;
+
       }
     );
 
@@ -2218,6 +2251,9 @@
 
         cancelStroke();
 
+        brushState.lastAnchorPoint =
+          null;
+
       }
     );
 
@@ -2227,6 +2263,9 @@
       () => {
 
         cancelStroke();
+
+        brushState.lastAnchorPoint =
+          null;
 
       }
     );
