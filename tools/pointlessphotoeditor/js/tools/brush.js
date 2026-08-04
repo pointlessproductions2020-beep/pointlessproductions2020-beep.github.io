@@ -205,6 +205,16 @@
   }
 
 
+  function getSelectionApi() {
+
+    return (
+      window.PaintlessSelection ||
+      null
+    );
+
+  }
+
+
   /* =======================================================
      5. GENERIC HELPERS
   ======================================================= */
@@ -856,6 +866,14 @@
     point
   ) {
 
+    const selection=getSelectionApi();
+    const hasSelection=typeof selection?.hasSelection==="function" && selection.hasSelection();
+
+    if(hasSelection && typeof selection.clipContext==="function"){
+      context.save();
+      selection.clipContext(context);
+    }
+
     if (
       !context ||
       !point
@@ -943,7 +961,7 @@
 
 
       context.restore();
-
+      if(hasSelection && typeof selection?.clipContext==="function") context.restore();
 
       return true;
 
@@ -1034,6 +1052,7 @@
 
 
     context.restore();
+    if(hasSelection && typeof selection?.clipContext==="function") context.restore();
 
 
     return true;
