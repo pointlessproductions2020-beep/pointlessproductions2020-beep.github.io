@@ -199,6 +199,15 @@
     activeLayerState:
       null,
 
+    ultraLab:
+      null,
+
+    ultraLayerName:
+      null,
+
+    ultraControls:
+      null,
+
     styles:
       null
 
@@ -1224,6 +1233,80 @@
         white-space: nowrap;
       }
 
+      .paintless3d-ultra-lab {
+        margin-top: 12px;
+        padding-top: 11px;
+        border-top: 1px solid rgba(255,255,255,.09);
+      }
+
+      .paintless3d-ultra-lab-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: #fff;
+        font: 900 10px/1.2 "Segoe UI", Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+      }
+
+      .paintless3d-ultra-lab-layer {
+        max-width: 120px;
+        overflow: hidden;
+        color: rgba(255,255,255,.55);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .paintless3d-ultra-effect {
+        margin-top: 8px;
+        padding: 8px;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 9px;
+        background: rgba(255,255,255,.025);
+      }
+
+      .paintless3d-ultra-effect-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 7px;
+        color: rgba(255,255,255,.78);
+        font: 800 9px/1 "Segoe UI", Arial, sans-serif;
+      }
+
+      .paintless3d-ultra-effect button {
+        width: 35px;
+        height: 20px;
+        border: 1px solid rgba(255,255,255,.15);
+        border-radius: 999px;
+        background: rgba(255,255,255,.06);
+        cursor: pointer;
+      }
+
+      .paintless3d-ultra-effect button.is-enabled {
+        border-color: rgba(37,230,255,.55);
+        background: linear-gradient(90deg,rgba(255,49,92,.35),rgba(37,230,255,.38));
+      }
+
+      .paintless3d-ultra-effect-row {
+        display: grid;
+        grid-template-columns: minmax(0,1fr) 55px;
+        gap: 7px;
+        align-items: center;
+      }
+
+      .paintless3d-ultra-effect-row input[type="range"] {
+        width: 100%;
+      }
+
+      .paintless3d-ultra-effect-row input[type="number"] {
+        width: 55px;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
       @media (max-width: 620px) {
         .paintless3d-preview-panel {
           padding: 10px;
@@ -1480,6 +1563,428 @@
   }
 
 
+  function createUltraEffectControl(
+    key,
+    label
+  ) {
+
+    const box =
+      createElement(
+        "div",
+        "paintless3d-ultra-effect"
+      );
+
+    const head =
+      createElement(
+        "div",
+        "paintless3d-ultra-effect-head"
+      );
+
+    const title =
+      createElement(
+        "span",
+        null,
+        label
+      );
+
+    const toggle =
+      createElement(
+        "button"
+      );
+
+    toggle.type =
+      "button";
+
+    toggle.setAttribute(
+      "role",
+      "switch"
+    );
+
+    const row =
+      createElement(
+        "div",
+        "paintless3d-ultra-effect-row"
+      );
+
+    const slider =
+      document.createElement(
+        "input"
+      );
+
+    slider.type =
+      "range";
+    slider.min =
+      "-30";
+    slider.max =
+      "30";
+    slider.step =
+      "0.1";
+
+    const number =
+      document.createElement(
+        "input"
+      );
+
+    number.type =
+      "number";
+    number.min =
+      "-30";
+    number.max =
+      "30";
+    number.step =
+      "0.1";
+
+    head.append(
+      title,
+      toggle
+    );
+
+    row.append(
+      slider,
+      number
+    );
+
+    box.append(
+      head,
+      row
+    );
+
+    return {
+      key,
+      box,
+      toggle,
+      slider,
+      number
+    };
+
+  }
+
+
+  function createUltraLab() {
+
+    const lab =
+      createElement(
+        "section",
+        "paintless3d-ultra-lab"
+      );
+
+    const heading =
+      createElement(
+        "div",
+        "paintless3d-ultra-lab-title"
+      );
+
+    const title =
+      createElement(
+        "span",
+        null,
+        "🧪 Ultra Anaglyph Lab"
+      );
+
+    const layerName =
+      createElement(
+        "span",
+        "paintless3d-ultra-lab-layer",
+        "No layer"
+      );
+
+    heading.append(
+      title,
+      layerName
+    );
+
+    const controls = {
+      rotation:
+        createUltraEffectControl(
+          "rotation",
+          "Rotation"
+        ),
+      skew:
+        createUltraEffectControl(
+          "skew",
+          "Skew"
+        ),
+      perspective:
+        createUltraEffectControl(
+          "perspective",
+          "Perspective"
+        ),
+      warp:
+        createUltraEffectControl(
+          "warp",
+          "Warp"
+        )
+    };
+
+    lab.append(
+      heading,
+      controls.rotation.box,
+      controls.skew.box,
+      controls.perspective.box,
+      controls.warp.box
+    );
+
+    return {
+      lab,
+      layerName,
+      controls
+    };
+
+  }
+
+
+  function updateUltraLabControls() {
+
+    const layer =
+      getActiveLayer();
+
+    if (
+      !dom.ultraControls
+    ) {
+
+      return;
+
+    }
+
+    if (dom.ultraLayerName) {
+
+      dom.ultraLayerName.textContent =
+        layer?.name ||
+        "No layer";
+
+    }
+
+    const definitions = {
+      rotation: [
+        "ultraRotationEnabled",
+        "ultraRotationAmount"
+      ],
+      skew: [
+        "ultraSkewEnabled",
+        "ultraSkewAmount"
+      ],
+      perspective: [
+        "ultraPerspectiveEnabled",
+        "ultraPerspectiveAmount"
+      ],
+      warp: [
+        "ultraWarpEnabled",
+        "ultraWarpAmount"
+      ]
+    };
+
+    Object.entries(
+      definitions
+    ).forEach(
+      ([key, names]) => {
+
+        const control =
+          dom.ultraControls[key];
+
+        const enabled =
+          Boolean(
+            layer?.[names[0]]
+          );
+
+        const amount =
+          Number(
+            layer?.[names[1]]
+          ) ||
+          0;
+
+        control.toggle.disabled =
+          !layer;
+
+        control.slider.disabled =
+          !layer ||
+          !enabled;
+
+        control.number.disabled =
+          !layer ||
+          !enabled;
+
+        control.toggle.classList.toggle(
+          "is-enabled",
+          enabled
+        );
+
+        control.toggle.setAttribute(
+          "aria-checked",
+          String(enabled)
+        );
+
+        control.slider.value =
+          String(amount);
+
+        control.number.value =
+          String(amount);
+
+      }
+    );
+
+  }
+
+
+  function applyUltraEffect(
+    key,
+    value,
+    saveHistory =
+      false
+  ) {
+
+    const layer =
+      getActiveLayer();
+
+    if (!layer) {
+
+      return false;
+
+    }
+
+    const amountProperty =
+      `ultra${key[0].toUpperCase()}${key.slice(1)}Amount`;
+
+    layer[amountProperty] =
+      clamp(
+        value,
+        -30,
+        30
+      );
+
+    dispatch(
+      "paintless:artwork-changed",
+      {
+        reason:
+          `ultra-${key}`,
+        layer
+      }
+    );
+
+    if (saveHistory) {
+
+      dispatch(
+        "paintless:history-requested",
+        {
+          reason:
+            `Ultra ${key}`
+        }
+      );
+
+    }
+
+    updateUltraLabControls();
+
+    return true;
+
+  }
+
+
+  function toggleUltraEffect(
+    key
+  ) {
+
+    const layer =
+      getActiveLayer();
+
+    if (!layer) {
+
+      return false;
+
+    }
+
+    const enabledProperty =
+      `ultra${key[0].toUpperCase()}${key.slice(1)}Enabled`;
+
+    layer[enabledProperty] =
+      !layer[enabledProperty];
+
+    dispatch(
+      "paintless:artwork-changed",
+      {
+        reason:
+          `ultra-${key}-toggle`,
+        layer
+      }
+    );
+
+    dispatch(
+      "paintless:history-requested",
+      {
+        reason:
+          `Toggle Ultra ${key}`
+      }
+    );
+
+    updateUltraLabControls();
+
+    return true;
+
+  }
+
+
+  function connectUltraLabEvents() {
+
+    if (!dom.ultraControls) {
+
+      return;
+
+    }
+
+    Object.values(
+      dom.ultraControls
+    ).forEach(
+      (control) => {
+
+        control.toggle.addEventListener(
+          "click",
+          () =>
+            toggleUltraEffect(
+              control.key
+            )
+        );
+
+        const live =
+          (event) =>
+            applyUltraEffect(
+              control.key,
+              event.target.value,
+              false
+            );
+
+        const commit =
+          (event) =>
+            applyUltraEffect(
+              control.key,
+              event.target.value,
+              true
+            );
+
+        control.slider.addEventListener(
+          "input",
+          live
+        );
+
+        control.slider.addEventListener(
+          "change",
+          commit
+        );
+
+        control.number.addEventListener(
+          "input",
+          live
+        );
+
+        control.number.addEventListener(
+          "change",
+          commit
+        );
+
+      }
+    );
+
+  }
+
+
   /* =======================================================
      10. PANEL CREATION
   ======================================================= */
@@ -1663,6 +2168,10 @@
       layerStateCopy,
       layerDepth
     );
+
+
+    const ultraLab =
+      createUltraLab();
 
 
     const strengthControl =
@@ -1978,6 +2487,7 @@
       header,
       status,
       layerState,
+      ultraLab.lab,
       strengthControl.group,
       convergenceControl.group,
       channelGroup,
@@ -2082,6 +2592,16 @@
 
     dom.activeLayerDepth =
       layerDepth;
+
+
+    dom.ultraLab =
+      ultraLab.lab;
+
+    dom.ultraLayerName =
+      ultraLab.layerName;
+
+    dom.ultraControls =
+      ultraLab.controls;
 
 
     return panel;
@@ -2541,6 +3061,8 @@
 
 
       updateActiveLayerDisplay();
+
+      updateUltraLabControls();
 
       updateLiveStatus();
 
@@ -3167,6 +3689,9 @@
   ======================================================= */
 
   function connectEvents() {
+
+    connectUltraLabEvents();
+
 
     dom.closeButton
       ?.addEventListener(
