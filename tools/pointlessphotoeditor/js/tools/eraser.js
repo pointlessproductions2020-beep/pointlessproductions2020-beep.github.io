@@ -126,6 +126,9 @@
     overlayCanvas:
       null,
 
+    cursorOverlayCanvas:
+      null,
+
     brushSizeInput:
       null,
 
@@ -720,7 +723,194 @@
 
 
   /* =======================================================
-     8. ERASER STAMP
+     8. LAYER COORDINATES
+  ======================================================= */
+
+  function documentPointToLayerPoint(
+    point,
+    layer
+  ) {
+
+    if (
+      !point ||
+      !layer?.canvas
+    ) {
+
+      return copyPoint(
+        point
+      );
+
+    }
+
+
+    const width =
+      Math.max(
+        1,
+        layer.canvas.width
+      );
+
+    const height =
+      Math.max(
+        1,
+        layer.canvas.height
+      );
+
+
+    const transformX =
+      Number.isFinite(
+        Number(
+          layer.transformX
+        )
+      )
+        ? Number(
+            layer.transformX
+          )
+        : 0;
+
+    const transformY =
+      Number.isFinite(
+        Number(
+          layer.transformY
+        )
+      )
+        ? Number(
+            layer.transformY
+          )
+        : 0;
+
+    const scaleX =
+      Number.isFinite(
+        Number(
+          layer.scaleX
+        )
+      )
+        ? Number(
+            layer.scaleX
+          ) || 1
+        : 1;
+
+    const scaleY =
+      Number.isFinite(
+        Number(
+          layer.scaleY
+        )
+      )
+        ? Number(
+            layer.scaleY
+          ) || 1
+        : 1;
+
+    const rotation =
+      (
+        Number(
+          layer.rotation
+        ) ||
+        0
+      ) *
+      Math.PI /
+      180;
+
+
+    const centreX =
+      transformX +
+      width /
+      2;
+
+    const centreY =
+      transformY +
+      height /
+      2;
+
+
+    const offsetX =
+      point.x -
+      centreX;
+
+    const offsetY =
+      point.y -
+      centreY;
+
+
+    const cosine =
+      Math.cos(
+        -rotation
+      );
+
+    const sine =
+      Math.sin(
+        -rotation
+      );
+
+
+    const rotatedX =
+      offsetX *
+      cosine -
+      offsetY *
+      sine;
+
+    const rotatedY =
+      offsetX *
+      sine +
+      offsetY *
+      cosine;
+
+
+    return {
+
+      x:
+        rotatedX /
+        scaleX +
+        width /
+        2,
+
+      y:
+        rotatedY /
+        scaleY +
+        height /
+        2,
+
+      pressure:
+        clamp(
+          point.pressure ??
+          1,
+          0,
+          1
+        )
+
+    };
+
+  }
+
+
+  function getLayerAdjustedPoint(
+    payload,
+    layer
+  ) {
+
+    const pressure =
+      normalisePressure(
+        payload
+      );
+
+
+    return documentPointToLayerPoint(
+      {
+        x:
+          payload.point.x,
+
+        y:
+          payload.point.y,
+
+        pressure
+      },
+      layer
+    );
+
+  }
+
+
+  /* =======================================================
+     9. ERASER STAMP
   ======================================================= */
 
   function stampHardEraser(
@@ -1172,10 +1362,188 @@
      10. CURSOR PREVIEW
   ======================================================= */
 
+  function createCursorOverlayCanvas() {
+
+    const existingCanvas =
+      document.getElementById(
+        "cursor-overlay-canvas"
+      );
+
+
+    if (existingCanvas) {
+
+      return existingCanvas;
+
+    }
+
+
+    if (
+      !dom.overlayCanvas ||
+      !dom.overlayCanvas.parentElement
+    ) {
+
+      return null;
+
+    }
+
+
+    const canvas =
+      document.createElement(
+        "canvas"
+      );
+
+
+    canvas.id =
+      "cursor-overlay-canvas";
+
+
+    canvas.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
+    canvas.style.position =
+      "absolute";
+
+    canvas.style.left =
+      "0";
+
+    canvas.style.top =
+      "0";
+
+    canvas.style.pointerEvents =
+      "none";
+
+    canvas.style.touchAction =
+      "none";
+
+    canvas.style.userSelect =
+      "none";
+
+    canvas.style.zIndex =
+      "22";
+
+
+    dom.overlayCanvas.parentElement
+      .appendChild(
+        canvas
+      );
+
+
+    return canvas;
+
+  }
+
+
+  function synchroniseCursorOverlay() {
+
+    if (
+      !dom.cursorOverlayCanvas ||
+      !dom.editorCanvas
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
+      dom.cursorOverlayCanvas.width !==
+        dom.editorCanvas.width
+    ) {
+
+      dom.cursorOverlayCanvas.width =
+        dom.editorCanvas.width;
+
+    }
+
+
+    if (
+      dom.cursorOverlayCanvas.height !==
+        dom.editorCanvas.height
+    ) {
+
+      dom.cursorOverlayCanvas.height =
+        dom.editorCanvas.height;
+
+    }
+
+
+    const editorStyle =
+      window.getComputedStyle(
+        dom.editorCanvas
+      );
+
+
+    dom.cursorOverlayCanvas.style.width =
+      editorStyle.width;
+
+    dom.cursorOverlayCanvas.style.height =
+      editorStyle.height;
+
+    dom.cursorOverlayCanvas.style.transform =
+      editorStyle.transform ===
+        "none"
+        ? ""
+        : editorStyle.transform;
+
+    dom.cursorOverlayCanvas.style.transformOrigin =
+      editorStyle.transformOrigin;
+
+    dom.cursorOverlayCanvas.style.borderRadius =
+      editorStyle.borderRadius;
+
+
+    return true;
+
+  }
+
+
   function clearEraserCursor() {
 
-    getCore()
-      ?.clearOverlay?.();
+    if (
+      dom.cursorOverlayCanvas &&
+      overlayContext
+    ) {
+
+      overlayContext.save();
+
+
+      overlayContext.setTransform(
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      );
+
+
+      overlayContext.globalAlpha =
+        1;
+
+
+      overlayContext.globalCompositeOperation =
+        "source-over";
+
+
+      overlayContext.setLineDash(
+        []
+      );
+
+
+      overlayContext.clearRect(
+        0,
+        0,
+        dom.cursorOverlayCanvas.width,
+        dom.cursorOverlayCanvas.height
+      );
+
+
+      overlayContext.restore();
+
+    }
 
 
     eraserState.cursorVisible =
@@ -1202,8 +1570,10 @@
     }
 
 
-    getCore()
-      ?.clearOverlay?.();
+    clearEraserCursor();
+
+
+    synchroniseCursorOverlay();
 
 
     const size =
@@ -1434,23 +1804,11 @@
     }
 
 
-    const pressure =
-      normalisePressure(
-        payload
+    const point =
+      getLayerAdjustedPoint(
+        payload,
+        layer
       );
-
-
-    const point = {
-
-      x:
-        payload.point.x,
-
-      y:
-        payload.point.y,
-
-      pressure
-
-    };
 
 
     eraserState.erasing =
@@ -1531,23 +1889,11 @@
     }
 
 
-    const pressure =
-      normalisePressure(
-        payload
+    const incomingPoint =
+      getLayerAdjustedPoint(
+        payload,
+        eraserState.layer
       );
-
-
-    const incomingPoint = {
-
-      x:
-        payload.point.x,
-
-      y:
-        payload.point.y,
-
-      pressure
-
-    };
 
 
     const smoothedPoint =
@@ -1584,6 +1930,22 @@
 
       renderLayers();
 
+
+      document.dispatchEvent(
+        new CustomEvent(
+          "paintless:artwork-changed",
+          {
+            detail: {
+              reason:
+                "eraser-stroke",
+
+              layer:
+                eraserState.layer
+            }
+          }
+        )
+      );
+
     }
 
 
@@ -1605,23 +1967,24 @@
     }
 
 
-    const pressure =
-      normalisePressure(
-        payload
-      );
+    const finalPoint =
+      eraserState.layer
+        ? getLayerAdjustedPoint(
+            payload,
+            eraserState.layer
+          )
+        : {
+            x:
+              payload.point.x,
 
+            y:
+              payload.point.y,
 
-    const finalPoint = {
-
-      x:
-        payload.point.x,
-
-      y:
-        payload.point.y,
-
-      pressure
-
-    };
+            pressure:
+              normalisePressure(
+                payload
+              )
+          };
 
 
     if (
@@ -1698,6 +2061,20 @@
 
     eraserState.changed =
       false;
+
+
+    if (
+      payload.point?.inside
+    ) {
+
+      drawEraserCursor(
+        payload.point,
+        normalisePressure(
+          payload
+        )
+      );
+
+    }
 
 
     return changed;
@@ -1810,9 +2187,31 @@
   ) {
 
     if (
-      !eraserState.active ||
+      !eraserState.active
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
       !eraserState.erasing
     ) {
+
+      if (
+        payload.point?.inside
+      ) {
+
+        drawEraserCursor(
+          payload.point,
+          normalisePressure(
+            payload
+          )
+        );
+
+      }
+
 
       return false;
 
@@ -2043,6 +2442,13 @@
       );
 
 
+    dom.cursorOverlayCanvas =
+      createCursorOverlayCanvas();
+
+
+    synchroniseCursorOverlay();
+
+
     dom.brushSizeInput =
       document.getElementById(
         "brush-size"
@@ -2062,7 +2468,7 @@
 
 
     overlayContext =
-      dom.overlayCanvas
+      dom.cursorOverlayCanvas
         ?.getContext(
           "2d"
         ) ||
@@ -2130,7 +2536,43 @@
 
     document.addEventListener(
       "paintless:document-resized",
-      cancelStroke
+      () => {
+
+        cancelStroke();
+
+        synchroniseCursorOverlay();
+
+      }
+    );
+
+
+    document.addEventListener(
+      "paintless:layer-transformed",
+      redrawEraserCursor
+    );
+
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        synchroniseCursorOverlay();
+
+        redrawEraserCursor();
+
+      }
+    );
+
+
+    window.addEventListener(
+      "focus",
+      () => {
+
+        synchroniseCursorOverlay();
+
+        redrawEraserCursor();
+
+      }
     );
 
   }
@@ -2169,6 +2611,7 @@
       if (
         !dom.editorCanvas ||
         !dom.overlayCanvas ||
+        !dom.cursorOverlayCanvas ||
         !overlayContext
       ) {
 
