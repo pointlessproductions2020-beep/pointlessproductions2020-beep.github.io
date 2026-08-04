@@ -3646,6 +3646,84 @@
   }
 
 
+  function isTextEntryTarget(
+    target
+  ) {
+
+    if (
+      !target ||
+      target ===
+        document.body ||
+      target ===
+        document.documentElement
+    ) {
+
+      return false;
+
+    }
+
+
+    if (
+      target.isContentEditable
+    ) {
+
+      return true;
+
+    }
+
+
+    const tagName =
+      String(
+        target.tagName ||
+        ""
+      ).toLowerCase();
+
+
+    if (
+      tagName ===
+        "textarea"
+    ) {
+
+      return true;
+
+    }
+
+
+    if (
+      tagName !==
+        "input"
+    ) {
+
+      return false;
+
+    }
+
+
+    const inputType =
+      String(
+        target.type ||
+        "text"
+      ).toLowerCase();
+
+
+    return ![
+      "button",
+      "checkbox",
+      "color",
+      "file",
+      "hidden",
+      "image",
+      "radio",
+      "range",
+      "reset",
+      "submit"
+    ].includes(
+      inputType
+    );
+
+  }
+
+
   function connectEvents() {
 
     dom.selectionModeInput
@@ -3656,6 +3734,9 @@
           setSelectionMode(
             dom.selectionModeInput.value
           );
+
+
+          dom.selectionModeInput.blur();
 
         }
       );
@@ -3703,8 +3784,9 @@
       (event) => {
 
         if (
-          getCore()
-            ?.isTypingElement?.()
+          isTextEntryTarget(
+            event.target
+          )
         ) {
 
           return;
@@ -3758,7 +3840,27 @@
 
           event.preventDefault();
 
-          clearSelectedPixels();
+          event.stopPropagation();
+
+
+          const cleared =
+            clearSelectedPixels();
+
+
+          console.log(
+            "PAINTLESS DELETE SELECTION",
+            {
+              cleared,
+
+              selectedPixelCount:
+                selectionState.selectedPixelCount,
+
+              layer:
+                selectionState.layer?.name ||
+                selectionState.layerId
+            }
+          );
+
 
           return;
 
@@ -3782,6 +3884,8 @@
         }
 
       }
+       },
+      true
     );
 
 
