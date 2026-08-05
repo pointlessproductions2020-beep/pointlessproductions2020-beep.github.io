@@ -1573,6 +1573,180 @@
      13. EYE RENDERING
   ======================================================= */
 
+  function drawVerticalHinge(
+    context,
+    canvas,
+    centreX,
+    centreY,
+    amount,
+    eyeDirection
+  ) {
+
+    const effective =
+      clamp(amount, -30, 30) *
+      eyeDirection;
+
+    const strength =
+      Math.abs(effective) /
+      30;
+
+    const stripCount =
+      120;
+
+    const sourceStripWidth =
+      canvas.width /
+      stripCount;
+
+
+    for (
+      let index = 0;
+      index < stripCount;
+      index += 1
+    ) {
+
+      const sourceX =
+        index *
+        sourceStripWidth;
+
+      const position =
+        (
+          index +
+          0.5
+        ) /
+        stripCount;
+
+      const nearWeight =
+        effective >= 0
+          ? position
+          : 1 - position;
+
+      const heightScale =
+        1 -
+        (
+          1 - nearWeight
+        ) *
+        strength *
+        0.48;
+
+      const sidewaysPush =
+        (
+          nearWeight -
+          0.5
+        ) *
+        strength *
+        canvas.width *
+        0.10;
+
+      const destinationHeight =
+        canvas.height *
+        heightScale;
+
+      context.drawImage(
+        canvas,
+        sourceX,
+        0,
+        sourceStripWidth + 1,
+        canvas.height,
+        -centreX +
+          sourceX +
+          sidewaysPush,
+        -destinationHeight / 2,
+        sourceStripWidth + 1,
+        destinationHeight
+      );
+
+    }
+
+  }
+
+
+  function drawHorizontalHinge(
+    context,
+    canvas,
+    centreX,
+    centreY,
+    amount,
+    eyeDirection
+  ) {
+
+    const effective =
+      clamp(amount, -30, 30) *
+      eyeDirection;
+
+    const strength =
+      Math.abs(effective) /
+      30;
+
+    const stripCount =
+      120;
+
+    const sourceStripHeight =
+      canvas.height /
+      stripCount;
+
+
+    for (
+      let index = 0;
+      index < stripCount;
+      index += 1
+    ) {
+
+      const sourceY =
+        index *
+        sourceStripHeight;
+
+      const position =
+        (
+          index +
+          0.5
+        ) /
+        stripCount;
+
+      const nearWeight =
+        effective >= 0
+          ? position
+          : 1 - position;
+
+      const widthScale =
+        1 -
+        (
+          1 - nearWeight
+        ) *
+        strength *
+        0.48;
+
+      const verticalPush =
+        (
+          nearWeight -
+          0.5
+        ) *
+        strength *
+        canvas.height *
+        0.10;
+
+      const destinationWidth =
+        canvas.width *
+        widthScale;
+
+      context.drawImage(
+        canvas,
+        0,
+        sourceY,
+        canvas.width,
+        sourceStripHeight + 1,
+        -destinationWidth / 2,
+        -centreY +
+          sourceY +
+          verticalPush,
+        destinationWidth,
+        sourceStripHeight + 1
+      );
+
+    }
+
+  }
+
+
   function drawLayerToEye(
     context,
     layer,
@@ -1846,11 +2020,59 @@
     );
 
 
-    context.drawImage(
-      layerCanvas,
-      -centreX,
-      -centreY
-    );
+    const verticalHingeActive =
+      layerStereoIsEnabled(layer) &&
+      eyeDirection !== 0 &&
+      layer.ultraVerticalHingeEnabled &&
+      Math.abs(
+        Number(layer.ultraVerticalHingeAmount) || 0
+      ) > 0.0001;
+
+
+    const horizontalHingeActive =
+      layerStereoIsEnabled(layer) &&
+      eyeDirection !== 0 &&
+      layer.ultraHorizontalHingeEnabled &&
+      Math.abs(
+        Number(layer.ultraHorizontalHingeAmount) || 0
+      ) > 0.0001;
+
+
+    if (
+      verticalHingeActive
+    ) {
+
+      drawVerticalHinge(
+        context,
+        layerCanvas,
+        centreX,
+        centreY,
+        layer.ultraVerticalHingeAmount,
+        eyeDirection
+      );
+
+    } else if (
+      horizontalHingeActive
+    ) {
+
+      drawHorizontalHinge(
+        context,
+        layerCanvas,
+        centreX,
+        centreY,
+        layer.ultraHorizontalHingeAmount,
+        eyeDirection
+      );
+
+    } else {
+
+      context.drawImage(
+        layerCanvas,
+        -centreX,
+        -centreY
+      );
+
+    }
 
 
     context.restore();
