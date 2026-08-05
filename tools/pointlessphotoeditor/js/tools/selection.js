@@ -361,20 +361,30 @@
       );
 
 
+    /*
+     * The selection canvas is a sibling of the editor canvas inside
+     * canvas-stage, so it already receives the same stage zoom and
+     * translation. Copying editorCanvas.transform here applies that
+     * transform a second time and shifts Polygon Lasso points away
+     * from the mouse.
+     */
+    dom.selectionOverlayCanvas.style.left =
+      `${dom.editorCanvas.offsetLeft}px`;
+
+    dom.selectionOverlayCanvas.style.top =
+      `${dom.editorCanvas.offsetTop}px`;
+
     dom.selectionOverlayCanvas.style.width =
-      editorStyle.width;
+      `${dom.editorCanvas.offsetWidth}px`;
 
     dom.selectionOverlayCanvas.style.height =
-      editorStyle.height;
+      `${dom.editorCanvas.offsetHeight}px`;
 
     dom.selectionOverlayCanvas.style.transform =
-      editorStyle.transform ===
-        "none"
-        ? ""
-        : editorStyle.transform;
+      "none";
 
     dom.selectionOverlayCanvas.style.transformOrigin =
-      editorStyle.transformOrigin;
+      "0 0";
 
     dom.selectionOverlayCanvas.style.borderRadius =
       editorStyle.borderRadius;
@@ -2193,6 +2203,73 @@
     );
 
 
+    /*
+     * Live mouse-position preview, matching the visible feedback used
+     * by Brush and Eraser. This is not a committed polygon vertex.
+     */
+    if (
+      selectionState.polygonPreviewPoint
+    ) {
+
+      const preview =
+        selectionState.polygonPreviewPoint;
+
+
+      overlayContext.beginPath();
+
+      overlayContext.arc(
+        preview.x,
+        preview.y,
+        7,
+        0,
+        Math.PI *
+          2
+      );
+
+      overlayContext.fillStyle =
+        "rgba(168, 76, 255, 0.16)";
+
+      overlayContext.fill();
+
+      overlayContext.lineWidth =
+        1.5;
+
+      overlayContext.strokeStyle =
+        "rgba(255, 255, 255, 0.98)";
+
+      overlayContext.stroke();
+
+
+      overlayContext.beginPath();
+
+      overlayContext.moveTo(
+        preview.x - 10,
+        preview.y
+      );
+
+      overlayContext.lineTo(
+        preview.x + 10,
+        preview.y
+      );
+
+      overlayContext.moveTo(
+        preview.x,
+        preview.y - 10
+      );
+
+      overlayContext.lineTo(
+        preview.x,
+        preview.y + 10
+      );
+
+      overlayContext.strokeStyle =
+        "rgba(168, 76, 255, 1)";
+
+      overlayContext.stroke();
+
+    }
+
+
     overlayContext.restore();
 
 
@@ -2255,16 +2332,47 @@
     }
 
 
-    selectionState.polygonPoints.push(
-      copyPoint(
-        payload.point
-      )
-    );
-
-    selectionState.polygonPreviewPoint =
+    const nextPoint =
       copyPoint(
         payload.point
       );
+
+
+    const previousPoint =
+      selectionState.polygonPoints[
+        selectionState.polygonPoints.length -
+          1
+      ] ||
+      null;
+
+
+    const duplicatePoint =
+      previousPoint &&
+      Math.abs(
+        previousPoint.x -
+        nextPoint.x
+      ) <
+        0.75 &&
+      Math.abs(
+        previousPoint.y -
+        nextPoint.y
+      ) <
+        0.75;
+
+
+    if (
+      !duplicatePoint
+    ) {
+
+      selectionState.polygonPoints.push(
+        nextPoint
+      );
+
+    }
+
+
+    selectionState.polygonPreviewPoint =
+      nextPoint;
 
 
     drawPolygonPreview();
@@ -4030,44 +4138,6 @@
       "polygon-lasso"
     ) {
 
-      const originalEvent =
-        payload.originalEvent ||
-        payload.event;
-
-
-      if (
-        Number(
-          originalEvent?.detail
-        ) >=
-          2
-      ) {
-
-        const changed =
-          finishPolygonSelection();
-
-
-        return {
-
-          changed:
-            false,
-
-          preventDefault:
-            true,
-
-          releasePointer:
-            true,
-
-          clearOverlay:
-            false,
-
-          selectionChanged:
-            changed
-
-        };
-
-      }
-
-
       const started =
         beginOrContinuePolygonSelection(
           payload
@@ -4586,6 +4656,33 @@
 
 
   function connectEvents() {
+
+    dom.editorCanvas
+      ?.addEventListener(
+        "dblclick",
+        (event) => {
+
+          if (
+            !selectionState.active ||
+            getSelectionMode() !==
+              "polygon-lasso" ||
+            !selectionState.selecting
+          ) {
+
+            return;
+
+          }
+
+
+          event.preventDefault();
+          event.stopPropagation();
+
+
+          finishPolygonSelection();
+
+        }
+      );
+
 
     dom.selectionModeInput
       ?.addEventListener(
