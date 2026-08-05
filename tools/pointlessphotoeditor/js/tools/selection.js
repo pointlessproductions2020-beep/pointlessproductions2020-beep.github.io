@@ -127,7 +127,13 @@
       null,
 
     outlineDirty:
-      true
+      true,
+
+    polygonPoints:
+      [],
+
+    polygonPreviewPoint:
+      null
 
   };
 
@@ -899,7 +905,8 @@
 
     return [
       "rectangle",
-      "magic-wand"
+      "magic-wand",
+      "polygon-lasso"
     ].includes(
       mode
     )
@@ -916,7 +923,8 @@
     if (
       ![
         "rectangle",
-        "magic-wand"
+        "magic-wand",
+        "polygon-lasso"
       ].includes(
         mode
       )
@@ -944,11 +952,16 @@
     cancelCurrentSelection();
 
 
-    sendStatusMessage(
-      mode ===
-        "magic-wand"
+    const statusMessage =
+      mode === "magic-wand"
         ? "Magic Wand ready. Shift adds, Alt subtracts."
-        : "Rectangle selection ready. Shift adds, Alt subtracts."
+        : mode === "polygon-lasso"
+          ? "Polygon Lasso ready. Click points, double-click or press Enter to finish."
+          : "Rectangle selection ready. Shift adds, Alt subtracts.";
+
+
+    sendStatusMessage(
+      statusMessage
     );
 
 
@@ -1769,6 +1782,633 @@
 
     return selectionState.selectedPixelCount >
       0;
+
+  }
+
+
+
+  /* =======================================================
+     11. POLYGON LASSO
+  ======================================================= */
+
+  function pointInsidePolygon(
+    point,
+    polygon
+  ) {
+
+    let inside =
+      false;
+
+
+    for (
+      let currentIndex = 0,
+          previousIndex = polygon.length - 1;
+      currentIndex < polygon.length;
+      previousIndex = currentIndex,
+      currentIndex += 1
+    ) {
+
+      const current =
+        polygon[currentIndex];
+
+      const previous =
+        polygon[previousIndex];
+
+
+      const crosses =
+        (
+          current.y > point.y
+        ) !==
+        (
+          previous.y > point.y
+        ) &&
+        point.x <
+          (
+            (
+              previous.x -
+              current.x
+            ) *
+            (
+              point.y -
+              current.y
+            ) /
+            (
+              previous.y -
+              current.y ||
+              Number.EPSILON
+            )
+          ) +
+          current.x;
+
+
+      if (crosses) {
+
+        inside =
+          !inside;
+
+      }
+
+    }
+
+
+    return inside;
+
+  }
+
+
+  function createPolygonMask(
+    polygonPoints,
+    width,
+    height,
+    layer =
+      getActiveLayer()
+  ) {
+
+    const mask =
+      createEmptyMask(
+        width,
+        height
+      );
+
+
+    if (
+      !layer ||
+      !Array.isArray(
+        polygonPoints
+      ) ||
+      polygonPoints.length <
+        3
+    ) {
+
+      return mask;
+
+    }
+
+
+    const layerPolygon =
+      polygonPoints.map(
+        (point) =>
+          documentPointToLayerPoint(
+            point,
+            layer
+          )
+      );
+
+
+    const minimumX =
+      clamp(
+        Math.floor(
+          Math.min(
+            ...layerPolygon.map(
+              (point) =>
+                point.x
+            )
+          )
+        ),
+        0,
+        width
+      );
+
+    const maximumX =
+      clamp(
+        Math.ceil(
+          Math.max(
+            ...layerPolygon.map(
+              (point) =>
+                point.x
+            )
+          )
+        ),
+        0,
+        width
+      );
+
+    const minimumY =
+      clamp(
+        Math.floor(
+          Math.min(
+            ...layerPolygon.map(
+              (point) =>
+                point.y
+            )
+          )
+        ),
+        0,
+        height
+      );
+
+    const maximumY =
+      clamp(
+        Math.ceil(
+          Math.max(
+            ...layerPolygon.map(
+              (point) =>
+                point.y
+            )
+          )
+        ),
+        0,
+        height
+      );
+
+
+    for (
+      let y = minimumY;
+      y < maximumY;
+      y += 1
+    ) {
+
+      const rowOffset =
+        y *
+        width;
+
+
+      for (
+        let x = minimumX;
+        x < maximumX;
+        x += 1
+      ) {
+
+        if (
+          pointInsidePolygon(
+            {
+              x:
+                x +
+                0.5,
+
+              y:
+                y +
+                0.5
+            },
+            layerPolygon
+          )
+        ) {
+
+          mask[
+            rowOffset +
+            x
+          ] =
+            1;
+
+        }
+
+      }
+
+    }
+
+
+    return mask;
+
+  }
+
+
+  function commitPolygonSelection(
+    polygonPoints,
+    options = {}
+  ) {
+
+    const layer =
+      options.layer ||
+      getActiveLayer();
+
+
+    if (
+      !isEditableLayer(
+        layer
+      ) ||
+      !Array.isArray(
+        polygonPoints
+      ) ||
+      polygonPoints.length <
+        3
+    ) {
+
+      return false;
+
+    }
+
+
+    const mask =
+      createPolygonMask(
+        polygonPoints,
+        layer.canvas.width,
+        layer.canvas.height,
+        layer
+      );
+
+
+    setSelectionMask(
+      mask,
+      layer.canvas.width,
+      layer.canvas.height,
+      {
+        layer,
+        combinationMode:
+          options.combinationMode ||
+          "replace"
+      }
+    );
+
+
+    sendStatusMessage(
+      `${selectionState.selectedPixelCount.toLocaleString()} pixel${
+        selectionState.selectedPixelCount === 1
+          ? ""
+          : "s"
+      } selected with Polygon Lasso.`
+    );
+
+
+    return selectionState.selectedPixelCount >
+      0;
+
+  }
+
+
+  function drawPolygonPreview() {
+
+    if (
+      !overlayContext ||
+      selectionState.polygonPoints.length ===
+        0
+    ) {
+
+      return false;
+
+    }
+
+
+    clearOverlay();
+
+
+    const points =
+      selectionState.polygonPoints;
+
+
+    overlayContext.save();
+
+    overlayContext.globalAlpha =
+      1;
+
+    overlayContext.globalCompositeOperation =
+      "source-over";
+
+    overlayContext.lineWidth =
+      1.5;
+
+    overlayContext.strokeStyle =
+      "rgba(255, 255, 255, 0.98)";
+
+    overlayContext.fillStyle =
+      "rgba(168, 76, 255, 0.13)";
+
+    overlayContext.setLineDash(
+      [
+        7,
+        5
+      ]
+    );
+
+    overlayContext.beginPath();
+
+    overlayContext.moveTo(
+      points[0].x,
+      points[0].y
+    );
+
+
+    points.slice(
+      1
+    ).forEach(
+      (point) => {
+
+        overlayContext.lineTo(
+          point.x,
+          point.y
+        );
+
+      }
+    );
+
+
+    if (
+      selectionState.polygonPreviewPoint
+    ) {
+
+      overlayContext.lineTo(
+        selectionState.polygonPreviewPoint.x,
+        selectionState.polygonPreviewPoint.y
+      );
+
+    }
+
+
+    if (
+      points.length >=
+        3
+    ) {
+
+      overlayContext.lineTo(
+        points[0].x,
+        points[0].y
+      );
+
+      overlayContext.fill();
+
+    }
+
+
+    overlayContext.stroke();
+
+    overlayContext.setLineDash(
+      []
+    );
+
+
+    points.forEach(
+      (point) => {
+
+        overlayContext.beginPath();
+
+        overlayContext.arc(
+          point.x,
+          point.y,
+          3.5,
+          0,
+          Math.PI *
+            2
+        );
+
+        overlayContext.fillStyle =
+          "rgba(168, 76, 255, 1)";
+
+        overlayContext.fill();
+
+        overlayContext.strokeStyle =
+          "rgba(255, 255, 255, 0.95)";
+
+        overlayContext.stroke();
+
+      }
+    );
+
+
+    overlayContext.restore();
+
+
+    return true;
+
+  }
+
+
+  function beginOrContinuePolygonSelection(
+    payload
+  ) {
+
+    const layer =
+      getActiveLayer();
+
+
+    if (
+      !isEditableLayer(
+        layer
+      )
+    ) {
+
+      sendStatusMessage(
+        "Select an editable layer first."
+      );
+
+      return false;
+
+    }
+
+
+    if (
+      !selectionState.selecting
+    ) {
+
+      selectionState.selecting =
+        true;
+
+      selectionState.layer =
+        layer;
+
+      selectionState.layerId =
+        getLayerIdentifier(
+          layer
+        );
+
+      selectionState.combinationMode =
+        getCombinationMode(
+          payload
+        );
+
+      selectionState.polygonPoints =
+        [];
+
+      selectionState.polygonPreviewPoint =
+        null;
+
+      stopMarchingAnts();
+
+    }
+
+
+    selectionState.polygonPoints.push(
+      copyPoint(
+        payload.point
+      )
+    );
+
+    selectionState.polygonPreviewPoint =
+      copyPoint(
+        payload.point
+      );
+
+
+    drawPolygonPreview();
+
+
+    return true;
+
+  }
+
+
+  function finishPolygonSelection() {
+
+    if (
+      !selectionState.selecting ||
+      selectionState.polygonPoints.length <
+        3
+    ) {
+
+      sendStatusMessage(
+        "Polygon Lasso needs at least three points."
+      );
+
+      return false;
+
+    }
+
+
+    const points =
+      selectionState.polygonPoints.filter(
+        (
+          point,
+          index,
+          allPoints
+        ) => {
+
+          if (
+            index ===
+              0
+          ) {
+
+            return true;
+
+          }
+
+
+          const previous =
+            allPoints[
+              index -
+              1
+            ];
+
+
+          return (
+            Math.abs(
+              point.x -
+              previous.x
+            ) >
+              0.25 ||
+            Math.abs(
+              point.y -
+              previous.y
+            ) >
+              0.25
+          );
+
+        }
+      );
+
+
+    const changed =
+      commitPolygonSelection(
+        points,
+        {
+          layer:
+            selectionState.layer,
+
+          combinationMode:
+            selectionState.combinationMode
+        }
+      );
+
+
+    selectionState.selecting =
+      false;
+
+    selectionState.polygonPoints =
+      [];
+
+    selectionState.polygonPreviewPoint =
+      null;
+
+    selectionState.combinationMode =
+      "replace";
+
+
+    clearOverlay();
+
+
+    if (
+      hasSelection()
+    ) {
+
+      startMarchingAnts();
+
+    }
+
+
+    return changed;
+
+  }
+
+
+  function removeLastPolygonPoint() {
+
+    if (
+      !selectionState.selecting ||
+      selectionState.polygonPoints.length ===
+        0
+    ) {
+
+      return false;
+
+    }
+
+
+    selectionState.polygonPoints.pop();
+
+
+    if (
+      selectionState.polygonPoints.length ===
+        0
+    ) {
+
+      cancelCurrentSelection();
+
+      return true;
+
+    }
+
+
+    drawPolygonPreview();
+
+
+    return true;
 
   }
 
@@ -3317,6 +3957,12 @@
     selectionState.currentPoint =
       null;
 
+    selectionState.polygonPoints =
+      [];
+
+    selectionState.polygonPreviewPoint =
+      null;
+
     selectionState.combinationMode =
       "replace";
 
@@ -3377,6 +4023,77 @@
 
     const mode =
       getSelectionMode();
+
+
+    if (
+      mode ===
+      "polygon-lasso"
+    ) {
+
+      const originalEvent =
+        payload.originalEvent ||
+        payload.event;
+
+
+      if (
+        Number(
+          originalEvent?.detail
+        ) >=
+          2
+      ) {
+
+        const changed =
+          finishPolygonSelection();
+
+
+        return {
+
+          changed:
+            false,
+
+          preventDefault:
+            true,
+
+          releasePointer:
+            true,
+
+          clearOverlay:
+            false,
+
+          selectionChanged:
+            changed
+
+        };
+
+      }
+
+
+      const started =
+        beginOrContinuePolygonSelection(
+          payload
+        );
+
+
+      return {
+
+        changed:
+          false,
+
+        preventDefault:
+          true,
+
+        releasePointer:
+          true,
+
+        clearOverlay:
+          false,
+
+        selectionChanged:
+          started
+
+      };
+
+    }
 
 
     if (
@@ -3464,9 +4181,25 @@
     }
 
 
-    updateRectangleSelection(
-      payload
-    );
+    if (
+      getSelectionMode() ===
+        "polygon-lasso"
+    ) {
+
+      selectionState.polygonPreviewPoint =
+        copyPoint(
+          payload.point
+        );
+
+      drawPolygonPreview();
+
+    } else {
+
+      updateRectangleSelection(
+        payload
+      );
+
+    }
 
 
     return {
@@ -3503,9 +4236,16 @@
     }
 
 
-    finishRectangleSelection(
-      payload
-    );
+    if (
+      getSelectionMode() !==
+        "polygon-lasso"
+    ) {
+
+      finishRectangleSelection(
+        payload
+      );
+
+    }
 
 
     return {
@@ -3518,6 +4258,48 @@
 
       releasePointer:
         true
+
+    };
+
+  }
+
+
+
+  function hover(
+    payload
+  ) {
+
+    if (
+      !selectionState.active ||
+      getSelectionMode() !==
+        "polygon-lasso" ||
+      !selectionState.selecting
+    ) {
+
+      return false;
+
+    }
+
+
+    selectionState.polygonPreviewPoint =
+      copyPoint(
+        payload.point
+      );
+
+
+    drawPolygonPreview();
+
+
+    return {
+
+      changed:
+        false,
+
+      preventDefault:
+        false,
+
+      clearOverlay:
+        false
 
     };
 
@@ -3875,6 +4657,60 @@
 
 
         if (
+          getSelectionMode() ===
+            "polygon-lasso" &&
+          selectionState.selecting
+        ) {
+
+          if (
+            event.key ===
+              "Enter"
+          ) {
+
+            event.preventDefault();
+
+            finishPolygonSelection();
+
+            return;
+
+          }
+
+
+          if (
+            event.key ===
+              "Backspace"
+          ) {
+
+            event.preventDefault();
+
+            removeLastPolygonPoint();
+
+            return;
+
+          }
+
+
+          if (
+            event.key ===
+              "Escape"
+          ) {
+
+            event.preventDefault();
+
+            cancelCurrentSelection();
+
+            sendStatusMessage(
+              "Polygon Lasso cancelled."
+            );
+
+            return;
+
+          }
+
+        }
+
+
+        if (
           event.key ===
             "Escape" &&
           hasSelection()
@@ -4171,6 +5007,8 @@
 
     pointerUp,
 
+    hover,
+
     pointerCancel
 
   };
@@ -4204,9 +5042,13 @@
 
     commitRectangleSelection,
 
+    commitPolygonSelection,
+
     commitMagicWandSelection,
 
     createRectangleMask,
+
+    createPolygonMask,
 
     createContiguousMagicMask,
 
