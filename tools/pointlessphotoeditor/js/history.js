@@ -228,6 +228,63 @@
                 locked:
                   layer.locked,
 
+                stereo3dEnabled:
+                  layer.stereo3dEnabled,
+
+                depth3d:
+                  layer.depth3d,
+
+                transformX:
+                  layer.transformX,
+
+                transformY:
+                  layer.transformY,
+
+                scaleX:
+                  layer.scaleX,
+
+                scaleY:
+                  layer.scaleY,
+
+                rotation:
+                  layer.rotation,
+
+                ultraRotationEnabled:
+                  layer.ultraRotationEnabled,
+
+                ultraRotationAmount:
+                  layer.ultraRotationAmount,
+
+                ultraSkewEnabled:
+                  layer.ultraSkewEnabled,
+
+                ultraSkewAmount:
+                  layer.ultraSkewAmount,
+
+                ultraPerspectiveEnabled:
+                  layer.ultraPerspectiveEnabled,
+
+                ultraPerspectiveAmount:
+                  layer.ultraPerspectiveAmount,
+
+                ultraWarpEnabled:
+                  layer.ultraWarpEnabled,
+
+                ultraWarpAmount:
+                  layer.ultraWarpAmount,
+
+                ultraVerticalHingeEnabled:
+                  layer.ultraVerticalHingeEnabled,
+
+                ultraVerticalHingeAmount:
+                  layer.ultraVerticalHingeAmount,
+
+                ultraHorizontalHingeEnabled:
+                  layer.ultraHorizontalHingeEnabled,
+
+                ultraHorizontalHingeAmount:
+                  layer.ultraHorizontalHingeAmount,
+
                 width:
                   layer.width,
 
@@ -344,6 +401,25 @@
         firstLayer.opacity !== secondLayer.opacity ||
         firstLayer.blendMode !== secondLayer.blendMode ||
         firstLayer.locked !== secondLayer.locked ||
+        firstLayer.stereo3dEnabled !== secondLayer.stereo3dEnabled ||
+        firstLayer.depth3d !== secondLayer.depth3d ||
+        firstLayer.transformX !== secondLayer.transformX ||
+        firstLayer.transformY !== secondLayer.transformY ||
+        firstLayer.scaleX !== secondLayer.scaleX ||
+        firstLayer.scaleY !== secondLayer.scaleY ||
+        firstLayer.rotation !== secondLayer.rotation ||
+        firstLayer.ultraRotationEnabled !== secondLayer.ultraRotationEnabled ||
+        firstLayer.ultraRotationAmount !== secondLayer.ultraRotationAmount ||
+        firstLayer.ultraSkewEnabled !== secondLayer.ultraSkewEnabled ||
+        firstLayer.ultraSkewAmount !== secondLayer.ultraSkewAmount ||
+        firstLayer.ultraPerspectiveEnabled !== secondLayer.ultraPerspectiveEnabled ||
+        firstLayer.ultraPerspectiveAmount !== secondLayer.ultraPerspectiveAmount ||
+        firstLayer.ultraWarpEnabled !== secondLayer.ultraWarpEnabled ||
+        firstLayer.ultraWarpAmount !== secondLayer.ultraWarpAmount ||
+        firstLayer.ultraVerticalHingeEnabled !== secondLayer.ultraVerticalHingeEnabled ||
+        firstLayer.ultraVerticalHingeAmount !== secondLayer.ultraVerticalHingeAmount ||
+        firstLayer.ultraHorizontalHingeEnabled !== secondLayer.ultraHorizontalHingeEnabled ||
+        firstLayer.ultraHorizontalHingeAmount !== secondLayer.ultraHorizontalHingeAmount ||
         firstLayer.width !== secondLayer.width ||
         firstLayer.height !== secondLayer.height
       ) {
