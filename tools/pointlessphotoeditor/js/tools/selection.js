@@ -2,7 +2,7 @@
 
 /* =========================================================
    PAINTLESS
-   SELECTION TOOL — v1.1
+   SELECTION TOOL — v1.5
 
    File:
    js/tools/selection.js
@@ -142,6 +142,9 @@
       true,
 
     completedPolygonPoints:
+      null,
+
+    clipboard:
       null
 
   };
@@ -175,6 +178,9 @@
       null,
 
     deselectButton:
+      null,
+
+    shortcutHelper:
       null
 
   };
@@ -889,6 +895,9 @@
     sendStatusMessage(
       statusMessage
     );
+
+
+    updateShortcutHelper();
 
 
     return true;
@@ -4035,6 +4044,652 @@
 
 
   /* =======================================================
+     15. INTERNAL SELECTION CLIPBOARD
+  ======================================================= */
+
+  function createShortcutHelper() {
+
+    const existing =
+      document.getElementById(
+        "paintless-selection-shortcuts"
+      );
+
+
+    if (existing) {
+
+      dom.shortcutHelper =
+        existing;
+
+      return existing;
+
+    }
+
+
+    const viewport =
+      document.getElementById(
+        "canvas-viewport"
+      );
+
+
+    if (!viewport) {
+
+      return null;
+
+    }
+
+
+    const helper =
+      document.createElement(
+        "div"
+      );
+
+
+    helper.id =
+      "paintless-selection-shortcuts";
+
+    helper.setAttribute(
+      "aria-live",
+      "polite"
+    );
+
+
+    helper.style.position =
+      "sticky";
+
+    helper.style.left =
+      "12px";
+
+    helper.style.bottom =
+      "12px";
+
+    helper.style.zIndex =
+      "1200";
+
+    helper.style.display =
+      "none";
+
+    helper.style.width =
+      "fit-content";
+
+    helper.style.maxWidth =
+      "min(760px, calc(100% - 24px))";
+
+    helper.style.margin =
+      "12px";
+
+    helper.style.padding =
+      "9px 12px";
+
+    helper.style.border =
+      "1px solid rgba(212, 154, 255, 0.35)";
+
+    helper.style.borderRadius =
+      "10px";
+
+    helper.style.background =
+      "rgba(12, 8, 18, 0.92)";
+
+    helper.style.color =
+      "rgba(255,255,255,0.84)";
+
+    helper.style.boxShadow =
+      "0 8px 24px rgba(0,0,0,0.32)";
+
+    helper.style.backdropFilter =
+      "blur(8px)";
+
+    helper.style.font =
+      '700 11px/1.5 "Segoe UI", Arial, sans-serif';
+
+    helper.style.pointerEvents =
+      "none";
+
+
+    viewport.appendChild(
+      helper
+    );
+
+
+    dom.shortcutHelper =
+      helper;
+
+
+    return helper;
+
+  }
+
+
+  function updateShortcutHelper() {
+
+    const helper =
+      dom.shortcutHelper ||
+      createShortcutHelper();
+
+
+    if (!helper) {
+
+      return false;
+
+    }
+
+
+    const mode =
+      getSelectionMode();
+
+
+    const modeInstructions =
+      mode ===
+        "polygon-lasso"
+        ? "<strong style=\"color:#d49aff\">Polygon Lasso</strong> · Click: add point · Enter/double-click: finish · Backspace: remove point · Esc: cancel/deselect"
+        : mode ===
+            "magic-wand"
+          ? "<strong style=\"color:#d49aff\">Magic Wand</strong> · Click: select colour · Shift: add · Alt: subtract · Shift+Alt: intersect"
+          : "<strong style=\"color:#d49aff\">Rectangle Select</strong> · Drag: select · Shift: add · Alt: subtract · Shift+Alt: intersect";
+
+
+    helper.innerHTML =
+      `${modeInstructions}<br>` +
+      "<span style=\"color:#ffffff\">Ctrl+C</span> Copy · " +
+      "<span style=\"color:#ffffff\">Ctrl+X</span> Cut · " +
+      "<span style=\"color:#ffffff\">Ctrl+V</span> Paste · " +
+      "<span style=\"color:#ffffff\">Ctrl+J</span> Duplicate selection · " +
+      "<span style=\"color:#ffffff\">Ctrl+Shift+I</span> Invert · " +
+      "<span style=\"color:#ffffff\">Ctrl+D</span> Deselect";
+
+
+    return true;
+
+  }
+
+
+  function showShortcutHelper() {
+
+    const helper =
+      dom.shortcutHelper ||
+      createShortcutHelper();
+
+
+    if (!helper) {
+
+      return false;
+
+    }
+
+
+    updateShortcutHelper();
+
+
+    helper.style.display =
+      "block";
+
+
+    return true;
+
+  }
+
+
+  function hideShortcutHelper() {
+
+    if (
+      dom.shortcutHelper
+    ) {
+
+      dom.shortcutHelper.style.display =
+        "none";
+
+    }
+
+
+    return true;
+
+  }
+
+
+  function copySelectionToClipboard({
+    announce =
+      true
+  } = {}) {
+
+    if (
+      !hasSelection()
+    ) {
+
+      if (announce) {
+
+        sendStatusMessage(
+          "Make a selection before copying."
+        );
+
+      }
+
+      return false;
+
+    }
+
+
+    const layer =
+      selectionState.layer;
+
+
+    if (
+      !layer?.canvas ||
+      !layer?.context
+    ) {
+
+      return false;
+
+    }
+
+
+    const width =
+      layer.canvas.width;
+
+    const height =
+      layer.canvas.height;
+
+
+    if (
+      selectionState.maskWidth !==
+        width ||
+      selectionState.maskHeight !==
+        height
+    ) {
+
+      sendStatusMessage(
+        "The selection no longer matches this layer."
+      );
+
+      return false;
+
+    }
+
+
+    const sourceData =
+      layer.context.getImageData(
+        0,
+        0,
+        width,
+        height
+      );
+
+    const copiedData =
+      new ImageData(
+        width,
+        height
+      );
+
+
+    for (
+      let index = 0;
+      index <
+        selectionState.mask.length;
+      index +=
+        1
+    ) {
+
+      if (
+        !selectionState.mask[
+          index
+        ]
+      ) {
+
+        continue;
+
+      }
+
+
+      const pixelIndex =
+        index *
+        4;
+
+
+      copiedData.data[
+        pixelIndex
+      ] =
+        sourceData.data[
+          pixelIndex
+        ];
+
+      copiedData.data[
+        pixelIndex +
+          1
+      ] =
+        sourceData.data[
+          pixelIndex +
+            1
+        ];
+
+      copiedData.data[
+        pixelIndex +
+          2
+      ] =
+        sourceData.data[
+          pixelIndex +
+            2
+        ];
+
+      copiedData.data[
+        pixelIndex +
+          3
+      ] =
+        sourceData.data[
+          pixelIndex +
+            3
+        ];
+
+    }
+
+
+    const clipboardCanvas =
+      document.createElement(
+        "canvas"
+      );
+
+    clipboardCanvas.width =
+      width;
+
+    clipboardCanvas.height =
+      height;
+
+    clipboardCanvas
+      .getContext(
+        "2d",
+        {
+          alpha:
+            true
+        }
+      )
+      .putImageData(
+        copiedData,
+        0,
+        0
+      );
+
+
+    selectionState.clipboard = {
+
+      canvas:
+        clipboardCanvas,
+
+      sourceName:
+        layer.name ||
+        "Selection",
+
+      transformX:
+        Number(
+          layer.transformX
+        ) ||
+        0,
+
+      transformY:
+        Number(
+          layer.transformY
+        ) ||
+        0,
+
+      scaleX:
+        Number(
+          layer.scaleX
+        ) ||
+        1,
+
+      scaleY:
+        Number(
+          layer.scaleY
+        ) ||
+        1,
+
+      rotation:
+        Number(
+          layer.rotation
+        ) ||
+        0,
+
+      stereo3dEnabled:
+        Boolean(
+          layer.stereo3dEnabled
+        ),
+
+      depth3d:
+        Number(
+          layer.depth3d
+        ) ||
+        0
+
+    };
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        `${selectionState.selectedPixelCount.toLocaleString()} selected pixel${
+          selectionState.selectedPixelCount ===
+            1
+            ? ""
+            : "s"
+        } copied.`
+      );
+
+    }
+
+
+    return true;
+
+  }
+
+
+  function pasteSelectionClipboard({
+    announce =
+      true
+  } = {}) {
+
+    const clipboard =
+      selectionState.clipboard;
+
+
+    if (
+      !clipboard?.canvas
+    ) {
+
+      if (announce) {
+
+        sendStatusMessage(
+          "The Paintless clipboard is empty."
+        );
+
+      }
+
+      return false;
+
+    }
+
+
+    const layersApi =
+      getLayersApi();
+
+
+    if (
+      typeof layersApi
+        ?.createLayer !==
+      "function"
+    ) {
+
+      sendStatusMessage(
+        "Paintless could not create a pasted layer."
+      );
+
+      return false;
+
+    }
+
+
+    const pastedLayer =
+      layersApi.createLayer({
+        name:
+          `${clipboard.sourceName} copy`,
+
+        select:
+          true,
+
+        insertAboveActive:
+          true
+      });
+
+
+    if (
+      !pastedLayer?.context
+    ) {
+
+      return false;
+
+    }
+
+
+    pastedLayer.context.clearRect(
+      0,
+      0,
+      pastedLayer.canvas.width,
+      pastedLayer.canvas.height
+    );
+
+
+    pastedLayer.context.drawImage(
+      clipboard.canvas,
+      0,
+      0
+    );
+
+
+    pastedLayer.transformX =
+      clipboard.transformX;
+
+    pastedLayer.transformY =
+      clipboard.transformY;
+
+    pastedLayer.scaleX =
+      clipboard.scaleX;
+
+    pastedLayer.scaleY =
+      clipboard.scaleY;
+
+    pastedLayer.rotation =
+      clipboard.rotation;
+
+    pastedLayer.stereo3dEnabled =
+      clipboard.stereo3dEnabled;
+
+    pastedLayer.depth3d =
+      clipboard.depth3d;
+
+
+    layersApi.renderLayerList?.();
+
+    layersApi.renderLayers?.();
+
+
+    saveSelectionHistory(
+      "Paste selection"
+    );
+
+
+    document.dispatchEvent(
+      new CustomEvent(
+        "paintless:artwork-changed",
+        {
+          detail: {
+            reason:
+              "selection-paste",
+
+            layer:
+              pastedLayer
+          }
+        }
+      )
+    );
+
+
+    if (announce) {
+
+      sendStatusMessage(
+        "Selection pasted onto a new layer."
+      );
+
+    }
+
+
+    return pastedLayer;
+
+  }
+
+
+  function cutSelectionToClipboard() {
+
+    if (
+      !copySelectionToClipboard({
+        announce:
+          false
+      })
+    ) {
+
+      return false;
+
+    }
+
+
+    const cleared =
+      clearSelectedPixels();
+
+
+    if (cleared) {
+
+      sendStatusMessage(
+        "Selection cut to the Paintless clipboard."
+      );
+
+    }
+
+
+    return cleared;
+
+  }
+
+
+  function duplicateSelectionToLayer() {
+
+    if (
+      !copySelectionToClipboard({
+        announce:
+          false
+      })
+    ) {
+
+      return false;
+
+    }
+
+
+    const pastedLayer =
+      pasteSelectionClipboard({
+        announce:
+          false
+      });
+
+
+    if (pastedLayer) {
+
+      sendStatusMessage(
+        "Selection duplicated onto a new layer."
+      );
+
+    }
+
+
+    return pastedLayer;
+
+  }
+
+
+  /* =======================================================
      15. CLEAR SELECTED PIXELS
   ======================================================= */
 
@@ -4747,6 +5402,9 @@
       true;
 
 
+    showShortcutHelper();
+
+
     getCore()
       ?.showToolOptions?.(
         [
@@ -4787,6 +5445,9 @@
 
     selectionState.active =
       false;
+
+
+    hideShortcutHelper();
 
 
     selectionState.selecting =
@@ -5167,6 +5828,78 @@
         }
 
 
+        const modifierPressed =
+          event.ctrlKey ||
+          event.metaKey;
+
+
+        if (
+          modifierPressed &&
+          !event.shiftKey &&
+          event.key.toLowerCase() ===
+            "c" &&
+          hasSelection()
+        ) {
+
+          event.preventDefault();
+
+          copySelectionToClipboard();
+
+          return;
+
+        }
+
+
+        if (
+          modifierPressed &&
+          !event.shiftKey &&
+          event.key.toLowerCase() ===
+            "x" &&
+          hasSelection()
+        ) {
+
+          event.preventDefault();
+
+          cutSelectionToClipboard();
+
+          return;
+
+        }
+
+
+        if (
+          modifierPressed &&
+          !event.shiftKey &&
+          event.key.toLowerCase() ===
+            "v"
+        ) {
+
+          event.preventDefault();
+
+          pasteSelectionClipboard();
+
+          return;
+
+        }
+
+
+        if (
+          modifierPressed &&
+          !event.shiftKey &&
+          event.key.toLowerCase() ===
+            "j" &&
+          hasSelection()
+        ) {
+
+          event.preventDefault();
+
+          duplicateSelectionToLayer();
+
+          return;
+
+        }
+
+
         if (
           (
             event.ctrlKey ||
@@ -5374,6 +6107,8 @@
 
       collectDomReferences();
 
+      createShortcutHelper();
+
 
       if (
         !dom.editorCanvas ||
@@ -5425,7 +6160,7 @@
 
 
       console.log(
-        "%cPaintless Selection ready.",
+        "%cPaintless Selection v1.5 — clipboard + shortcut helper ready.",
         [
           "color:#69f59c",
           "font-weight:bold",
@@ -5502,6 +6237,14 @@
     invertSelection,
 
     clearSelectedPixels,
+
+    copySelectionToClipboard,
+
+    cutSelectionToClipboard,
+
+    pasteSelectionClipboard,
+
+    duplicateSelectionToLayer,
 
 
     setSelectionMode,
