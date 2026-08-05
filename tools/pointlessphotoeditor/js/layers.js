@@ -204,7 +204,13 @@
   ultraPerspectiveAmount = 0,
 
   ultraWarpEnabled = false,
-  ultraWarpAmount = 0
+  ultraWarpAmount = 0,
+
+  ultraVerticalHingeEnabled = false,
+  ultraVerticalHingeAmount = 0,
+
+  ultraHorizontalHingeEnabled = false,
+  ultraHorizontalHingeAmount = 0
 } = {}) {
 
       this.id = id;
@@ -313,6 +319,28 @@ this.ultraWarpEnabled =
 this.ultraWarpAmount =
   clamp(
     Number(ultraWarpAmount) || 0,
+    -30,
+    30
+  );
+
+
+this.ultraVerticalHingeEnabled =
+  Boolean(ultraVerticalHingeEnabled);
+
+this.ultraVerticalHingeAmount =
+  clamp(
+    Number(ultraVerticalHingeAmount) || 0,
+    -30,
+    30
+  );
+
+
+this.ultraHorizontalHingeEnabled =
+  Boolean(ultraHorizontalHingeEnabled);
+
+this.ultraHorizontalHingeAmount =
+  clamp(
+    Number(ultraHorizontalHingeAmount) || 0,
     -30,
     30
   );
@@ -580,6 +608,18 @@ ultraWarpEnabled:
 
 ultraWarpAmount:
   this.ultraWarpAmount,
+
+ultraVerticalHingeEnabled:
+  this.ultraVerticalHingeEnabled,
+
+ultraVerticalHingeAmount:
+  this.ultraVerticalHingeAmount,
+
+ultraHorizontalHingeEnabled:
+  this.ultraHorizontalHingeEnabled,
+
+ultraHorizontalHingeAmount:
+  this.ultraHorizontalHingeAmount,
 
 width:
   this.canvas.width,
@@ -3300,7 +3340,19 @@ ultraWarpEnabled:
   savedLayer.ultraWarpEnabled ?? false,
 
 ultraWarpAmount:
-  savedLayer.ultraWarpAmount ?? 0
+  savedLayer.ultraWarpAmount ?? 0,
+
+ultraVerticalHingeEnabled:
+  savedLayer.ultraVerticalHingeEnabled ?? false,
+
+ultraVerticalHingeAmount:
+  savedLayer.ultraVerticalHingeAmount ?? 0,
+
+ultraHorizontalHingeEnabled:
+  savedLayer.ultraHorizontalHingeEnabled ?? false,
+
+ultraHorizontalHingeAmount:
+  savedLayer.ultraHorizontalHingeAmount ?? 0
           });
 
 
