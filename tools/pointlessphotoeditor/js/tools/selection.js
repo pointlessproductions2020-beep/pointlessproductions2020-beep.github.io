@@ -257,75 +257,12 @@
 
   function createSelectionOverlayCanvas() {
 
-    const existingCanvas =
-      document.getElementById(
-        "selection-overlay-canvas"
-      );
-
-
-    if (existingCanvas) {
-
-      return existingCanvas;
-
-    }
-
-
-    if (
-      !dom.overlayCanvas ||
-      !dom.overlayCanvas.parentElement
-    ) {
-
-      return null;
-
-    }
-
-
-    const canvas =
-      document.createElement(
-        "canvas"
-      );
-
-
-    canvas.id =
-      "selection-overlay-canvas";
-
-
-    canvas.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-    canvas.style.position =
-      "absolute";
-
-    canvas.style.left =
-      "0";
-
-    canvas.style.top =
-      "0";
-
-    canvas.style.pointerEvents =
-      "none";
-
-    canvas.style.touchAction =
-      "none";
-
-    canvas.style.userSelect =
-      "none";
-
-    canvas.style.zIndex =
-      "999";
-
-
-    dom.overlayCanvas.parentElement
-      .insertBefore(
-        canvas,
-        dom.overlayCanvas
-      );
-
-
-    return canvas;
+    /*
+     * Selection visuals belong on Paintless' existing overlay canvas.
+     * It is already sized, zoomed and stacked directly over editor-canvas.
+     */
+    return dom.overlayCanvas ||
+      null;
 
   }
 
@@ -364,41 +301,11 @@
     }
 
 
-    const editorStyle =
-      window.getComputedStyle(
-        dom.editorCanvas
-      );
-
-
     /*
-     * The selection canvas is a sibling of the editor canvas inside
-     * canvas-stage, so it already receives the same stage zoom and
-     * translation. Copying editorCanvas.transform here applies that
-     * transform a second time and shifts Polygon Lasso points away
-     * from the mouse.
+     * Do not copy CSS transforms, offsets or display sizes here.
+     * overlay-canvas already occupies the exact same canvas-stage position
+     * as editor-canvas and inherits the stage zoom automatically.
      */
-    dom.selectionOverlayCanvas.style.left =
-      `${dom.editorCanvas.offsetLeft}px`;
-
-    dom.selectionOverlayCanvas.style.top =
-      `${dom.editorCanvas.offsetTop}px`;
-
-    dom.selectionOverlayCanvas.style.width =
-      `${dom.editorCanvas.offsetWidth}px`;
-
-    dom.selectionOverlayCanvas.style.height =
-      `${dom.editorCanvas.offsetHeight}px`;
-
-    dom.selectionOverlayCanvas.style.transform =
-      "none";
-
-    dom.selectionOverlayCanvas.style.transformOrigin =
-      "0 0";
-
-    dom.selectionOverlayCanvas.style.borderRadius =
-      editorStyle.borderRadius;
-
-
     return true;
 
   }
@@ -3714,7 +3621,7 @@
      * is committed, not only while it is being drawn.
      */
     overlayContext.fillStyle =
-      "rgba(168, 76, 255, 0.22)";
+      "rgba(168, 76, 255, 0.28)";
 
     overlayContext.fill();
 
@@ -4962,7 +4869,9 @@
 
 
     overlayContext =
-      dom.selectionOverlayCanvas
+      getCore()
+        ?.getOverlayContext?.() ||
+      dom.overlayCanvas
         ?.getContext(
           "2d"
         ) ||
