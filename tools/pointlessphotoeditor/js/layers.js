@@ -192,7 +192,19 @@
   transformY = 0,
   scaleX = 1,
   scaleY = 1,
-  rotation = 0
+  rotation = 0,
+
+  ultraRotationEnabled = false,
+  ultraRotationAmount = 0,
+
+  ultraSkewEnabled = false,
+  ultraSkewAmount = 0,
+
+  ultraPerspectiveEnabled = false,
+  ultraPerspectiveAmount = 0,
+
+  ultraWarpEnabled = false,
+  ultraWarpAmount = 0
 } = {}) {
 
       this.id = id;
@@ -269,25 +281,41 @@ this.ultraRotationEnabled =
   Boolean(ultraRotationEnabled);
 
 this.ultraRotationAmount =
-  clamp(ultraRotationAmount, -30, 30);
+  clamp(
+    Number(ultraRotationAmount) || 0,
+    -30,
+    30
+  );
 
 this.ultraSkewEnabled =
   Boolean(ultraSkewEnabled);
 
 this.ultraSkewAmount =
-  clamp(ultraSkewAmount, -30, 30);
+  clamp(
+    Number(ultraSkewAmount) || 0,
+    -30,
+    30
+  );
 
 this.ultraPerspectiveEnabled =
   Boolean(ultraPerspectiveEnabled);
 
 this.ultraPerspectiveAmount =
-  clamp(ultraPerspectiveAmount, -30, 30);
+  clamp(
+    Number(ultraPerspectiveAmount) || 0,
+    -30,
+    30
+  );
 
 this.ultraWarpEnabled =
   Boolean(ultraWarpEnabled);
 
 this.ultraWarpAmount =
-  clamp(ultraWarpAmount, -30, 30);
+  clamp(
+    Number(ultraWarpAmount) || 0,
+    -30,
+    30
+  );
 
       this.canvas =
         document.createElement(
