@@ -1234,9 +1234,28 @@
       }
 
       .paintless3d-ultra-lab {
+        display: none;
         margin-top: 12px;
         padding-top: 11px;
         border-top: 1px solid rgba(255,255,255,.09);
+      }
+
+      html[data-paintless-mode="3d"]
+      .paintless3d-ultra-lab,
+      body.paintless-3d-mode
+      .paintless3d-ultra-lab,
+      body.paintless3d-editor-active
+      .paintless3d-ultra-lab {
+        display: block;
+      }
+
+      html[data-paintless-mode="3d"]
+      .paintless3d-standard-layer-property,
+      body.paintless-3d-mode
+      .paintless3d-standard-layer-property,
+      body.paintless3d-editor-active
+      .paintless3d-standard-layer-property {
+        display: none !important;
       }
 
       .paintless3d-ultra-lab-title {
@@ -2487,7 +2506,6 @@
       header,
       status,
       layerState,
-      ultraLab.lab,
       strengthControl.group,
       convergenceControl.group,
       channelGroup,
@@ -2633,6 +2651,48 @@
 
     dom.controlParent.appendChild(
       createPreviewPanel()
+    );
+
+
+    const layerList =
+      document.getElementById(
+        "layer-list"
+      );
+
+
+    const layerPanel =
+      layerList?.parentElement ||
+      null;
+
+
+    if (
+      layerPanel &&
+      dom.ultraLab
+    ) {
+
+      layerPanel.appendChild(
+        dom.ultraLab
+      );
+
+    }
+
+
+    [
+      document.getElementById(
+        "layer-blend-mode"
+      ),
+      document.getElementById(
+        "layer-opacity"
+      )
+    ].forEach(
+      (control) => {
+
+        control?.parentElement
+          ?.classList.add(
+            "paintless3d-standard-layer-property"
+          );
+
+      }
     );
 
 
