@@ -1732,12 +1732,35 @@
         createUltraEffectControl(
           "warp",
           "Warp"
+        ),
+
+      verticalHinge:
+        createUltraEffectControl(
+          "verticalHinge",
+          "Vertical Hinge"
+        ),
+
+      horizontalHinge:
+        createUltraEffectControl(
+          "horizontalHinge",
+          "Horizontal Hinge"
         )
     };
 
+    const hingeHint =
+      createElement(
+        "small",
+        "paintless3d-preview-panel-subtitle",
+        "Vertical Hinge opens left/right like a door. Horizontal Hinge opens top/bottom like a flap."
+      );
+
+
     lab.append(
       heading,
+      hingeHint,
       controls.rotation.box,
+      controls.verticalHinge.box,
+      controls.horizontalHinge.box,
       controls.skew.box,
       controls.perspective.box,
       controls.warp.box
@@ -1789,6 +1812,16 @@
       warp: [
         "ultraWarpEnabled",
         "ultraWarpAmount"
+      ],
+
+      verticalHinge: [
+        "ultraVerticalHingeEnabled",
+        "ultraVerticalHingeAmount"
+      ],
+
+      horizontalHinge: [
+        "ultraHorizontalHingeEnabled",
+        "ultraHorizontalHingeAmount"
       ]
     };
 
