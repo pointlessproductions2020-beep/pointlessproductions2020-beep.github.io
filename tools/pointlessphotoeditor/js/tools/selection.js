@@ -139,7 +139,10 @@
       null,
 
     renderedMaskDirty:
-      true
+      true,
+
+    completedPolygonPoints:
+      null
 
   };
 
@@ -312,7 +315,7 @@
       "none";
 
     canvas.style.zIndex =
-      "18";
+      "999";
 
 
     dom.overlayCanvas.parentElement
@@ -2464,6 +2467,11 @@
       );
 
 
+    selectionState.completedPolygonPoints =
+      points.map(
+        copyPoint
+      );
+
     selectionState.selecting =
       false;
 
@@ -3647,6 +3655,110 @@
   }
 
 
+  function drawCompletedPolygonVisual() {
+
+    const points =
+      selectionState.completedPolygonPoints;
+
+
+    if (
+      !overlayContext ||
+      !Array.isArray(
+        points
+      ) ||
+      points.length <
+        3
+    ) {
+
+      return false;
+
+    }
+
+
+    overlayContext.save();
+
+    overlayContext.globalAlpha =
+      1;
+
+    overlayContext.globalCompositeOperation =
+      "source-over";
+
+
+    overlayContext.beginPath();
+
+    overlayContext.moveTo(
+      points[0].x,
+      points[0].y
+    );
+
+
+    points.slice(
+      1
+    ).forEach(
+      (point) => {
+
+        overlayContext.lineTo(
+          point.x,
+          point.y
+        );
+
+      }
+    );
+
+
+    overlayContext.closePath();
+
+
+    /*
+     * Keep the sexy Paintless purple interior after the polygon
+     * is committed, not only while it is being drawn.
+     */
+    overlayContext.fillStyle =
+      "rgba(168, 76, 255, 0.22)";
+
+    overlayContext.fill();
+
+
+    overlayContext.lineWidth =
+      3;
+
+    overlayContext.setLineDash(
+      [
+        6,
+        6
+      ]
+    );
+
+    overlayContext.lineDashOffset =
+      -selectionState.dashOffset;
+
+    overlayContext.strokeStyle =
+      "rgba(0, 0, 0, 0.98)";
+
+    overlayContext.stroke();
+
+
+    overlayContext.lineWidth =
+      1.5;
+
+    overlayContext.lineDashOffset =
+      5 -
+      selectionState.dashOffset;
+
+    overlayContext.strokeStyle =
+      "rgba(255, 255, 255, 1)";
+
+    overlayContext.stroke();
+
+
+    overlayContext.restore();
+
+
+    return true;
+
+  }
+
+
   function drawSelectionOutline() {
 
     if (
@@ -3676,6 +3788,22 @@
     }
 
 
+    clearOverlay();
+
+
+    if (
+      Array.isArray(
+        selectionState.completedPolygonPoints
+      ) &&
+      selectionState.completedPolygonPoints.length >=
+        3
+    ) {
+
+      return drawCompletedPolygonVisual();
+
+    }
+
+
     const renderedMask =
       buildRenderedSelectionMask();
 
@@ -3684,14 +3812,9 @@
       !renderedMask
     ) {
 
-      clearOverlay();
-
       return false;
 
     }
-
-
-    clearOverlay();
 
 
     overlayContext.save();
@@ -3762,9 +3885,9 @@
       selectionState.dashOffset =
         (
           selectionState.dashOffset +
-          selectionState.marchingAntsSpeed
+          1
         ) %
-        10;
+        12;
 
       selectionState.lastAnimationTime =
         timestamp;
@@ -3893,6 +4016,9 @@
 
     selectionState.renderedMaskDirty =
       true;
+
+    selectionState.completedPolygonPoints =
+      null;
 
 
     clearOverlay();
