@@ -587,7 +587,7 @@ input[type="range"]::-moz-range-thumb {
 
 
 /* =========================================================
-   9. TOOLBOX
+   9. TOOLBOX — PAINTLESS UI POLISH
 ========================================================= */
 
 .toolbox {
@@ -597,158 +597,345 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 
   min-height: 0;
-  padding: 8px 7px;
+  padding: 8px 7px 10px;
 
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
 
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(212, 154, 255, 0.14);
 
   background:
-    linear-gradient(
-      to right,
-      rgba(17, 12, 25, 0.99),
-      rgba(12, 8, 18, 0.99)
-    );
+    radial-gradient(circle at 50% 0, rgba(168, 76, 255, 0.12), transparent 28%),
+    linear-gradient(to right, rgba(17, 12, 25, 0.995), rgba(9, 6, 14, 0.995));
+
+  box-shadow:
+    inset -1px 0 0 rgba(53, 231, 255, 0.025),
+    8px 0 28px rgba(0, 0, 0, 0.2);
 
   scrollbar-width: thin;
+  scrollbar-color: rgba(168, 76, 255, 0.5) transparent;
 }
 
-.tool-button {
+.toolbox::-webkit-scrollbar { width: 5px; }
+.toolbox::-webkit-scrollbar-track { background: transparent; }
+.toolbox::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(var(--purple), var(--cyan));
+}
+
+.toolbox-brand-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 26px;
+  margin-bottom: 1px;
+  border: 1px solid rgba(212, 154, 255, 0.18);
+  border-radius: 9px;
+  color: var(--purple-light);
+  background: linear-gradient(145deg, rgba(168,76,255,.14), rgba(53,231,255,.035));
+  box-shadow: inset 0 0 12px rgba(168,76,255,.06);
+  font-size: .68rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+.tool-group {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.tool-button,
+.support-tool-button {
+  position: relative;
+  isolation: isolate;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 
   flex: 0 0 auto;
+  width: 60px;
+  min-height: 51px;
+  padding: 5px 4px;
 
-  width: 58px;
-  min-height: 49px;
-  padding: 5px;
+  overflow: hidden;
 
-  border: 1px solid transparent;
-  border-radius: 10px;
-
-  background: transparent;
-  color: var(--text-muted);
-
-  transition:
-    background 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    transform 140ms ease;
-}
-
-.tool-button > span {
-  font-size: 1.18rem;
-  line-height: 1;
-}
-
-.tool-button > small {
-  font-size: 0.49rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.tool-button:hover {
-  transform: translateY(-1px);
-
-  border-color: var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
-}
-
-.tool-button.is-active {
-  border-color: var(--border-strong);
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 12px;
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(168, 76, 255, 0.22),
-      rgba(53, 231, 255, 0.06)
-    );
+    linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  color: var(--text-muted);
 
-  color: #ffffff;
+  text-decoration: none;
 
   box-shadow:
-    inset 0 0 18px rgba(168, 76, 255, 0.08),
-    0 0 16px rgba(168, 76, 255, 0.11);
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 4px 12px rgba(0,0,0,.12);
+
+  transition:
+    transform 145ms ease,
+    border-color 145ms ease,
+    background 145ms ease,
+    color 145ms ease,
+    box-shadow 145ms ease,
+    filter 145ms ease;
+}
+
+.tool-button::before,
+.support-tool-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(212,154,255,.22), transparent 48%),
+    linear-gradient(145deg, rgba(168,76,255,.14), rgba(53,231,255,.045));
+  transition: opacity 145ms ease;
+}
+
+.tool-button__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+}
+
+.tool-button__icon svg {
+  width: 23px;
+  height: 23px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool-button__icon svg .soft {
+  fill: currentColor;
+  fill-opacity: .08;
+}
+
+.tool-button > small,
+.support-tool-button > small {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: .47rem;
+  font-weight: 900;
+  letter-spacing: .045em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tool-button:hover,
+.support-tool-button:hover {
+  transform: translateY(-2px) scale(1.025);
+  border-color: rgba(212,154,255,.28);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 8px 18px rgba(0,0,0,.25),
+    0 0 16px rgba(168,76,255,.09);
+}
+
+.tool-button:hover::before,
+.support-tool-button:hover::before { opacity: 1; }
+
+.tool-button:active,
+.support-tool-button:active { transform: translateY(0) scale(.98); }
+
+.tool-button.is-active {
+  border-color: rgba(212,154,255,.58);
+  color: #fff;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(212,154,255,.24), transparent 48%),
+    linear-gradient(145deg, rgba(101,32,170,.68), rgba(31,18,49,.92) 58%, rgba(53,231,255,.08));
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.04),
+    inset 0 0 18px rgba(168,76,255,.14),
+    0 0 18px rgba(168,76,255,.2),
+    0 7px 18px rgba(0,0,0,.32);
+}
+
+.tool-button.is-active::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--pink), var(--purple-light), var(--cyan));
+  box-shadow: 0 0 9px rgba(168,76,255,.65);
 }
 
 .toolbox-divider {
   flex: 0 0 auto;
-
-  width: 42px;
+  width: 48px;
   height: 1px;
-  margin: 4px 0;
-
-  background: var(--border);
+  margin: 1px 0;
+  background: linear-gradient(90deg, transparent, rgba(212,154,255,.24), transparent);
 }
+
+.tool-family {
+  position: relative;
+  width: 60px;
+}
+
+.tool-family__main { width: 60px; }
+
+.tool-family__indicator {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  color: rgba(255,255,255,.42);
+  font-size: .42rem;
+  line-height: 1;
+}
+
+.tool-family-menu {
+  position: fixed;
+  z-index: 2200;
+  width: 188px;
+  padding: 7px;
+  border: 1px solid rgba(212,154,255,.28);
+  border-radius: 14px;
+  background: rgba(14,9,21,.98);
+  box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 22px rgba(168,76,255,.12);
+  backdrop-filter: blur(16px);
+}
+
+.tool-family-option {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 39px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-soft);
+  text-align: left;
+}
+
+.tool-family-option:hover,
+.tool-family-option.is-selected {
+  background: rgba(168,76,255,.12);
+  color: #fff;
+}
+
+.tool-family-option > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(255,255,255,.035);
+}
+
+.tool-family-option strong { font-size: .72rem; }
 
 .colour-stack {
   position: relative;
-
   flex: 0 0 auto;
-
   width: 58px;
   min-height: 68px;
+  margin-top: 1px;
 }
 
 .colour-chip {
   position: absolute;
-
   width: 35px;
   height: 35px;
-
-  border: 2px solid rgba(255, 255, 255, 0.78);
-  border-radius: 9px;
-
-  box-shadow:
-    0 5px 12px rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255,255,255,.8);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.4), 0 0 12px rgba(168,76,255,.08);
 }
 
-.colour-chip--primary {
-  top: 3px;
-  left: 6px;
-  z-index: 2;
-
-  background: var(--purple);
-}
-
-.colour-chip--secondary {
-  top: 21px;
-  left: 22px;
-  z-index: 1;
-
-  background: #ffffff;
-}
+.colour-chip--primary { top: 3px; left: 5px; z-index: 2; background: var(--purple); }
+.colour-chip--secondary { top: 22px; left: 21px; z-index: 1; background: #fff; }
 
 .swap-colours-button {
   position: absolute;
   right: 0;
   bottom: 0;
   z-index: 3;
-
   display: grid;
   place-items: center;
-
-  width: 22px;
-  height: 22px;
-
-  border: 1px solid var(--border);
+  width: 23px;
+  height: 23px;
+  border: 1px solid rgba(212,154,255,.24);
   border-radius: 50%;
-
-  background: var(--surface-light);
+  background: #191122;
   color: var(--text-soft);
-
-  font-size: 0.68rem;
+  font-size: .68rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,.3);
 }
 
+.toolbox-spacer {
+  flex: 1 0 10px;
+  min-height: 10px;
+}
+
+.support-tool-button {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: auto;
+  border-color: rgba(255,95,183,.22);
+  color: #ff9fd3;
+  background:
+    radial-gradient(circle at 50% 15%, rgba(255,95,183,.16), transparent 52%),
+    linear-gradient(145deg, rgba(97,24,78,.38), rgba(24,11,31,.96));
+  box-shadow:
+    0 -8px 18px rgba(9,6,14,.88),
+    0 7px 20px rgba(0,0,0,.28),
+    0 0 16px rgba(255,95,183,.09);
+}
+
+.support-tool-button__heart {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  font-size: 1.35rem;
+  line-height: 1;
+  text-shadow: 0 0 11px rgba(255,95,183,.5);
+  animation: paintless-heart-breathe 12s ease-in-out infinite;
+}
+
+.support-tool-button:hover {
+  border-color: rgba(255,95,183,.55);
+  color: #fff;
+  box-shadow:
+    0 -8px 18px rgba(9,6,14,.88),
+    0 10px 24px rgba(0,0,0,.34),
+    0 0 24px rgba(255,95,183,.22);
+}
+
+@keyframes paintless-heart-breathe {
+  0%, 82%, 100% { transform: scale(1); filter: brightness(1); }
+  88% { transform: scale(1.16); filter: brightness(1.3); }
+  93% { transform: scale(1); }
+  96% { transform: scale(1.1); }
+}
 
 /* =========================================================
    10. WORKSPACE
