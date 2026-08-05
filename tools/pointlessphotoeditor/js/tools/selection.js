@@ -133,7 +133,13 @@
       [],
 
     polygonPreviewPoint:
-      null
+      null,
+
+    renderedMaskCanvas:
+      null,
+
+    renderedMaskDirty:
+      true
 
   };
 
@@ -1291,6 +1297,9 @@
 
     selectionState.outlinePath =
       null;
+
+    selectionState.renderedMaskDirty =
+      true;
 
 
     if (
@@ -3375,6 +3384,269 @@
   }
 
 
+  function buildRenderedSelectionMask() {
+
+    if (
+      !hasSelection()
+    ) {
+
+      selectionState.renderedMaskCanvas =
+        null;
+
+      selectionState.renderedMaskDirty =
+        false;
+
+      return null;
+
+    }
+
+
+    const width =
+      selectionState.maskWidth;
+
+    const height =
+      selectionState.maskHeight;
+
+    const mask =
+      selectionState.mask;
+
+
+    let canvas =
+      selectionState.renderedMaskCanvas;
+
+
+    if (!canvas) {
+
+      canvas =
+        document.createElement(
+          "canvas"
+        );
+
+      selectionState.renderedMaskCanvas =
+        canvas;
+
+    }
+
+
+    if (
+      canvas.width !==
+        width
+    ) {
+
+      canvas.width =
+        width;
+
+    }
+
+
+    if (
+      canvas.height !==
+        height
+    ) {
+
+      canvas.height =
+        height;
+
+    }
+
+
+    const context =
+      canvas.getContext(
+        "2d",
+        {
+          alpha:
+            true,
+
+          willReadFrequently:
+            true
+        }
+      );
+
+
+    const imageData =
+      context.createImageData(
+        width,
+        height
+      );
+
+    const pixels =
+      imageData.data;
+
+
+    for (
+      let y = 0;
+      y < height;
+      y += 1
+    ) {
+
+      const row =
+        y *
+        width;
+
+
+      for (
+        let x = 0;
+        x < width;
+        x += 1
+      ) {
+
+        const index =
+          row +
+          x;
+
+
+        if (
+          !mask[
+            index
+          ]
+        ) {
+
+          continue;
+
+        }
+
+
+        const pixelIndex =
+          index *
+          4;
+
+
+        /*
+         * The completed selection keeps Paintless' purple mask tint
+         * visible, so the user can clearly see the selected interior.
+         */
+        pixels[
+          pixelIndex
+        ] =
+          168;
+
+        pixels[
+          pixelIndex +
+            1
+        ] =
+          76;
+
+        pixels[
+          pixelIndex +
+            2
+        ] =
+          255;
+
+        pixels[
+          pixelIndex +
+            3
+        ] =
+          38;
+
+
+        const leftSelected =
+          x >
+            0 &&
+          mask[
+            index -
+              1
+          ];
+
+        const rightSelected =
+          x <
+            width -
+              1 &&
+          mask[
+            index +
+              1
+          ];
+
+        const topSelected =
+          y >
+            0 &&
+          mask[
+            index -
+              width
+          ];
+
+        const bottomSelected =
+          y <
+            height -
+              1 &&
+          mask[
+            index +
+              width
+          ];
+
+
+        const boundary =
+          !leftSelected ||
+          !rightSelected ||
+          !topSelected ||
+          !bottomSelected;
+
+
+        if (boundary) {
+
+          const whiteDash =
+            (
+              x +
+              y +
+              Math.floor(
+                selectionState.dashOffset
+              )
+            ) %
+              10 <
+            5;
+
+
+          const colour =
+            whiteDash
+              ? 255
+              : 10;
+
+
+          pixels[
+            pixelIndex
+          ] =
+            colour;
+
+          pixels[
+            pixelIndex +
+              1
+          ] =
+            colour;
+
+          pixels[
+            pixelIndex +
+              2
+          ] =
+            colour;
+
+          pixels[
+            pixelIndex +
+              3
+          ] =
+            255;
+
+        }
+
+      }
+
+    }
+
+
+    context.putImageData(
+      imageData,
+      0,
+      0
+    );
+
+
+    selectionState.renderedMaskDirty =
+      false;
+
+
+    return canvas;
+
+  }
+
+
   function drawSelectionOutline() {
 
     if (
@@ -3404,14 +3676,13 @@
     }
 
 
-    const path =
-      selectionState.outlineDirty ||
-      !selectionState.outlinePath
-        ? buildSelectionOutlinePath()
-        : selectionState.outlinePath;
+    const renderedMask =
+      buildRenderedSelectionMask();
 
 
-    if (!path) {
+    if (
+      !renderedMask
+    ) {
 
       clearOverlay();
 
@@ -3431,39 +3702,22 @@
     overlayContext.globalCompositeOperation =
       "source-over";
 
+
     applyLayerTransformToOverlay(
       layer
     );
 
-    overlayContext.lineWidth =
-      2;
 
-    overlayContext.setLineDash(
-      [
-        5,
-        4
-      ]
+    overlayContext.imageSmoothingEnabled =
+      false;
+
+
+    overlayContext.drawImage(
+      renderedMask,
+      0,
+      0
     );
 
-    overlayContext.lineDashOffset =
-      0;
-
-    overlayContext.strokeStyle =
-      "rgba(0, 0, 0, 0.95)";
-
-    overlayContext.stroke(
-      path
-    );
-
-    overlayContext.lineWidth =
-      1;
-
-    overlayContext.strokeStyle =
-      "rgba(255, 255, 255, 0.98)";
-
-    overlayContext.stroke(
-      path
-    );
 
     overlayContext.restore();
 
@@ -3473,19 +3727,60 @@
   }
 
 
-  function animateMarchingAnts() {
+  function animateMarchingAnts(
+    timestamp
+  ) {
 
-    /*
-     * Keep the selection continuously visible.
-     * Animation can return later once the core selection flow
-     * is fully stable.
-     */
+    if (
+      !hasSelection()
+    ) {
+
+      selectionState.animationFrame =
+        null;
+
+      return;
+
+    }
+
+
+    if (
+      !selectionState.lastAnimationTime
+    ) {
+
+      selectionState.lastAnimationTime =
+        timestamp;
+
+    }
+
+
+    if (
+      timestamp -
+        selectionState.lastAnimationTime >=
+      OUTLINE_FRAME_INTERVAL
+    ) {
+
+      selectionState.dashOffset =
+        (
+          selectionState.dashOffset +
+          selectionState.marchingAntsSpeed
+        ) %
+        10;
+
+      selectionState.lastAnimationTime =
+        timestamp;
+
+      selectionState.renderedMaskDirty =
+        true;
+
+      drawSelectionOutline();
+
+    }
+
 
     selectionState.animationFrame =
-      null;
-
-
-    drawSelectionOutline();
+      requestAnimationFrame(
+        animateMarchingAnts
+      );
 
   }
 
@@ -3501,8 +3796,17 @@
     selectionState.dashOffset =
       0;
 
+    selectionState.renderedMaskDirty =
+      true;
+
 
     drawSelectionOutline();
+
+
+    selectionState.animationFrame =
+      requestAnimationFrame(
+        animateMarchingAnts
+      );
 
   }
 
@@ -3582,6 +3886,12 @@
       null;
 
     selectionState.outlineDirty =
+      true;
+
+    selectionState.renderedMaskCanvas =
+      null;
+
+    selectionState.renderedMaskDirty =
       true;
 
 
