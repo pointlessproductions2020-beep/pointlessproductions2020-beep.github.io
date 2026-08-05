@@ -2,7 +2,7 @@
 
 /* =========================================================
    PAINTLESS3D
-   EXPORT MODULE — v0.1
+   EXPORT MODULE — v0.2 MODAL
 
    File:
    js/paintless3d/export.js
@@ -1257,6 +1257,150 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
+      dialog.paintless3d-export-panel {
+        position: fixed;
+        inset: 0;
+        width: min(620px, calc(100vw - 28px));
+        max-width: none;
+        max-height: min(760px, calc(100dvh - 28px));
+        margin: auto;
+        padding: 20px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        border: 1px solid rgba(212, 154, 255, 0.34);
+        border-radius: 20px;
+        background:
+          radial-gradient(
+            circle at 5% 5%,
+            rgba(255, 49, 92, 0.14),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at 95% 5%,
+            rgba(37, 230, 255, 0.14),
+            transparent 34%
+          ),
+          linear-gradient(
+            145deg,
+            rgba(29, 18, 45, 0.99),
+            rgba(9, 6, 14, 0.995)
+          );
+        box-shadow:
+          0 30px 100px rgba(0, 0, 0, 0.72),
+          inset 0 0 0 1px rgba(168, 76, 255, 0.08),
+          0 0 38px rgba(168, 76, 255, 0.16);
+        scrollbar-width: thin;
+        scrollbar-color: #a84cff rgba(255, 255, 255, 0.05);
+      }
+
+      dialog.paintless3d-export-panel:not([open]) {
+        display: none !important;
+      }
+
+      dialog.paintless3d-export-panel[open] {
+        display: block !important;
+        animation: paintless3d-export-enter 150ms ease-out;
+      }
+
+      dialog.paintless3d-export-panel::backdrop {
+        background: rgba(3, 2, 6, 0.78);
+        backdrop-filter: blur(7px);
+        -webkit-backdrop-filter: blur(7px);
+      }
+
+      dialog.paintless3d-export-panel::-webkit-scrollbar {
+        width: 9px;
+      }
+
+      dialog.paintless3d-export-panel::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.035);
+        border-radius: 999px;
+      }
+
+      dialog.paintless3d-export-panel::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background:
+          linear-gradient(
+            #a84cff,
+            #35e7ff
+          ) padding-box;
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-header {
+        position: sticky;
+        top: -20px;
+        z-index: 2;
+        margin: -20px -20px 16px;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        background: rgba(13, 8, 21, 0.94);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-heading {
+        font-size: 14px;
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-subtitle {
+        font-size: 10px;
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-group {
+        margin-top: 15px;
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-select,
+      dialog.paintless3d-export-panel .paintless3d-export-filename,
+      dialog.paintless3d-export-panel .paintless3d-export-number {
+        height: 39px;
+        font-size: 11px;
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-toggle-row {
+        min-height: 48px;
+        padding: 9px 11px;
+      }
+
+      dialog.paintless3d-export-panel .paintless3d-export-action {
+        min-height: 46px;
+        margin-top: 18px;
+        font-size: 11px;
+      }
+
+      @keyframes paintless3d-export-enter {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.985);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (max-width: 640px) {
+        dialog.paintless3d-export-panel {
+          width: calc(100vw - 18px);
+          max-height: calc(100dvh - 18px);
+          padding: 15px;
+          border-radius: 16px;
+        }
+
+        dialog.paintless3d-export-panel .paintless3d-export-header {
+          top: -15px;
+          margin: -15px -15px 13px;
+          padding: 15px;
+        }
+
+        dialog.paintless3d-export-panel .paintless3d-export-statistics {
+          grid-template-columns: 1fr;
+        }
+      }
     `;
 
 
@@ -1405,13 +1549,25 @@
 
     const panel =
       createElement(
-        "section",
+        "dialog",
         "paintless3d-export-panel"
       );
 
 
     panel.id =
       "paintless3d-export-panel";
+
+
+    panel.setAttribute(
+      "aria-modal",
+      "true"
+    );
+
+
+    panel.setAttribute(
+      "aria-labelledby",
+      "paintless3d-export-heading"
+    );
 
 
     const header =
@@ -1433,6 +1589,10 @@
         "paintless3d-export-heading",
         "Paintless3D Export"
       );
+
+
+    heading.id =
+      "paintless3d-export-heading";
 
 
     const subtitle =
@@ -1888,14 +2048,7 @@
     }
 
 
-    if (!dom.controlParent) {
-
-      return false;
-
-    }
-
-
-    dom.controlParent.appendChild(
+    document.body.appendChild(
       createExportPanel()
     );
 
@@ -1934,6 +2087,33 @@
     updateControls();
 
 
+    if (
+      typeof dom.panel.showModal ===
+        "function" &&
+      !dom.panel.open
+    ) {
+
+      dom.panel.showModal();
+
+    } else {
+
+      dom.panel.setAttribute(
+        "open",
+        ""
+      );
+
+    }
+
+
+    window.requestAnimationFrame(
+      () => {
+
+        dom.formatSelect?.focus();
+
+      }
+    );
+
+
     return true;
 
   }
@@ -1955,6 +2135,23 @@
     dom.panel.classList.remove(
       "is-open"
     );
+
+
+    if (
+      typeof dom.panel.close ===
+        "function" &&
+      dom.panel.open
+    ) {
+
+      dom.panel.close();
+
+    } else {
+
+      dom.panel.removeAttribute(
+        "open"
+      );
+
+    }
 
 
     return true;
@@ -3007,12 +3204,73 @@
   }
 
 
+  function handleDialogClosed() {
+
+    exportState.panelOpen =
+      false;
+
+
+    dom.panel?.classList.remove(
+      "is-open"
+    );
+
+  }
+
+
+  function handleDialogBackdropClick(
+    event
+  ) {
+
+    if (
+      event.target !==
+        dom.panel
+    ) {
+
+      return;
+
+    }
+
+
+    const bounds =
+      dom.panel.getBoundingClientRect();
+
+
+    const insideDialog =
+      event.clientX >= bounds.left &&
+      event.clientX <= bounds.right &&
+      event.clientY >= bounds.top &&
+      event.clientY <= bounds.bottom;
+
+
+    if (!insideDialog) {
+
+      closePanel();
+
+    }
+
+  }
+
+
   function connectEvents() {
 
     dom.closeButton
       ?.addEventListener(
         "click",
         closePanel
+      );
+
+
+    dom.panel
+      ?.addEventListener(
+        "close",
+        handleDialogClosed
+      );
+
+
+    dom.panel
+      ?.addEventListener(
+        "click",
+        handleDialogBackdropClick
       );
 
 
@@ -3102,6 +3360,20 @@
       ?.removeEventListener(
         "click",
         closePanel
+      );
+
+
+    dom.panel
+      ?.removeEventListener(
+        "close",
+        handleDialogClosed
+      );
+
+
+    dom.panel
+      ?.removeEventListener(
+        "click",
+        handleDialogBackdropClick
       );
 
 
