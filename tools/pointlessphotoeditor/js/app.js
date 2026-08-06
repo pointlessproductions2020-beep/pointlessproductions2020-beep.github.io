@@ -2655,6 +2655,7 @@
     try { panelHeights = JSON.parse(localStorage.getItem(panelKey) || '{}') || {}; } catch (_) { panelHeights = {}; }
 
     const setupPanel = (panel, index) => {
+      if (panel.classList.contains('layers-panel')) return;
       if (panel.dataset.paintlessResizable === 'true') return;
       panel.dataset.paintlessResizable = 'true';
       const identity = [...panel.classList].find((name) => name.endsWith('-panel') && name !== 'editor-panel') || `panel-${index}`;
@@ -2688,6 +2689,122 @@
     const setupPanels = () => Array.from(sidebar.querySelectorAll('.editor-panel')).forEach(setupPanel);
     setupPanels();
     new MutationObserver(setupPanels).observe(sidebar,{childList:true,subtree:true});
+
+    const ultraHeightKey = 'paintless:ultra-panel-height';
+
+    const findUltraPanel = () => {
+      const candidates = Array.from(
+        sidebar.querySelectorAll(
+          ':scope > section, :scope > div, [class*="ultra"], [id*="ultra"], [class*="anaglyph"], [id*="anaglyph"]'
+        )
+      );
+
+      return candidates.find((element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        if (element.classList.contains('layers-panel')) return false;
+
+        const identity = `${element.id} ${element.className}`.toLowerCase();
+        const heading = element.querySelector('h1,h2,h3,.panel-title,.panel-header')?.textContent?.toLowerCase() || '';
+        const text = `${identity} ${heading}`;
+
+        return text.includes('ultra') || text.includes('anaglyph');
+      }) || null;
+    };
+
+    const setupLayersUltraSplitter = () => {
+      const layersPanel = sidebar.querySelector('.layers-panel');
+      const ultraPanel = findUltraPanel();
+
+      if (!layersPanel || !ultraPanel || ultraPanel === layersPanel) return false;
+
+      let splitter = sidebar.querySelector('.layers-ultra-resize-handle');
+
+      if (!splitter) {
+        splitter = document.createElement('div');
+        splitter.className = 'layers-ultra-resize-handle';
+        splitter.setAttribute('role', 'separator');
+        splitter.setAttribute('aria-orientation', 'horizontal');
+        splitter.setAttribute('aria-label', 'Resize Layers and Ultra Anaglyph panels');
+        splitter.tabIndex = 0;
+        ultraPanel.parentNode.insertBefore(splitter, ultraPanel);
+      } else if (splitter.nextElementSibling !== ultraPanel) {
+        ultraPanel.parentNode.insertBefore(splitter, ultraPanel);
+      }
+
+      layersPanel.classList.add('layers-panel--shared-space');
+      ultraPanel.classList.add('paintless-ultra-resizable-panel');
+
+      const savedHeight = Math.max(150, Math.min(560, Number(localStorage.getItem(ultraHeightKey)) || 300));
+      ultraPanel.style.setProperty('--paintless-ultra-panel-height', `${savedHeight}px`);
+      ultraPanel.style.height = `${savedHeight}px`;
+
+      if (splitter.dataset.paintlessConnected === 'true') return true;
+      splitter.dataset.paintlessConnected = 'true';
+
+      let active = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      const applyUltraHeight = (height) => {
+        const sidebarHeight = sidebar.getBoundingClientRect().height;
+        const maxHeight = Math.max(180, sidebarHeight - 220);
+        const nextHeight = Math.max(150, Math.min(maxHeight, Number(height) || 300));
+        ultraPanel.style.setProperty('--paintless-ultra-panel-height', `${nextHeight}px`);
+        ultraPanel.style.height = `${nextHeight}px`;
+        splitter.setAttribute('aria-valuenow', String(Math.round(nextHeight)));
+        return nextHeight;
+      };
+
+      const finish = () => {
+        if (!active) return;
+        active = false;
+        splitter.classList.remove('is-dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        localStorage.setItem(ultraHeightKey, String(Math.round(ultraPanel.getBoundingClientRect().height)));
+      };
+
+      splitter.addEventListener('pointerdown', (event) => {
+        active = true;
+        startY = event.clientY;
+        startHeight = ultraPanel.getBoundingClientRect().height;
+        splitter.setPointerCapture?.(event.pointerId);
+        splitter.classList.add('is-dragging');
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        event.preventDefault();
+      });
+
+      window.addEventListener('pointermove', (event) => {
+        if (!active) return;
+        applyUltraHeight(startHeight - (event.clientY - startY));
+      });
+
+      window.addEventListener('pointerup', finish);
+      window.addEventListener('pointercancel', finish);
+
+      splitter.addEventListener('keydown', (event) => {
+        if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+        const current = ultraPanel.getBoundingClientRect().height;
+        const next = event.key === 'Home' ? 150 :
+          event.key === 'End' ? sidebar.getBoundingClientRect().height - 220 :
+          current + (event.key === 'ArrowUp' ? 20 : -20);
+        const applied = applyUltraHeight(next);
+        localStorage.setItem(ultraHeightKey, String(Math.round(applied)));
+        event.preventDefault();
+      });
+
+      return true;
+    };
+
+    setupLayersUltraSplitter();
+    new MutationObserver(() => requestAnimationFrame(setupLayersUltraSplitter))
+      .observe(sidebar, { childList: true, subtree: true });
+
+    document.addEventListener('paintless3d:module-ready', () => {
+      requestAnimationFrame(setupLayersUltraSplitter);
+      window.setTimeout(setupLayersUltraSplitter, 100);
+    });
 
     const groupForTool = {
       move:'navigate', select:'navigate', crop:'navigate', transform:'navigate',
