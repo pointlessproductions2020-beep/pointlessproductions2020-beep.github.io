@@ -3936,3 +3936,79 @@ select option:checked {
   .toolbox-group h3 { font-size: 0; height: 2px; margin: 0 0 4px; background: rgba(168,76,255,.2); }
   .support-tool-button small { display: none; }
 }
+
+/* =========================================================
+   PAINTLESS v1.0.1 — COLOUR SWATCH + LAYERS/ULTRA SPLITTER
+========================================================= */
+
+.colour-chip {
+  background-clip: padding-box !important;
+  transition: background-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.colour-chip:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+
+.colour-chip--primary {
+  outline: 1px solid rgba(255,255,255,.32);
+}
+
+.colour-chip--secondary {
+  outline: 1px solid rgba(0,0,0,.35);
+}
+
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.layers-panel--shared-space {
+  flex: 1 1 260px !important;
+  min-height: 180px !important;
+  height: auto !important;
+  overflow: hidden;
+}
+
+.layers-panel--shared-space .layer-list {
+  min-height: 90px;
+  overflow: auto;
+}
+
+.paintless-ultra-resizable-panel {
+  flex: 0 0 var(--paintless-ultra-panel-height, 300px) !important;
+  min-height: 150px !important;
+  max-height: calc(100% - 220px) !important;
+  overflow: auto !important;
+}
+
+.layers-ultra-resize-handle {
+  position: relative;
+  z-index: 40;
+  flex: 0 0 10px;
+  height: 10px;
+  margin: -5px 0;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.layers-ultra-resize-handle::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 4px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.22);
+  transition: background 130ms ease, box-shadow 130ms ease;
+}
+
+.layers-ultra-resize-handle:hover::after,
+.layers-ultra-resize-handle:focus-visible::after,
+.layers-ultra-resize-handle.is-dragging::after {
+  background: linear-gradient(90deg, var(--purple), var(--cyan));
+  box-shadow: 0 0 12px rgba(168,76,255,.42);
+}
