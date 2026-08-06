@@ -470,6 +470,34 @@
   }
 
 
+  function refreshColourDomReferences() {
+
+    dom.primaryColourInput =
+      byId("primary-colour");
+
+    dom.panelColourPicker =
+      byId("panel-colour-picker");
+
+    dom.hexColourInput =
+      byId("hex-colour-input");
+
+    dom.primaryColourChip =
+      byId("primary-colour-chip");
+
+    dom.secondaryColourChip =
+      byId("secondary-colour-chip");
+
+    dom.swapColoursButton =
+      byId("swap-colours-button");
+
+    dom.recentColours =
+      byId("recent-colours");
+
+    return dom;
+
+  }
+
+
   /* =======================================================
      6. STORAGE
   ======================================================= */
@@ -950,6 +978,8 @@
     colour
   ) {
 
+    refreshColourDomReferences();
+
     colourState.updatingControls =
       true;
 
@@ -982,9 +1012,22 @@
 
       if (dom.primaryColourChip) {
 
-        dom.primaryColourChip.style.background =
+        dom.primaryColourChip.style.setProperty(
+          "background",
+          colour,
+          "important"
+        );
+
+        dom.primaryColourChip.style.backgroundColor =
           colour;
 
+        dom.primaryColourChip.dataset.colour =
+          colour;
+
+        dom.primaryColourChip.setAttribute(
+          "aria-label",
+          `Primary colour ${colour.toUpperCase()}`
+        );
 
         dom.primaryColourChip.title =
           `Primary colour: ${colour.toUpperCase()}`;
@@ -1005,6 +1048,8 @@
     colour
   ) {
 
+    refreshColourDomReferences();
+
     colourState.updatingControls =
       true;
 
@@ -1013,9 +1058,22 @@
 
       if (dom.secondaryColourChip) {
 
-        dom.secondaryColourChip.style.background =
+        dom.secondaryColourChip.style.setProperty(
+          "background",
+          colour,
+          "important"
+        );
+
+        dom.secondaryColourChip.style.backgroundColor =
           colour;
 
+        dom.secondaryColourChip.dataset.colour =
+          colour;
+
+        dom.secondaryColourChip.setAttribute(
+          "aria-label",
+          `Secondary colour ${colour.toUpperCase()}`
+        );
 
         dom.secondaryColourChip.title =
           `Secondary colour: ${colour.toUpperCase()}`;
@@ -1278,6 +1336,8 @@
     announce =
       true
   } = {}) {
+
+    refreshColourDomReferences();
 
     const previousPrimary =
       colourState.primaryColour;
