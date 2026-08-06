@@ -1,272 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Blocky Level 1 Extended</title>
-  <style>
-    canvas { background: #ddf; display: block; margin: 0 auto; }
-    #overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      font-family: sans-serif;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    #overlay button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
-  </style>
-</head>
-<body>
-<canvas id="game" width="800" height="400"></canvas>
-<div id="overlay">
-  <h1>🎉 Level Complete!</h1>
-  <p>Blocky made it to the flagpole!</p>
-  <button onclick="restart()">Play Again</button>
-</div>
-<script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const overlay = document.getElementById('overlay');
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity Web Player | BlockyTheBrave</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width=1280 height=720 tabindex="-1"></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+      <div id="unity-warning"> </div>
+      <div id="unity-footer">
+        <div id="unity-logo-title-footer"></div>
+        <div id="unity-fullscreen-button"></div>
+        <div id="unity-build-title">BlockyTheBrave</div>
+      </div>
+    </div>
+    <script>
+      var canvas = document.querySelector("#unity-canvas");
 
-let keys = {};
-document.addEventListener('keydown', e => keys[e.code] = true);
-document.addEventListener('keyup', e => keys[e.code] = false);
-
-let cameraX = 0;
-let levelComplete = false;
-
-const blocky = {
-  x: 100, y: 300,
-  vx: 0, vy: 0,
-  gravity: 0.5,
-  jumpPower: -10,
-  grounded: false,
-  width: 20, height: 40,
-  blocks: [
-    { dx: 0, dy: -30 },
-    { dx: -10, dy: 0 },
-    { dx: 0, dy: 0 },
-    { dx: 10, dy: 0 },
-    { dx: -5, dy: 30 },
-    { dx: 5, dy: 30 }
-  ]
-};
-
-const platforms = [
-  { x: 0, y: 350, width: 3000, height: 50, color: 'red' },
-  { x: 300, y: 250, width: 40, height: 40, color: 'red' },
-  { x: 350, y: 250, width: 40, height: 40, color: 'yellow', punchable: true, punched: false },
-  { x: 400, y: 250, width: 40, height: 40, color: 'red' },
-  { x: 600, y: 300, width: 40, height: 50, color: 'red' },
-  { x: 640, y: 250, width: 40, height: 100, color: 'red' },
-  { x: 1000, y: 350, width: 200, height: 50, color: 'purple', sticky: true },
-  { x: 1300, y: 350, width: 200, height: 50, color: 'lightblue', wind: 1 },
-  { x: 1600, y: 250, width: 40, height: 40, color: 'yellow', punchable: true, punched: false, multi: true }
-];
-
-const powerUps = [];
-const triangleEnemies = [
-  { x: 800, y: 320, width: 20, height: 20, dir: 1 },
-  { x: 1400, y: 320, width: 20, height: 20, dir: -1 }
-];
-const crushers = [
-  { x: 1200, y: 200, width: 40, height: 40, active: false, vy: 0 }
-];
-const flagpole = { x: 2900, y: 200, width: 10, height: 150 };
-
-const backgroundElements = [
-  { type: 'cloud', x: 200, y: 50 },
-  { type: 'cloud', x: 600, y: 80 },
-  { type: 'tree', x: 500, y: 300 },
-  { type: 'tree', x: 900, y: 300 },
-  { type: 'mountain', x: 1500, y: 250 },
-  { type: 'mountain', x: 2200, y: 250 }
-];
-  function collide(rect1, rect2) {
-  return rect1.x < rect2.x + rect2.width &&
-         rect1.x + rect1.width > rect2.x &&
-         rect1.y < rect2.y + rect2.height &&
-         rect1.y + rect1.height > rect2.y;
-}
-
-function update() {
-  if (levelComplete) return;
-
-  blocky.vy += blocky.gravity;
-
-  // Movement
-  const sticky = platforms.some(p => p.sticky && collide(blocky, p));
-  blocky.vx = keys['ArrowRight'] ? (sticky ? 1 : 2) :
-              keys['ArrowLeft'] ? (sticky ? -1 : -2) : 0;
-
-  // Wind tunnel
-  platforms.forEach(p => {
-    if (p.wind && collide(blocky, p)) {
-      blocky.vx += p.wind;
-    }
-  });
-
-  blocky.x += blocky.vx;
-  blocky.y += blocky.vy;
-  blocky.grounded = false;
-
-  for (let plat of platforms) {
-    const playerRect = {
-      x: blocky.x, y: blocky.y, width: blocky.width, height: blocky.height
-    };
-    if (collide(playerRect, plat)) {
-      if (blocky.vy > 0) {
-        blocky.y = plat.y - blocky.height;
-        blocky.vy = 0;
-        blocky.grounded = true;
-      } else if (blocky.vy < 0 && plat.punchable && !plat.punched) {
-        blocky.vy = 0;
-        plat.punched = true;
-        const count = plat.multi ? 3 : 1;
-        for (let i = 0; i < count; i++) {
-          powerUps.push({ x: plat.x, y: plat.y - 20 - i * 25, width: 20, height: 20, vy: -2 });
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        var warningBanner = document.querySelector("#unity-warning");
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
         }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
       }
-    }
-  }
 
-  if (keys['Space'] && blocky.grounded) {
-    blocky.vy = blocky.jumpPower;
-  }
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/BuiltProjects.loader.js";
+      var config = {
+        arguments: [],
+        dataUrl: buildUrl + "/BuiltProjects.data.unityweb",
+        frameworkUrl: buildUrl + "/BuiltProjects.framework.js.unityweb",
+        codeUrl: buildUrl + "/BuiltProjects.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "PointlessProductions",
+        productName: "BlockyTheBrave",
+        productVersion: "0.1.0",
+        showBanner: unityShowBanner,
+        // errorHandler: function(err, url, line) {
+        //    alert("error " + err + " occurred at line " + line);
+        //    // Return 'true' if you handled this error and don't want Unity
+        //    // to process it further, 'false' otherwise.
+        //    return true;
+        // },
+      };
 
-  powerUps.forEach(p => {
-    p.y += p.vy;
-    p.vy += 0.2;
-  });
+      // By default, Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
 
-  // Triangle enemies bounce
-  triangleEnemies.forEach(e => {
-    e.x += e.dir * 1.5;
-    if (e.x < 750 || e.x > 1450) e.dir *= -1;
-    if (collide(blocky, e)) restart();
-  });
+      // If you would like all file writes inside Unity Application.persistentDataPath
+      // directory to automatically persist so that the contents are remembered when
+      // the user revisits the site the next time, uncomment the following line:
+      // config.autoSyncPersistentDataPath = true;
+      // This autosyncing is currently not the default behavior to avoid regressing
+      // existing user projects that might rely on the earlier manual
+      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
+      // expected to change.
 
-  // Crushers drop
-  crushers.forEach(c => {
-    if (!c.active && Math.abs(blocky.x - c.x) < 40) c.active = true;
-    if (c.active) {
-      c.vy += 0.5;
-      c.y += c.vy;
-      if (collide(blocky, c)) restart();
-    }
-  });
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
 
-  // Flagpole collision
-  const playerRect = { x: blocky.x, y: blocky.y, width: blocky.width, height: blocky.height };
-  if (collide(playerRect, flagpole)) {
-    levelComplete = true;
-    overlay.style.display = 'flex';
-  }
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        document.querySelector("#unity-container").className = "unity-mobile";
+        canvas.className = "unity-mobile";
 
-  cameraX = blocky.x - canvas.width / 2;
-}
-  function drawCharacter(baseX, baseY, time) {
-  ctx.fillStyle = 'blue';
-  blocky.blocks.forEach((block, i) => {
-    let offsetY = block.dy;
-    if (i >= 4) {
-      offsetY += Math.sin(time / 200 + i) * 5;
-    }
-    ctx.fillRect(baseX + block.dx - cameraX, baseY + offsetY, 10, 10);
-  });
-}
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
 
-function drawBackground() {
-  const parallaxX = cameraX * 0.5;
-  backgroundElements.forEach(el => {
-    if (el.type === 'cloud') {
-      ctx.fillStyle = '#ccc';
-      ctx.fillRect(el.x - parallaxX, el.y, 40, 20);
-      ctx.fillRect(el.x + 15 - parallaxX, el.y - 10, 30, 20);
-    } else if (el.type === 'tree') {
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(el.x - parallaxX, el.y, 10, 50);
-      ctx.fillStyle = 'green';
-      ctx.fillRect(el.x - 10 - parallaxX, el.y - 30, 30, 30);
-    } else if (el.type === 'mountain') {
-      ctx.fillStyle = '#aaa';
-      ctx.beginPath();
-      ctx.moveTo(el.x - parallaxX, el.y + 100);
-      ctx.lineTo(el.x + 50 - parallaxX, el.y);
-      ctx.lineTo(el.x + 100 - parallaxX, el.y + 100);
-      ctx.closePath();
-      ctx.fill();
-    }
-  });
-}
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+      } else {
+        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+        canvas.style.width = "1280px";
+        canvas.style.height = "720px";
+      }
 
-  drawBackground();
+      document.querySelector("#unity-loading-bar").style.display = "block";
 
-  platforms.forEach(p => {
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
-  });
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+              }).then((unityInstance) => {
+                document.querySelector("#unity-loading-bar").style.display = "none";
+                document.querySelector("#unity-fullscreen-button").onclick = () => {
+                  unityInstance.SetFullscreen(1);
+                };
 
-  ctx.fillStyle = 'green';
-  powerUps.forEach(p => {
-    ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
-  });
+              }).catch((message) => {
+                alert(message);
+              });
+            };
 
-  ctx.fillStyle = 'orange';
-  triangleEnemies.forEach(e => {
-    ctx.beginPath();
-    ctx.moveTo(e.x - cameraX, e.y + e.height);
-    ctx.lineTo(e.x + e.width / 2 - cameraX, e.y);
-    ctx.lineTo(e.x + e.width - cameraX, e.y + e.height);
-    ctx.closePath();
-    ctx.fill();
-  });
+      document.body.appendChild(script);
 
-  ctx.fillStyle = 'black';
-  crushers.forEach(c => {
-    ctx.fillRect(c.x - cameraX, c.y, c.width, c.height);
-  });
-
-  ctx.fillStyle = 'black';
-  ctx.fillRect(flagpole.x - cameraX, flagpole.y, flagpole.width, flagpole.height);
-  ctx.fillStyle = 'white';
-  ctx.fillRect(flagpole.x - cameraX + 10, flagpole.y, 20, 20);
-
-  drawCharacter(blocky.x, blocky.y, performance.now());
-}
-
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-
-function restart() {
-  blocky.x = 100;
-  blocky.y = 300;
-  blocky.vx = 0;
-  blocky.vy = 0;
-  cameraX = 0;
-  levelComplete = false;
-  overlay.style.display = 'none';
-  powerUps.length = 0;
-  platforms.forEach(p => { if (p.punchable) p.punched = false; });
-  triangleEnemies.forEach(e => { e.x = e.dir === 1 ? 800 : 1400; });
-  crushers.forEach(c => { c.y = 200; c.vy = 0; c.active = false; });
-}
-
-loop();
-</script>
-</body>
+    </script>
+  </body>
 </html>
