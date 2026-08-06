@@ -107,22 +107,21 @@
     const ultraHeightKey = 'paintless:ultra-panel-height';
 
     const findUltraPanel = () => {
-      const candidates = Array.from(
-        sidebar.querySelectorAll(
-          ':scope > section, :scope > div, [class*="ultra"], [id*="ultra"], [class*="anaglyph"], [id*="anaglyph"]'
-        )
+      const directPanel = sidebar.querySelector(
+        ':scope > #paintless3d-preview-panel, :scope > .paintless3d-preview-panel'
       );
 
-      return candidates.find((element) => {
-        if (!(element instanceof HTMLElement)) return false;
-        if (element.classList.contains('layers-panel')) return false;
+      if (directPanel instanceof HTMLElement) return directPanel;
 
-        const identity = `${element.id} ${element.className}`.toLowerCase();
-        const heading = element.querySelector('h1,h2,h3,.panel-title,.panel-header')?.textContent?.toLowerCase() || '';
-        const text = `${identity} ${heading}`;
+      const nestedMatch = sidebar.querySelector(
+        '#paintless3d-preview-panel, .paintless3d-preview-panel, [class*="ultra"], [id*="ultra"], [class*="anaglyph"], [id*="anaglyph"]'
+      );
 
-        return text.includes('ultra') || text.includes('anaglyph');
-      }) || null;
+      if (!(nestedMatch instanceof HTMLElement)) return null;
+
+      return nestedMatch.closest(
+        '#paintless3d-preview-panel, .paintless3d-preview-panel'
+      ) || nestedMatch;
     };
 
     const setupLayersUltraSplitter = () => {
@@ -148,7 +147,7 @@
       layersPanel.classList.add('layers-panel--shared-space');
       ultraPanel.classList.add('paintless-ultra-resizable-panel');
 
-      const savedHeight = Math.max(150, Math.min(560, Number(localStorage.getItem(ultraHeightKey)) || 300));
+      const savedHeight = Math.max(150, Math.min(560, Number(localStorage.getItem(ultraHeightKey)) || 360));
       ultraPanel.style.setProperty('--paintless-ultra-panel-height', `${savedHeight}px`);
       ultraPanel.style.height = `${savedHeight}px`;
 
@@ -162,7 +161,7 @@
       const applyUltraHeight = (height) => {
         const sidebarHeight = sidebar.getBoundingClientRect().height;
         const maxHeight = Math.max(180, sidebarHeight - 220);
-        const nextHeight = Math.max(150, Math.min(maxHeight, Number(height) || 300));
+        const nextHeight = Math.max(150, Math.min(maxHeight, Number(height) || 360));
         ultraPanel.style.setProperty('--paintless-ultra-panel-height', `${nextHeight}px`);
         ultraPanel.style.height = `${nextHeight}px`;
         splitter.setAttribute('aria-valuenow', String(Math.round(nextHeight)));
