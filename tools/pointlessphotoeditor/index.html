@@ -1,341 +1,128 @@
 <!DOCTYPE html>
+
 <html lang="en">
-
 <head>
-
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
-
-  <title>Paintless | Pointless Productions</title>
-
-  <meta
-    name="description"
-    content="Paintless is a fast, friendly browser image editor from Pointless Productions."
-  >
-
-  <meta name="theme-color" content="#090611">
-
-  <link
-    rel="icon"
-    type="image/png"
-    href="assets/images/paintless-logo.png"
-  >
-
-  <link
-    rel="stylesheet"
-    href="css/style.css"
-  >
-
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Paintless | Pointless Productions</title>
+<meta content="Paintless is a fast, friendly browser image editor from Pointless Productions." name="description"/>
+<meta content="#090611" name="theme-color"/>
+<link href="assets/images/paintless-logo.png" rel="icon" type="image/png"/>
+<link href="css/style.css" rel="stylesheet"/>
 </head>
-
-
 <body>
-
-  <!-- =====================================================
+<!-- =====================================================
        ACCESSIBILITY
   ====================================================== -->
-
-  <a class="skip-link" href="#editor-canvas">
+<a class="skip-link" href="#editor-canvas">
     Skip to canvas
   </a>
-
-
-  <!-- =====================================================
+<!-- =====================================================
        APPLICATION
   ====================================================== -->
-
-  <div class="paintless-app" id="paintless-app">
-
-
-    <!-- ===================================================
+<div class="paintless-app" id="paintless-app">
+<!-- ===================================================
          TOP BAR
     ==================================================== -->
-
-    <header class="top-bar">
-
-      <div class="brand-area">
-
-        <a
-          class="paintless-brand"
-          href="../../index.html"
-          aria-label="Return to Pointless Productions"
-        >
-
-          <img
-            src="assets/images/paintless-logo.png"
-            alt="Paintless"
-            width="42"
-            height="42"
-          >
-
-          <span class="paintless-brand__text">
-
-            <strong>
+<header class="top-bar">
+<div class="brand-area">
+<a aria-label="Return to Pointless Productions" class="paintless-brand" href="../../index.html">
+<img alt="Paintless" height="42" src="assets/images/paintless-logo.png" width="42"/>
+<span class="paintless-brand__text">
+<strong>
               Paintless
             </strong>
-
-            <small>
+<small>
               Less pain. More creating.
             </small>
-
-          </span>
-
-        </a>
-
-      </div>
-
-
-      <nav
-        class="main-menu"
-        aria-label="Paintless menu"
-      >
-
-        <button
-          class="menu-button"
-          id="file-menu-button"
-          type="button"
-          aria-expanded="false"
-        >
+</span>
+</a>
+</div>
+<nav aria-label="Paintless menu" class="main-menu">
+<button aria-expanded="false" class="menu-button" id="file-menu-button" type="button">
           File
         </button>
-
-        <button
-          class="menu-button"
-          id="edit-menu-button"
-          type="button"
-          aria-expanded="false"
-        >
+<button aria-expanded="false" class="menu-button" id="edit-menu-button" type="button">
           Edit
         </button>
-
-        <button
-          class="menu-button"
-          id="image-menu-button"
-          type="button"
-          aria-expanded="false"
-        >
+<button aria-expanded="false" class="menu-button" id="image-menu-button" type="button">
           Image
         </button>
-
-        <button
-          class="menu-button"
-          id="layer-menu-button"
-          type="button"
-          aria-expanded="false"
-        >
+<button aria-expanded="false" class="menu-button" id="layer-menu-button" type="button">
           Layer
         </button>
-
-        <button
-          class="menu-button"
-          id="help-menu-button"
-          type="button"
-          aria-expanded="false"
-        >
+<button aria-expanded="false" class="menu-button" id="help-menu-button" type="button">
           Help
         </button>
-
-      </nav>
-
-
-      <div class="top-actions">
-
-        <button
-          class="top-action-button"
-          id="undo-button"
-          type="button"
-          title="Pretending that never happened"
-          aria-label="Undo"
-          disabled
-        >
+</nav>
+<div class="top-actions">
+<button aria-label="Undo" class="top-action-button" disabled="" id="undo-button" title="Pretending that never happened" type="button">
           ↶
         </button>
-
-        <button
-          class="top-action-button"
-          id="redo-button"
-          type="button"
-          title="Actually, put it back"
-          aria-label="Redo"
-          disabled
-        >
+<button aria-label="Redo" class="top-action-button" disabled="" id="redo-button" title="Actually, put it back" type="button">
           ↷
         </button>
-
-        <span
-          class="top-divider"
-          aria-hidden="true"
-        ></span>
-
-        <button
-          class="top-action-button"
-          id="zoom-out-button"
-          type="button"
-          title="Zoom out"
-          aria-label="Zoom out"
-        >
+<span aria-hidden="true" class="top-divider"></span>
+<button aria-label="Zoom out" class="top-action-button" id="zoom-out-button" title="Zoom out" type="button">
           −
         </button>
-
-        <output
-          class="zoom-display"
-          id="zoom-display"
-          aria-live="polite"
-        >
+<output aria-live="polite" class="zoom-display" id="zoom-display">
           100%
         </output>
-
-        <button
-          class="top-action-button"
-          id="zoom-in-button"
-          type="button"
-          title="Zoom in"
-          aria-label="Zoom in"
-        >
+<button aria-label="Zoom in" class="top-action-button" id="zoom-in-button" title="Zoom in" type="button">
           +
         </button>
-
-        <button
-          class="secondary-button import-button"
-          id="import-image-button"
-          type="button"
-          title="Import an image as a new layer"
-        >
+<button class="secondary-button import-button" id="import-image-button" title="Import an image as a new layer" type="button">
           Import
         </button>
-
-        <button
-          class="export-button"
-          id="export-button"
-          type="button"
-        >
+<button class="export-button" id="export-button" type="button">
           Export
         </button>
-
-      </div>
-
-    </header>
-
-
-    <!-- ===================================================
+</div>
+</header>
+<!-- ===================================================
          TOOL OPTIONS BAR
     ==================================================== -->
-
-    <section
-      class="tool-options-bar"
-      id="tool-options-bar"
-      aria-label="Tool settings"
-    >
-
-      <div class="active-tool-name">
-
-        <span>
+<section aria-label="Tool settings" class="tool-options-bar" id="tool-options-bar">
+<div class="active-tool-name">
+<span>
           Tool
         </span>
-
-        <strong id="active-tool-name">
+<strong id="active-tool-name">
           Brush
         </strong>
-
-      </div>
-
-
-      <!-- BRUSH / ERASER OPTIONS -->
-
-      <div
-        class="tool-option-group"
-        id="brush-options"
-      >
-
-        <label for="brush-size">
+</div>
+<!-- BRUSH / ERASER OPTIONS -->
+<div class="tool-option-group" id="brush-options">
+<label for="brush-size">
           Size
         </label>
-
-        <input
-          id="brush-size"
-          type="range"
-          min="1"
-          max="200"
-          value="20"
-        >
-
-        <output
-          id="brush-size-output"
-          for="brush-size"
-        >
+<input id="brush-size" max="200" min="1" type="range" value="20"/>
+<output for="brush-size" id="brush-size-output">
           20 px
         </output>
-
-      </div>
-
-
-      <div
-        class="tool-option-group"
-        id="opacity-options"
-      >
-
-        <label for="tool-opacity">
+</div>
+<div class="tool-option-group" id="opacity-options">
+<label for="tool-opacity">
           Opacity
         </label>
-
-        <input
-          id="tool-opacity"
-          type="range"
-          min="1"
-          max="100"
-          value="100"
-        >
-
-        <output
-          id="tool-opacity-output"
-          for="tool-opacity"
-        >
+<input id="tool-opacity" max="100" min="1" type="range" value="100"/>
+<output for="tool-opacity" id="tool-opacity-output">
           100%
         </output>
-
-      </div>
-
-
-      <div
-        class="tool-option-group"
-        id="hardness-options"
-      >
-
-        <label for="brush-hardness">
+</div>
+<div class="tool-option-group" id="hardness-options">
+<label for="brush-hardness">
           Hardness
         </label>
-
-        <input
-          id="brush-hardness"
-          type="range"
-          min="0"
-          max="100"
-          value="80"
-        >
-
-        <output
-          id="brush-hardness-output"
-          for="brush-hardness"
-        >
+<input id="brush-hardness" max="100" min="0" type="range" value="80"/>
+<output for="brush-hardness" id="brush-hardness-output">
           80%
         </output>
-
-      </div>
-
-
-      <!-- SHAPE OPTIONS -->
-
-      <div
-        class="tool-option-group"
-        id="shape-options"
-        hidden
-      >
-
-        <!--
+</div>
+<!-- SHAPE OPTIONS -->
+<div class="tool-option-group" hidden="" id="shape-options">
+<!--
           Hidden compatibility control.
 
           The visible shape chooser now opens from the Shapes
@@ -343,2773 +130,572 @@
           reading this value without needing to use a native
           dropdown in the top options bar.
         -->
-
-        <select
-          id="shape-type"
-          aria-hidden="true"
-          tabindex="-1"
-          hidden
-        >
-
-          <option value="ellipse" selected>
+<select aria-hidden="true" hidden="" id="shape-type" tabindex="-1">
+<option selected="" value="ellipse">
             Ellipse
           </option>
-
-          <option value="rectangle">
+<option value="rectangle">
             Rectangle
           </option>
-
-          <option value="rounded-rectangle">
+<option value="rounded-rectangle">
             Rounded Rectangle
           </option>
-
-          <option value="line">
+<option value="line">
             Line
           </option>
-
-        </select>
-
-
-        <label class="compact-checkbox">
-
-          <input
-            id="shape-fill-enabled"
-            type="checkbox"
-          >
-
-          <span>
+</select>
+<label class="compact-checkbox">
+<input id="shape-fill-enabled" type="checkbox"/>
+<span>
             Fill
           </span>
-
-        </label>
-
-
-        <label class="compact-checkbox">
-
-          <input
-            id="shape-stroke-enabled"
-            type="checkbox"
-            checked
-          >
-
-          <span>
+</label>
+<label class="compact-checkbox">
+<input checked="" id="shape-stroke-enabled" type="checkbox"/>
+<span>
             Stroke
           </span>
-
-        </label>
-
-
-        <label for="shape-corner-radius">
+</label>
+<label for="shape-corner-radius">
           Radius
         </label>
-
-        <input
-          id="shape-corner-radius"
-          type="range"
-          min="0"
-          max="100"
-          value="24"
-        >
-
-        <output
-          id="shape-corner-radius-output"
-          for="shape-corner-radius"
-        >
+<input id="shape-corner-radius" max="100" min="0" type="range" value="24"/>
+<output for="shape-corner-radius" id="shape-corner-radius-output">
           24 px
         </output>
-
-      </div>
-
-
-      <!-- SELECTION OPTIONS -->
-
-      <div
-        class="tool-option-group"
-        id="selection-options"
-        hidden
-      >
-
-        <label for="selection-mode">
+</div>
+<!-- SELECTION OPTIONS -->
+<div class="tool-option-group" hidden="" id="selection-options">
+<label for="selection-mode">
           Selection
         </label>
-
-        <select id="selection-mode">
-
-          <option value="rectangle">
+<select id="selection-mode">
+<option value="rectangle">
             Rectangle
           </option>
-
-          <option value="magic-wand">
+<option value="magic-wand">
             Magic Wand
           </option>
-
-          <option value="polygon-lasso">
+<option value="polygon-lasso">
             Polygon Lasso
           </option>
-
-        </select>
-
-        <label for="wand-tolerance">
+</select>
+<label for="wand-tolerance">
           Tolerance
         </label>
-
-        <input
-          id="wand-tolerance"
-          type="range"
-          min="0"
-          max="100"
-          value="24"
-        >
-
-        <output
-          id="wand-tolerance-output"
-          for="wand-tolerance"
-        >
+<input id="wand-tolerance" max="100" min="0" type="range" value="24"/>
+<output for="wand-tolerance" id="wand-tolerance-output">
           24
         </output>
-
-        <label class="compact-checkbox">
-
-          <input
-            id="wand-contiguous"
-            type="checkbox"
-            checked
-          >
-
-          <span>
+<label class="compact-checkbox">
+<input checked="" id="wand-contiguous" type="checkbox"/>
+<span>
             Connected
           </span>
-
-        </label>
-
-        <button
-          class="tool-option-button"
-          id="deselect-button"
-          type="button"
-        >
+</label>
+<button class="tool-option-button" id="deselect-button" type="button">
           Deselect
         </button>
-
-      </div>
-
-
-      <!-- TEXT OPTIONS -->
-
-      <div
-        class="tool-option-group"
-        id="text-options"
-        hidden
-      >
-
-        <label for="text-font-family">
+</div>
+<!-- TEXT OPTIONS -->
+<div class="tool-option-group" hidden="" id="text-options">
+<label for="text-font-family">
           Font
         </label>
-
-        <select id="text-font-family">
-
-          <option value="Segoe UI">
+<select id="text-font-family">
+<option value="Segoe UI">
             Segoe UI
           </option>
-
-          <option value="Arial">
+<option value="Arial">
             Arial
           </option>
-
-          <option value="Georgia">
+<option value="Georgia">
             Georgia
           </option>
-
-          <option value="Courier New">
+<option value="Courier New">
             Courier New
           </option>
-
-          <option value="Impact">
+<option value="Impact">
             Impact
           </option>
-
-        </select>
-
-        <label for="text-font-size">
+</select>
+<label for="text-font-size">
           Size
         </label>
-
-        <input
-          id="text-font-size"
-          type="number"
-          min="6"
-          max="500"
-          value="32"
-        >
-
-        <label class="compact-checkbox">
-
-          <input
-            id="text-bold"
-            type="checkbox"
-          >
-
-          <span>
+<input id="text-font-size" max="500" min="6" type="number" value="32"/>
+<label class="compact-checkbox">
+<input id="text-bold" type="checkbox"/>
+<span>
             Bold
           </span>
-
-        </label>
-
-        <label class="compact-checkbox">
-
-          <input
-            id="text-italic"
-            type="checkbox"
-          >
-
-          <span>
+</label>
+<label class="compact-checkbox">
+<input id="text-italic" type="checkbox"/>
+<span>
             Italic
           </span>
-
-        </label>
-
-      </div>
-
-
-      <!-- COLOUR -->
-
-      <label class="colour-control">
-
-        <span>
+</label>
+</div>
+<!-- COLOUR -->
+<label class="colour-control">
+<span>
           Colour
         </span>
-
-        <input
-          id="primary-colour"
-          type="color"
-          value="#a84cff"
-          aria-label="Primary colour"
-        >
-
-      </label>
-
-    </section>
-
-
-    <!-- ===================================================
+<input aria-label="Primary colour" id="primary-colour" type="color" value="#a84cff"/>
+</label>
+</section>
+<!-- ===================================================
          EDITOR BODY
     ==================================================== -->
-
-    <main class="editor-layout">
-
-
-      <!-- =================================================
+<main class="editor-layout">
+<!-- =================================================
            LEFT TOOLBAR
       ================================================== -->
-
-      <aside class="toolbox" aria-label="Paintless tools">
-
-        <div class="toolbox-brand-mark" aria-hidden="true"><span>P</span></div>
-
-        <section class="toolbox-section" data-tool-group="navigate">
-          <h2 class="toolbox-section__title">Navigate</h2>
-          <div class="tool-group tool-group--grid">
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="blur"
-          title="Blur"
-          aria-label="Blur"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"/><path d="M9 16c1 1 2 1.5 3 1.5"/></svg></span>
-          <small>Blur</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="sharpen"
-          title="Sharpen"
-          aria-label="Sharpen"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v6M9 15h6"/></svg></span>
-          <small>Sharpen</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="smudge"
-          title="Smudge"
-          aria-label="Smudge"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 14V7a2 2 0 1 1 4 0v5-8a2 2 0 1 1 4 0v8-5a2 2 0 1 1 4 0v9c0 3-2 6-6 6h-3c-2 0-4-1-5-3l-3-5a2 2 0 0 1 3-2l2 2Z"/></svg></span>
-          <small>Smudge</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="liquify"
-          title="Liquify"
-          aria-label="Liquify"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7c4-4 7 4 11 0s7 4 7 4M3 13c4-4 7 4 11 0s7 4 7 4M3 19c4-4 7 2 11-1"/></svg></span>
-          <small>Liquify</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Type, shapes and transform">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="text"
-          title="Text (T)"
-          aria-label="Text"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5V3h16v2M12 3v18M8 21h8"/></svg></span>
-          <small>Text</small>
-        </button>
-
-        <div class="tool-family" id="shape-tool-family">
-          <button
-            class="tool-button tool-family__main"
-            id="shape-tool-button"
-            type="button"
-            data-tool="shape"
-            title="Ellipse (U) — hold for more shapes"
-            aria-label="Ellipse shape tool"
-            aria-pressed="false"
-            aria-haspopup="menu"
-            aria-expanded="false"
-          >
-            <span class="tool-button__icon" id="shape-tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="5"/><rect x="10" y="10" width="10" height="10" rx="2"/></svg></span>
-            <small id="shape-tool-label">Shapes</small>
-            <span class="tool-family__indicator" aria-hidden="true">◢</span>
-          </button>
-          <div class="tool-family-menu" id="shape-tool-menu" role="menu" aria-label="Choose a shape" hidden>
-            <button class="tool-family-option is-selected" type="button" role="menuitem" data-shape-choice="ellipse" data-shape-icon="◯" data-shape-label="Ellipse" aria-pressed="true"><span aria-hidden="true">◯</span><strong>Ellipse</strong></button>
-            <button class="tool-family-option" type="button" role="menuitem" data-shape-choice="rectangle" data-shape-icon="□" data-shape-label="Rectangle" aria-pressed="false"><span aria-hidden="true">□</span><strong>Rectangle</strong></button>
-            <button class="tool-family-option" type="button" role="menuitem" data-shape-choice="rounded-rectangle" data-shape-icon="▢" data-shape-label="Rounded" aria-pressed="false"><span aria-hidden="true">▢</span><strong>Rounded rectangle</strong></button>
-            <button class="tool-family-option" type="button" role="menuitem" data-shape-choice="line" data-shape-icon="╱" data-shape-label="Line" aria-pressed="false"><span aria-hidden="true">╱</span><strong>Line</strong></button>
-          </div>
-        </div>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="transform"
-          title="Transform"
-          aria-label="Transform"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8V5h3M16 5h3v3M19 16v3h-3M8 19H5v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Transform</small>
-        </button>
-          </div>
-        </section>
-
-        <section class="toolbox-section" data-tool-group="create">
-          <h2 class="toolbox-section__title">Create</h2>
-          <div class="tool-group tool-group--grid">
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="blur"
-          title="Blur"
-          aria-label="Blur"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"/><path d="M9 16c1 1 2 1.5 3 1.5"/></svg></span>
-          <small>Blur</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="sharpen"
-          title="Sharpen"
-          aria-label="Sharpen"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v6M9 15h6"/></svg></span>
-          <small>Sharpen</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="smudge"
-          title="Smudge"
-          aria-label="Smudge"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 14V7a2 2 0 1 1 4 0v5-8a2 2 0 1 1 4 0v8-5a2 2 0 1 1 4 0v9c0 3-2 6-6 6h-3c-2 0-4-1-5-3l-3-5a2 2 0 0 1 3-2l2 2Z"/></svg></span>
-          <small>Smudge</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="liquify"
-          title="Liquify"
-          aria-label="Liquify"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7c4-4 7 4 11 0s7 4 7 4M3 13c4-4 7 4 11 0s7 4 7 4M3 19c4-4 7 2 11-1"/></svg></span>
-          <small>Liquify</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Type, shapes and transform">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="text"
-          title="Text (T)"
-          aria-label="Text"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5V3h16v2M12 3v18M8 21h8"/></svg></span>
-          <small>Text</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="blur"
-          title="Blur"
-          aria-label="Blur"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"/><path d="M9 16c1 1 2 1.5 3 1.5"/></svg></span>
-          <small>Blur</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="sharpen"
-          title="Sharpen"
-          aria-label="Sharpen"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v6M9 15h6"/></svg></span>
-          <small>Sharpen</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="smudge"
-          title="Smudge"
-          aria-label="Smudge"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 14V7a2 2 0 1 1 4 0v5-8a2 2 0 1 1 4 0v8-5a2 2 0 1 1 4 0v9c0 3-2 6-6 6h-3c-2 0-4-1-5-3l-3-5a2 2 0 0 1 3-2l2 2Z"/></svg></span>
-          <small>Smudge</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="liquify"
-          title="Liquify"
-          aria-label="Liquify"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7c4-4 7 4 11 0s7 4 7 4M3 13c4-4 7 4 11 0s7 4 7 4M3 19c4-4 7 2 11-1"/></svg></span>
-          <small>Liquify</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Type, shapes and transform">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="text"
-          title="Text (T)"
-          aria-label="Text"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5V3h16v2M12 3v18M8 21h8"/></svg></span>
-          <small>Text</small>
-        </button>
-
-        <div class="tool-family" id="shape-tool-family">
-          <button
-            class="tool-button tool-family__main"
-            id="shape-tool-button"
-            type="button"
-            data-tool="shape"
-            title="Ellipse (U) — hold for more shapes"
-            aria-label="Ellipse shape tool"
-            aria-pressed="false"
-            aria-haspopup="menu"
-            aria-expanded="false"
-          >
-            <span class="tool-button__icon" id="shape-tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="5"/><rect x="10" y="10" width="10" height="10" rx="2"/></svg></span>
-            <small id="shape-tool-label">Shapes</small>
-            <span class="tool-family__indicator" aria-hidden="true">◢</span>
-          </button>
-          </div>
-        </section>
-
-        <section class="toolbox-section" data-tool-group="retouch">
-          <h2 class="toolbox-section__title">Retouch</h2>
-          <div class="tool-group tool-group--grid" id="retouch-tool-grid">
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="blur"
-          title="Blur"
-          aria-label="Blur"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"/><path d="M9 16c1 1 2 1.5 3 1.5"/></svg></span>
-          <small>Blur</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="blur"
-          title="Blur"
-          aria-label="Blur"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"/><path d="M9 16c1 1 2 1.5 3 1.5"/></svg></span>
-          <small>Blur</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="sharpen"
-          title="Sharpen"
-          aria-label="Sharpen"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v6M9 15h6"/></svg></span>
-          <small>Sharpen</small>
-        </button>
-<button
-          class="tool-button"
-          type="button"
-          data-tool="move"
-          title="Move layer (V)"
-          aria-label="Move layer"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg></span>
-          <small>Move</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="select"
-          title="Selection tools (M)"
-          aria-label="Selection tools"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"/><path d="M8 8h8v8H8z" class="soft"/></svg></span>
-          <small>Select</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="crop"
-          title="Crop (C)"
-          aria-label="Crop"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"/></svg></span>
-          <small>Crop</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Paint and create">
-
-        <button
-          class="tool-button is-active"
-          type="button"
-          data-tool="brush"
-          title="Brush (B)"
-          aria-label="Brush"
-          aria-pressed="true"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"/></svg></span>
-          <small>Brush</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eraser"
-          title="Eraser (E)"
-          aria-label="Eraser"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"/><path d="m6 16 8-8"/></svg></span>
-          <small>Eraser</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="fill"
-          title="Fill bucket (G)"
-          aria-label="Fill bucket"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 12-6 6-8-8L11 6"/><path d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z" class="soft"/></svg></span>
-          <small>Fill</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="gradient"
-          title="Gradient"
-          aria-label="Gradient"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".08"/></linearGradient></defs><rect x="3" y="4" width="18" height="16" rx="2" fill="url(#g)" stroke="currentColor"/></svg></span>
-          <small>Gradient</small>
-        </button>
-
-        </div>
-
-        <span class="toolbox-divider" aria-hidden="true"></span>
-
-        <div class="tool-group" role="group" aria-label="Retouch and colour">
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="clone"
-          title="Clone stamp (S)"
-          aria-label="Clone stamp"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"/><path d="M9 15h6M12 12v6"/></svg></span>
-          <small>Clone</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="eyedropper"
-          title="Colour picker (I)"
-          aria-label="Colour picker"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"/><path d="M4 20h5"/></svg></span>
-          <small>Picker</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="blur"
-          title="Blur"
-          aria-label="Blur"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"/><path d="M9 16c1 1 2 1.5 3 1.5"/></svg></span>
-          <small>Blur</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="sharpen"
-          title="Sharpen"
-          aria-label="Sharpen"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v6M9 15h6"/></svg></span>
-          <small>Sharpen</small>
-        </button>
-
-        <button
-          class="tool-button"
-          type="button"
-          data-tool="smudge"
-          title="Smudge"
-          aria-label="Smudge"
-          aria-pressed="false"
-        >
-          <span class="tool-button__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 14V7a2 2 0 1 1 4 0v5-8a2 2 0 1 1 4 0v8-5a2 2 0 1 1 4 0v9c0 3-2 6-6 6h-3c-2 0-4-1-5-3l-3-5a2 2 0 0 1 3-2l2 2Z"/></svg></span>
-          <small>Smudge</small>
-        </button>
-          </div>
-        </section>
-
-        <section class="toolbox-section toolbox-section--colour" aria-label="Current colours">
-          <h2 class="toolbox-section__title">Colour</h2>
-          <div class="colour-stack" aria-label="Current colours">
-            <button class="colour-chip colour-chip--primary" id="primary-colour-chip" type="button" aria-label="Choose primary colour" title="Primary colour"></button>
-            <button class="colour-chip colour-chip--secondary" id="secondary-colour-chip" type="button" aria-label="Choose secondary colour" title="Secondary colour"></button>
-            <button class="swap-colours-button" id="swap-colours-button" type="button" aria-label="Swap colours" title="Swap colours (X)">⇄</button>
-          </div>
-        </section>
-
-        <div class="toolbox-spacer" aria-hidden="true"></div>
-
-        <a class="support-tool-button" href="support/" target="_blank" rel="noopener noreferrer" title="Support Paintless — help keep it free" aria-label="Support Paintless">
-          <span class="support-tool-button__heart" aria-hidden="true">♥</span>
-          <small>Support Paintless</small>
-        </a>
-
-      </aside>
-
-
-      <!-- =================================================
+<aside aria-label="Paintless tools" class="toolbox"><div aria-hidden="true" class="toolbox-brand-mark"><span>P</span></div><div class="toolbox-scroll"><section class="toolbox-group" data-tool-group="navigate"><h3>Navigate</h3><div aria-label="Navigate tools" class="toolbox-grid" role="group"><button aria-label="Move layer" aria-pressed="false" class="tool-button" data-tool="move" title="Move layer (V)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"></path></svg></span>
+<small>Move</small>
+</button><button aria-label="Selection tools" aria-pressed="false" class="tool-button" data-tool="select" title="Selection tools (M)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M5 4h3M4 5v3M16 4h3m1 1v3M5 20h3m-4-1v-3M16 20h3m1-1v-3"></path><path class="soft" d="M8 8h8v8H8z"></path></svg></span>
+<small>Select</small>
+</button><button aria-label="Crop" aria-pressed="false" class="tool-button" data-tool="crop" title="Crop (C)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M7 2v15a2 2 0 0 0 2 2h13M2 7h15a2 2 0 0 1 2 2v13"></path></svg></span>
+<small>Crop</small>
+</button><button aria-label="Transform" aria-pressed="false" class="tool-button" data-tool="transform" title="Transform" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M5 8V5h3M16 5h3v3M19 16v3h-3M8 19H5v-3"></path><path class="soft" d="M8 8h8v8H8z"></path></svg></span>
+<small>Transform</small>
+</button></div></section><section class="toolbox-group" data-tool-group="paint"><h3>Paint</h3><div aria-label="Paint tools" class="toolbox-grid" role="group"><button aria-label="Brush" aria-pressed="true" class="tool-button is-active" data-tool="brush" title="Brush (B)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M14.5 4.5 19.5 9.5M13 6l5 5-8.5 8.5c-1.8 1.8-4.6 1.8-6.4 0 2.2-.5 2.6-2.4 2.9-4.2L13 6Z"></path></svg></span>
+<small>Brush</small>
+</button><button aria-label="Eraser" aria-pressed="false" class="tool-button" data-tool="eraser" title="Eraser (E)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m8 4 12 12-4 4H8l-5-5 5-11Z"></path><path d="m6 16 8-8"></path></svg></span>
+<small>Eraser</small>
+</button><button aria-label="Fill bucket" aria-pressed="false" class="tool-button" data-tool="fill" title="Fill bucket (G)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m5 4 12 12-6 6-8-8L11 6"></path><path class="soft" d="M17 6c1.5 2 3 3.6 3 5a3 3 0 0 1-6 0c0-1.4 1.5-3 3-5Z"></path></svg></span>
+<small>Fill</small>
+</button><button aria-label="Gradient" aria-pressed="false" class="tool-button" data-tool="gradient" title="Gradient" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><defs><lineargradient id="g" x1="0" x2="1"><stop stop-color="currentColor"></stop><stop offset="1" stop-color="currentColor" stop-opacity=".08"></stop></lineargradient></defs><rect fill="url(#g)" height="16" rx="2" stroke="currentColor" width="18" x="3" y="4"></rect></svg></span>
+<small>Gradient</small>
+</button></div></section><section class="toolbox-group" data-tool-group="retouch"><h3>Retouch</h3><div aria-label="Retouch tools" class="toolbox-grid" role="group"><button aria-label="Clone stamp" aria-pressed="false" class="tool-button" data-tool="clone" title="Clone stamp (S)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M8 3h8v5H8zM6 8h12l2 4v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7l2-4Z"></path><path d="M9 15h6M12 12v6"></path></svg></span>
+<small>Clone</small>
+</button><button aria-label="Colour picker" aria-pressed="false" class="tool-button" data-tool="eyedropper" title="Colour picker (I)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m14 3 7 7-3 3-2-2-8 8H4v-4l8-8-2-2 4-2Z"></path><path d="M4 20h5"></path></svg></span>
+<small>Picker</small>
+</button><button aria-label="Blur" aria-pressed="false" class="tool-button" data-tool="blur" title="Blur" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11Z"></path><path d="M9 16c1 1 2 1.5 3 1.5"></path></svg></span>
+<small>Blur</small>
+</button><button aria-label="Sharpen" aria-pressed="false" class="tool-button" data-tool="sharpen" title="Sharpen" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m12 3 9 17H3L12 3Z"></path><path d="M12 9v6M9 15h6"></path></svg></span>
+<small>Sharpen</small>
+</button><button aria-label="Smudge" aria-pressed="false" class="tool-button" data-tool="smudge" title="Smudge" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M8 14V7a2 2 0 1 1 4 0v5-8a2 2 0 1 1 4 0v8-5a2 2 0 1 1 4 0v9c0 3-2 6-6 6h-3c-2 0-4-1-5-3l-3-5a2 2 0 0 1 3-2l2 2Z"></path></svg></span>
+<small>Smudge</small>
+</button><button aria-label="Liquify" aria-pressed="false" class="tool-button" data-tool="liquify" title="Liquify" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 7c4-4 7 4 11 0s7 4 7 4M3 13c4-4 7 4 11 0s7 4 7 4M3 19c4-4 7 2 11-1"></path></svg></span>
+<small>Liquify</small>
+</button></div></section><section class="toolbox-group" data-tool-group="create"><h3>Create</h3><div aria-label="Create tools" class="toolbox-grid" role="group"><button aria-label="Text" aria-pressed="false" class="tool-button" data-tool="text" title="Text (T)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 5V3h16v2M12 3v18M8 21h8"></path></svg></span>
+<small>Text</small>
+</button><div class="tool-family" id="shape-tool-family">
+<button aria-expanded="false" aria-haspopup="menu" aria-label="Ellipse shape tool" aria-pressed="false" class="tool-button tool-family__main" data-tool="shape" id="shape-tool-button" title="Ellipse (U) — hold for more shapes" type="button">
+<span class="tool-button__icon" id="shape-tool-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><circle cx="9" cy="9" r="5"></circle><rect height="10" rx="2" width="10" x="10" y="10"></rect></svg></span>
+<small id="shape-tool-label">Shapes</small>
+<span aria-hidden="true" class="tool-family__indicator">◢</span>
+</button>
+<div aria-label="Choose a shape" class="tool-family-menu" hidden="" id="shape-tool-menu" role="menu">
+<button aria-pressed="true" class="tool-family-option is-selected" data-shape-choice="ellipse" data-shape-icon="◯" data-shape-label="Ellipse" role="menuitem" type="button"><span aria-hidden="true">◯</span><strong>Ellipse</strong></button>
+<button aria-pressed="false" class="tool-family-option" data-shape-choice="rectangle" data-shape-icon="□" data-shape-label="Rectangle" role="menuitem" type="button"><span aria-hidden="true">□</span><strong>Rectangle</strong></button>
+<button aria-pressed="false" class="tool-family-option" data-shape-choice="rounded-rectangle" data-shape-icon="▢" data-shape-label="Rounded" role="menuitem" type="button"><span aria-hidden="true">▢</span><strong>Rounded rectangle</strong></button>
+<button aria-pressed="false" class="tool-family-option" data-shape-choice="line" data-shape-icon="╱" data-shape-label="Line" role="menuitem" type="button"><span aria-hidden="true">╱</span><strong>Line</strong></button>
+</div>
+</div></div></section><section class="toolbox-group toolbox-group--colour" data-tool-group="colour"><h3>Colour</h3><div aria-label="Current colours" class="colour-stack">
+<button aria-label="Choose primary colour" class="colour-chip colour-chip--primary" id="primary-colour-chip" title="Primary colour" type="button"></button>
+<button aria-label="Choose secondary colour" class="colour-chip colour-chip--secondary" id="secondary-colour-chip" title="Secondary colour" type="button"></button>
+<button aria-label="Swap colours" class="swap-colours-button" id="swap-colours-button" title="Swap colours (X)" type="button">⇄</button>
+</div></section></div><a aria-label="Support Paintless" class="support-tool-button" href="support/" rel="noopener noreferrer" target="_blank" title="Support Paintless — help keep it free"><span aria-hidden="true" class="support-tool-button__heart">♥</span><small>Support</small></a></aside>
+<!-- =================================================
            WORKSPACE
       ================================================== -->
-
-      <section
-        class="workspace"
-        id="workspace"
-        aria-label="Image editing workspace"
-      >
-
-        <div
-          class="workspace-ruler workspace-ruler--horizontal"
-          aria-hidden="true"
-        ></div>
-
-        <div
-          class="workspace-ruler workspace-ruler--vertical"
-          aria-hidden="true"
-        ></div>
-
-
-        <div
-          class="canvas-viewport"
-          id="canvas-viewport"
-        >
-
-          <div
-            class="canvas-stage"
-            id="canvas-stage"
-          >
-
-            <canvas
-              id="editor-canvas"
-              width="1280"
-              height="720"
-              tabindex="0"
-              aria-label="Paintless editing canvas"
-            ></canvas>
-
-            <canvas
-              id="overlay-canvas"
-              width="1280"
-              height="720"
-              aria-hidden="true"
-            ></canvas>
-
-            <textarea
-              id="canvas-text-editor"
-              aria-label="Canvas text editor"
-              hidden
-            ></textarea>
-
-          </div>
-
-        </div>
-
-
-        <div
-          class="workspace-empty-state"
-          id="workspace-empty-state"
-        >
-
-          <div class="empty-state-logo">
-
-            <img
-              src="assets/images/paintless-logo.png"
-              alt="Paintless crowned painter mascot"
-            >
-
-          </div>
-
-          <h1>
+<section aria-label="Image editing workspace" class="workspace" id="workspace">
+<div aria-hidden="true" class="workspace-ruler workspace-ruler--horizontal"></div>
+<div aria-hidden="true" class="workspace-ruler workspace-ruler--vertical"></div>
+<div class="canvas-viewport" id="canvas-viewport">
+<div class="canvas-stage" id="canvas-stage">
+<canvas aria-label="Paintless editing canvas" height="720" id="editor-canvas" tabindex="0" width="1280"></canvas>
+<canvas aria-hidden="true" height="720" id="overlay-canvas" width="1280"></canvas>
+<textarea aria-label="Canvas text editor" hidden="" id="canvas-text-editor"></textarea>
+</div>
+</div>
+<div class="workspace-empty-state" id="workspace-empty-state">
+<div class="empty-state-logo">
+<img alt="Paintless crowned painter mascot" src="assets/images/paintless-logo.png"/>
+</div>
+<h1>
             Start creating
           </h1>
-
-          <p>
+<p>
             Open an image or make a beautifully empty canvas.
           </p>
-
-          <div class="empty-state-actions">
-
-            <button
-              class="primary-button"
-              id="new-canvas-button"
-              type="button"
-            >
+<div class="empty-state-actions">
+<button class="primary-button" id="new-canvas-button" type="button">
               New Canvas
             </button>
-
-            <button
-              class="secondary-button"
-              id="open-image-button"
-              type="button"
-            >
+<button class="secondary-button" id="open-image-button" type="button">
               Open Image
             </button>
-
-          </div>
-
-          <small>
+</div>
+<small>
             No account. No cloud. No unnecessary nonsense.
           </small>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
+</div>
+</section>
+<!-- =================================================
            RIGHT SIDEBAR
       ================================================== -->
-
-      <div
-        class="sidebar-resize-handle"
-        id="sidebar-resize-handle"
-        role="separator"
-        aria-label="Resize right sidebar"
-        aria-orientation="vertical"
-        tabindex="0"
-      ></div>
-
-      <aside
-        class="right-sidebar"
-        aria-label="Paintless panels"
-      >
-
-
-        <!-- COLOUR PANEL -->
-
-        <section class="editor-panel colour-panel">
-
-          <header class="panel-header">
-
-            <h2>
+<div aria-label="Resize right sidebar" aria-orientation="vertical" class="sidebar-resize-handle" id="sidebar-resize-handle" role="separator" tabindex="0"></div>
+<aside aria-label="Paintless panels" class="right-sidebar">
+<!-- COLOUR PANEL -->
+<section class="editor-panel colour-panel">
+<header class="panel-header">
+<h2>
               Colour
             </h2>
-
-            <button
-              class="panel-menu-button"
-              type="button"
-              aria-label="Colour panel options"
-            >
+<button aria-label="Colour panel options" class="panel-menu-button" type="button">
               •••
             </button>
-
-          </header>
-
-
-          <div class="colour-preview">
-
-            <input
-              id="panel-colour-picker"
-              type="color"
-              value="#a84cff"
-              aria-label="Choose colour"
-            >
-
-            <label for="hex-colour-input">
+</header>
+<div class="colour-preview">
+<input aria-label="Choose colour" id="panel-colour-picker" type="color" value="#a84cff"/>
+<label for="hex-colour-input">
               Hex
             </label>
-
-            <input
-              id="hex-colour-input"
-              type="text"
-              value="#A84CFF"
-              maxlength="7"
-              spellcheck="false"
-            >
-
-          </div>
-
-
-          <div
-            class="recent-colours"
-            id="recent-colours"
-            aria-label="Recent colours"
-          ></div>
-
-        </section>
-
-
-        <!-- ADJUSTMENTS PANEL -->
-
-        <section class="editor-panel adjustments-panel">
-
-          <header class="panel-header">
-
-            <h2>
+<input id="hex-colour-input" maxlength="7" spellcheck="false" type="text" value="#A84CFF"/>
+</div>
+<div aria-label="Recent colours" class="recent-colours" id="recent-colours"></div>
+</section>
+<!-- ADJUSTMENTS PANEL -->
+<section class="editor-panel adjustments-panel">
+<header class="panel-header">
+<h2>
               Adjustments
             </h2>
-
-            <button
-              class="reset-panel-button"
-              id="reset-adjustments-button"
-              type="button"
-            >
+<button class="reset-panel-button" id="reset-adjustments-button" type="button">
               Reset
             </button>
-
-          </header>
-
-
-          <label class="adjustment-control">
-
-            <span>
+</header>
+<label class="adjustment-control">
+<span>
               Brightness
             </span>
-
-            <output id="brightness-output">
+<output id="brightness-output">
               0
             </output>
-
-            <input
-              id="brightness-control"
-              type="range"
-              min="-100"
-              max="100"
-              value="0"
-            >
-
-          </label>
-
-
-          <label class="adjustment-control">
-
-            <span>
+<input id="brightness-control" max="100" min="-100" type="range" value="0"/>
+</label>
+<label class="adjustment-control">
+<span>
               Contrast
             </span>
-
-            <output id="contrast-output">
+<output id="contrast-output">
               0
             </output>
-
-            <input
-              id="contrast-control"
-              type="range"
-              min="-100"
-              max="100"
-              value="0"
-            >
-
-          </label>
-
-
-          <label class="adjustment-control">
-
-            <span>
+<input id="contrast-control" max="100" min="-100" type="range" value="0"/>
+</label>
+<label class="adjustment-control">
+<span>
               Saturation
             </span>
-
-            <output id="saturation-output">
+<output id="saturation-output">
               0
             </output>
-
-            <input
-              id="saturation-control"
-              type="range"
-              min="-100"
-              max="100"
-              value="0"
-            >
-
-          </label>
-
-
-          <label class="adjustment-control">
-
-            <span>
+<input id="saturation-control" max="100" min="-100" type="range" value="0"/>
+</label>
+<label class="adjustment-control">
+<span>
               Hue
             </span>
-
-            <output id="hue-output">
+<output id="hue-output">
               0°
             </output>
-
-            <input
-              id="hue-control"
-              type="range"
-              min="-180"
-              max="180"
-              value="0"
-            >
-
-          </label>
-
-        </section>
-
-
-        <!-- LAYERS PANEL -->
-
-        <section class="editor-panel layers-panel">
-
-          <header class="panel-header">
-
-            <h2>
+<input id="hue-control" max="180" min="-180" type="range" value="0"/>
+</label>
+</section>
+<!-- LAYERS PANEL -->
+<section class="editor-panel layers-panel">
+<header class="panel-header">
+<h2>
               Layers
             </h2>
-
-            <div class="panel-header-actions">
-
-              <button
-                id="import-layer-button"
-                type="button"
-                title="Import image as layer"
-                aria-label="Import image as layer"
-              >
+<div class="panel-header-actions">
+<button aria-label="Import image as layer" id="import-layer-button" title="Import image as layer" type="button">
                 🖼
               </button>
-
-              <button
-                id="add-layer-button"
-                type="button"
-                title="Add layer"
-                aria-label="Add layer"
-              >
+<button aria-label="Add layer" id="add-layer-button" title="Add layer" type="button">
                 +
               </button>
-
-              <button
-                id="duplicate-layer-button"
-                type="button"
-                title="Duplicate layer"
-                aria-label="Duplicate layer"
-              >
+<button aria-label="Duplicate layer" id="duplicate-layer-button" title="Duplicate layer" type="button">
                 ⧉
               </button>
-
-              <button
-                id="transform-layer-button"
-                type="button"
-                title="Transform selected layer"
-                aria-label="Transform selected layer"
-              >
+<button aria-label="Transform selected layer" id="transform-layer-button" title="Transform selected layer" type="button">
   ⛶
               </button>
-
-              <button
-                id="delete-layer-button"
-                type="button"
-                title="Delete layer"
-                aria-label="Delete layer"
-              >
+<button aria-label="Delete layer" id="delete-layer-button" title="Delete layer" type="button">
                 🗑
               </button>
-
-            </div>
-
-          </header>
-
-
-          <div
-            class="layer-list"
-            id="layer-list"
-            role="list"
-            aria-label="Image layers"
-          ></div>
-
-
-          <div class="layer-properties">
-
-            <label for="layer-blend-mode">
+</div>
+</header>
+<div aria-label="Image layers" class="layer-list" id="layer-list" role="list"></div>
+<div class="layer-properties">
+<label for="layer-blend-mode">
               Blend
             </label>
-
-            <select id="layer-blend-mode">
-
-              <option value="source-over">
+<select id="layer-blend-mode">
+<option value="source-over">
                 Normal
               </option>
-
-              <option value="multiply">
+<option value="multiply">
                 Multiply
               </option>
-
-              <option value="screen">
+<option value="screen">
                 Screen
               </option>
-
-              <option value="overlay">
+<option value="overlay">
                 Overlay
               </option>
-
-              <option value="darken">
+<option value="darken">
                 Darken
               </option>
-
-              <option value="lighten">
+<option value="lighten">
                 Lighten
               </option>
-
-              <option value="color-dodge">
+<option value="color-dodge">
                 Colour Dodge
               </option>
-
-              <option value="color-burn">
+<option value="color-burn">
                 Colour Burn
               </option>
-
-              <option value="hard-light">
+<option value="hard-light">
                 Hard Light
               </option>
-
-              <option value="soft-light">
+<option value="soft-light">
                 Soft Light
               </option>
-
-              <option value="difference">
+<option value="difference">
                 Difference
               </option>
-
-              <option value="exclusion">
+<option value="exclusion">
                 Exclusion
               </option>
-
-              <option value="hue">
+<option value="hue">
                 Hue
               </option>
-
-              <option value="saturation">
+<option value="saturation">
                 Saturation
               </option>
-
-              <option value="color">
+<option value="color">
                 Colour
               </option>
-
-              <option value="luminosity">
+<option value="luminosity">
                 Luminosity
               </option>
-
-            </select>
-
-
-            <label for="layer-opacity">
+</select>
+<label for="layer-opacity">
               Opacity
             </label>
-
-            <input
-              id="layer-opacity"
-              type="range"
-              min="0"
-              max="100"
-              value="100"
-            >
-
-          </div>
-
-        </section>
-
-      </aside>
-
-    </main>
-
-
-    <!-- ===================================================
+<input id="layer-opacity" max="100" min="0" type="range" value="100"/>
+</div>
+</section>
+</aside>
+</main>
+<!-- ===================================================
          STATUS BAR
     ==================================================== -->
-
-    <footer class="status-bar">
-
-      <div class="status-bar__left">
-
-        <span id="document-status">
+<footer class="status-bar">
+<div class="status-bar__left">
+<span id="document-status">
           No document open
         </span>
-
-        <span
-          class="status-divider"
-          aria-hidden="true"
-        ></span>
-
-        <span id="canvas-size-status">
+<span aria-hidden="true" class="status-divider"></span>
+<span id="canvas-size-status">
           1280 × 720 px
         </span>
-
-      </div>
-
-
-      <div class="status-bar__centre">
-
-        <span id="save-status">
+</div>
+<div class="status-bar__centre">
+<span id="save-status">
           Your masterpiece is currently imaginary.
         </span>
-
-      </div>
-
-
-      <div class="status-bar__right">
-
-        <button
-          id="fit-screen-button"
-          type="button"
-        >
+</div>
+<div class="status-bar__right">
+<button id="fit-screen-button" type="button">
           Fit Screen
         </button>
-
-        <span id="cursor-position">
-          X: 0&nbsp;&nbsp;Y: 0
+<span id="cursor-position">
+          X: 0  Y: 0
         </span>
-
-      </div>
-
-    </footer>
-
-  </div>
-
-
-  <!-- =====================================================
+</div>
+</footer>
+</div>
+<!-- =====================================================
        HIDDEN FILE INPUTS
   ====================================================== -->
-
-  <input
-    id="image-file-input"
-    type="file"
-    accept="image/png,image/jpeg,image/webp,image/gif"
-    hidden
-  >
-
-  <input
-    id="import-image-file-input"
-    type="file"
-    accept="image/png,image/jpeg,image/webp,image/gif"
-    hidden
-  >
-
-  <input
-    id="project-file-input"
-    type="file"
-    accept=".paintless,application/json"
-    hidden  
-  >
-
-
-  <!-- =====================================================
+<input accept="image/png,image/jpeg,image/webp,image/gif" hidden="" id="image-file-input" type="file"/>
+<input accept="image/png,image/jpeg,image/webp,image/gif" hidden="" id="import-image-file-input" type="file"/>
+<input accept=".paintless,application/json" hidden="" id="project-file-input" type="file"/>
+<!-- =====================================================
        NEW CANVAS DIALOG
   ====================================================== -->
-
-  <dialog
-    class="paintless-dialog"
-    id="new-canvas-dialog"
-  >
-
-    <form method="dialog">
-
-      <header class="dialog-header">
-
-        <div>
-
-          <p>
+<dialog class="paintless-dialog" id="new-canvas-dialog">
+<form method="dialog">
+<header class="dialog-header">
+<div>
+<p>
             Paintless
           </p>
-
-          <h2>
+<h2>
             New Canvas
           </h2>
-
-        </div>
-
-        <button
-          class="dialog-close-button"
-          value="cancel"
-          aria-label="Close"
-        >
+</div>
+<button aria-label="Close" class="dialog-close-button" value="cancel">
           ×
         </button>
-
-      </header>
-
-
-      <div class="dialog-body">
-
-        <label>
-
-          <span>
+</header>
+<div class="dialog-body">
+<label>
+<span>
             Name
           </span>
-
-          <input
-            id="new-document-name"
-            type="text"
-            value="Untitled Masterpiece"
-          >
-
-        </label>
-
-
-        <div class="dialog-row">
-
-          <label>
-
-            <span>
+<input id="new-document-name" type="text" value="Untitled Masterpiece"/>
+</label>
+<div class="dialog-row">
+<label>
+<span>
               Width
             </span>
-
-            <input
-              id="new-canvas-width"
-              type="number"
-              min="1"
-              max="10000"
-              value="1280"
-            >
-
-          </label>
-
-
-          <label>
-
-            <span>
+<input id="new-canvas-width" max="10000" min="1" type="number" value="1280"/>
+</label>
+<label>
+<span>
               Height
             </span>
-
-            <input
-              id="new-canvas-height"
-              type="number"
-              min="1"
-              max="10000"
-              value="720"
-            >
-
-          </label>
-
-        </div>
-
-
-        <label>
-
-          <span>
+<input id="new-canvas-height" max="10000" min="1" type="number" value="720"/>
+</label>
+</div>
+<label>
+<span>
             Background
           </span>
-
-          <select id="new-canvas-background">
-
-            <option value="transparent">
+<select id="new-canvas-background">
+<option value="transparent">
               Transparent
             </option>
-
-            <option value="white" selected>
+<option selected="" value="white">
               White
             </option>
-
-            <option value="black">
+<option value="black">
               Black
             </option>
-
-            <option value="custom">
+<option value="custom">
               Custom colour
             </option>
-
-          </select>
-
-        </label>
-
-      </div>
-
-
-      <footer class="dialog-actions">
-
-        <button
-          class="secondary-button"
-          value="cancel"
-        >
+</select>
+</label>
+</div>
+<footer class="dialog-actions">
+<button class="secondary-button" value="cancel">
           Cancel
         </button>
-
-        <button
-          class="primary-button"
-          id="create-canvas-button"
-          value="default"
-        >
+<button class="primary-button" id="create-canvas-button" value="default">
           Create Canvas
         </button>
-
-      </footer>
-
-    </form>
-
-  </dialog>
-
-
-  <!-- =====================================================
+</footer>
+</form>
+</dialog>
+<!-- =====================================================
        EXPORT DIALOG
   ====================================================== -->
-
-  <dialog
-    class="paintless-dialog"
-    id="export-dialog"
-  >
-
-    <form method="dialog">
-
-      <header class="dialog-header">
-
-        <div>
-
-          <p>
+<dialog class="paintless-dialog" id="export-dialog">
+<form method="dialog">
+<header class="dialog-header">
+<div>
+<p>
             Almost done
           </p>
-
-          <h2>
+<h2>
             Export Image
           </h2>
-
-        </div>
-
-        <button
-          class="dialog-close-button"
-          value="cancel"
-          aria-label="Close"
-        >
+</div>
+<button aria-label="Close" class="dialog-close-button" value="cancel">
           ×
         </button>
-
-      </header>
-
-
-      <div class="dialog-body">
-
-        <label>
-
-          <span>
+</header>
+<div class="dialog-body">
+<label>
+<span>
             File name
           </span>
-
-          <input
-            id="export-file-name"
-            type="text"
-            value="paintless-masterpiece"
-          >
-
-        </label>
-
-
-        <label>
-
-          <span>
+<input id="export-file-name" type="text" value="paintless-masterpiece"/>
+</label>
+<label>
+<span>
             Format
           </span>
-
-          <select id="export-format">
-
-            <option value="image/png">
+<select id="export-format">
+<option value="image/png">
               PNG
             </option>
-
-            <option value="image/jpeg">
+<option value="image/jpeg">
               JPEG
             </option>
-
-            <option value="image/webp">
+<option value="image/webp">
               WebP
             </option>
-
-          </select>
-
-        </label>
-
-
-        <label>
-
-          <span>
+</select>
+</label>
+<label>
+<span>
             Quality
           </span>
-
-          <input
-            id="export-quality"
-            type="range"
-            min="10"
-            max="100"
-            value="92"
-          >
-
-        </label>
-
-      </div>
-
-
-      <footer class="dialog-actions">
-
-        <button
-          class="secondary-button"
-          value="cancel"
-        >
+<input id="export-quality" max="100" min="10" type="range" value="92"/>
+</label>
+</div>
+<footer class="dialog-actions">
+<button class="secondary-button" value="cancel">
           Cancel
         </button>
-
-        <button
-          class="primary-button"
-          id="confirm-export-button"
-          value="default"
-        >
+<button class="primary-button" id="confirm-export-button" value="default">
           Export
         </button>
-
-      </footer>
-
-    </form>
-
-  </dialog>
-
-
-  <!-- =====================================================
+</footer>
+</form>
+</dialog>
+<!-- =====================================================
        LOADING SCREEN
   ====================================================== -->
-
-  <div
-    class="loading-screen"
-    id="loading-screen"
-    aria-hidden="true"
-  >
-
-    <div class="loading-card">
-
-      <img
-        class="loading-logo"
-        src="assets/images/paintless-logo.png"
-        alt="Paintless"
-      >
-
-      <strong>
+<div aria-hidden="true" class="loading-screen" id="loading-screen">
+<div class="loading-card">
+<img alt="Paintless" class="loading-logo" src="assets/images/paintless-logo.png"/>
+<strong>
         PAINTLESS
       </strong>
-
-      <p id="loading-message">
+<p id="loading-message">
         Loading creativity...
       </p>
-
-      <div class="loading-track">
-
-        <span id="loading-progress"></span>
-
-      </div>
-
-      <output id="loading-percentage">
+<div class="loading-track">
+<span id="loading-progress"></span>
+</div>
+<output id="loading-percentage">
         0%
       </output>
-
-    </div>
-
-  </div>
-
-
-  <!-- =====================================================
+</div>
+</div>
+<!-- =====================================================
        APPLICATION SCRIPTS
   ====================================================== -->
-
-  <script src="js/history.js"></script>
-  <script src="js/layers.js"></script>
-  <script src="js/canvas.js"></script>
-  <script src="js/tools.js"></script>
-  <script src="js/files.js"></script>
-  <script src="js/app.js"></script>
-
+<script src="js/history.js"></script>
+<script src="js/layers.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/files.js"></script>
+<script src="js/app.js"></script>
 </body>
-
 </html>
