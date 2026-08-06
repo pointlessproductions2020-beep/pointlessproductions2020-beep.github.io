@@ -1775,16 +1775,18 @@
 
     if (
       pointerState.pointerDown &&
-      nextTool !==
-        pointerState.activeTool
+      nextTool !== pointerState.activeTool
     ) {
-
       cancelCurrentPointerAction();
-
+    } else {
+      releaseCapturedPointer();
+      resetPointerState();
+      clearOverlay();
     }
 
+    pointerState.activeTool = null;
+    pointerState.activeModule = null;
   }
-
 
   /* =======================================================
      15. DOM CONNECTIONS
