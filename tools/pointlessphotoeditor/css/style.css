@@ -4012,3 +4012,17 @@ select option:checked {
   background: linear-gradient(90deg, var(--purple), var(--cyan));
   box-shadow: 0 0 12px rgba(168,76,255,.42);
 }
+
+/* PAINTLESS v1.0.4 STREAM STABILITY PATCH */
+.right-sidebar > .layers-panel--shared-space {
+  flex: 0 1 360px !important;
+  min-height: 210px !important;
+  max-height: 46vh !important;
+}
+.right-sidebar > .paintless-ultra-resizable-panel {
+  flex: 0 0 var(--paintless-ultra-panel-height, 360px) !important;
+  margin-top: 0 !important;
+  max-height: 48vh !important;
+}
+.right-sidebar > .layers-ultra-resize-handle { margin: 0 !important; }
+.right-sidebar > .layers-panel--shared-space .layer-list { max-height: none !important; }
