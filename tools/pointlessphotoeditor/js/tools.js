@@ -494,6 +494,25 @@
       );
 
 
+    /* Reset shared pointer state before every tool change. */
+    try {
+      const pointerApi =
+        window.PaintlessPointer ||
+        getModule("pointer")?.api ||
+        null;
+
+      if (pointerApi?.isPointerDown?.()) {
+        pointerApi.cancelCurrentPointerAction?.();
+      }
+
+      pointerApi?.resetPointerState?.();
+      window.PaintlessToolCore?.resetPointerState?.();
+      window.PaintlessCanvas?.clearOverlay?.();
+    } catch (error) {
+      console.warn("Paintless pointer reset failed during tool change:", error);
+    }
+
+
     const nextModule =
       getModule(
         cleanToolName
@@ -549,6 +568,12 @@
 
 
     updateActiveToolButtons();
+
+
+    requestAnimationFrame(() => {
+      window.PaintlessCanvas?.updateStageDimensions?.();
+      window.PaintlessCanvas?.clearOverlay?.();
+    });
 
 
     dispatchToolSystemEvent(
