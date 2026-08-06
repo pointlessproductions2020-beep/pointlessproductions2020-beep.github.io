@@ -2441,611 +2441,6 @@
   }
 
 
-
-
-  /* =======================================================
-     PAINTLESS UI 2.0 — WORKSPACE LAYOUT
-  ======================================================= */
-
-  const workspaceLayoutStorageKey =
-    "paintless.workspace.layout.v2";
-
-  function readWorkspaceLayout() {
-
-    try {
-
-      return JSON.parse(
-        window.localStorage.getItem(
-          workspaceLayoutStorageKey
-        ) ||
-        "{}"
-      );
-
-    } catch (error) {
-
-      console.warn(
-        "Paintless could not read the saved workspace layout.",
-        error
-      );
-
-      return {};
-
-    }
-
-  }
-
-
-  function saveWorkspaceLayout(
-    partialLayout = {}
-  ) {
-
-    const previousLayout =
-      readWorkspaceLayout();
-
-    const nextLayout = {
-      ...previousLayout,
-      ...partialLayout
-    };
-
-    try {
-
-      window.localStorage.setItem(
-        workspaceLayoutStorageKey,
-        JSON.stringify(nextLayout)
-      );
-
-    } catch (error) {
-
-      console.warn(
-        "Paintless could not save the workspace layout.",
-        error
-      );
-
-    }
-
-    return nextLayout;
-
-  }
-
-
-  function organiseLateToolbarButtons() {
-
-    const toolbox =
-      document.querySelector(".toolbox");
-
-    const retouchGrid =
-      document.getElementById("retouch-tool-grid");
-
-    if (!toolbox || !retouchGrid) {
-      return;
-    }
-
-    const retouchTools =
-      new Set([
-        "clone",
-        "eyedropper",
-        "blur",
-        "sharpen",
-        "smudge",
-        "liquify"
-      ]);
-
-    const moveLateButtons = () => {
-
-      Array.from(
-        toolbox.children
-      ).forEach(
-        (element) => {
-
-          if (
-            !element.matches?.(
-              ".tool-button[data-tool], .tool-family"
-            )
-          ) {
-            return;
-          }
-
-          const toolButton =
-            element.matches("[data-tool]")
-              ? element
-              : element.querySelector("[data-tool]");
-
-          const toolName =
-            toolButton?.dataset.tool;
-
-          if (
-            toolName &&
-            retouchTools.has(toolName)
-          ) {
-
-            const duplicate =
-              retouchGrid.querySelector(
-                `[data-tool="${toolName}"]`
-              );
-
-            if (duplicate) {
-
-              element.remove();
-
-            } else {
-
-              retouchGrid.appendChild(element);
-
-            }
-
-          } else {
-
-            element.remove();
-
-          }
-
-        }
-      );
-
-    };
-
-    moveLateButtons();
-
-    const observer =
-      new MutationObserver(moveLateButtons);
-
-    observer.observe(
-      toolbox,
-      {
-        childList: true
-      }
-    );
-
-  }
-
-
-  function initialiseResizableSidebar() {
-
-    const editorLayout =
-      document.querySelector(".editor-layout");
-
-    const handle =
-      document.getElementById(
-        "sidebar-resize-handle"
-      );
-
-    if (!editorLayout || !handle) {
-      return;
-    }
-
-    const savedLayout =
-      readWorkspaceLayout();
-
-    const minimumWidth = 260;
-    const maximumWidth = 680;
-
-    const applyWidth = (width) => {
-
-      const availableMaximum =
-        Math.max(
-          minimumWidth,
-          Math.min(
-            maximumWidth,
-            window.innerWidth - 360
-          )
-        );
-
-      const safeWidth =
-        clamp(
-          Math.round(Number(width) || 320),
-          minimumWidth,
-          availableMaximum
-        );
-
-      document.documentElement.style.setProperty(
-        "--sidebar-width",
-        `${safeWidth}px`
-      );
-
-      handle.setAttribute(
-        "aria-valuenow",
-        String(safeWidth)
-      );
-
-      return safeWidth;
-
-    };
-
-    applyWidth(
-      savedLayout.sidebarWidth ||
-      320
-    );
-
-    let startX = 0;
-    let startWidth = 0;
-
-    const finishResize = () => {
-
-      if (
-        !handle.classList.contains(
-          "is-dragging"
-        )
-      ) {
-        return;
-      }
-
-      handle.classList.remove("is-dragging");
-      document.body.classList.remove(
-        "is-resizing-sidebar"
-      );
-
-      const currentWidth =
-        parseFloat(
-          getComputedStyle(
-            document.documentElement
-          ).getPropertyValue(
-            "--sidebar-width"
-          )
-        );
-
-      saveWorkspaceLayout({
-        sidebarWidth:
-          Math.round(currentWidth)
-      });
-
-    };
-
-    handle.addEventListener(
-      "pointerdown",
-      (event) => {
-
-        event.preventDefault();
-
-        startX = event.clientX;
-        startWidth =
-          document.querySelector(
-            ".right-sidebar"
-          )?.getBoundingClientRect().width ||
-          320;
-
-        handle.setPointerCapture?.(
-          event.pointerId
-        );
-
-        handle.classList.add("is-dragging");
-        document.body.classList.add(
-          "is-resizing-sidebar"
-        );
-
-      }
-    );
-
-    handle.addEventListener(
-      "pointermove",
-      (event) => {
-
-        if (
-          !handle.classList.contains(
-            "is-dragging"
-          )
-        ) {
-          return;
-        }
-
-        applyWidth(
-          startWidth +
-          (startX - event.clientX)
-        );
-
-      }
-    );
-
-    handle.addEventListener(
-      "pointerup",
-      finishResize
-    );
-
-    handle.addEventListener(
-      "pointercancel",
-      finishResize
-    );
-
-    handle.addEventListener(
-      "keydown",
-      (event) => {
-
-        if (
-          event.key !== "ArrowLeft" &&
-          event.key !== "ArrowRight"
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-
-        const currentWidth =
-          document.querySelector(
-            ".right-sidebar"
-          )?.getBoundingClientRect().width ||
-          320;
-
-        const direction =
-          event.key === "ArrowLeft"
-            ? 1
-            : -1;
-
-        const width =
-          applyWidth(
-            currentWidth +
-            direction *
-            (event.shiftKey ? 40 : 12)
-          );
-
-        saveWorkspaceLayout({
-          sidebarWidth: width
-        });
-
-      }
-    );
-
-    window.addEventListener(
-      "resize",
-      () => {
-
-        const currentWidth =
-          document.querySelector(
-            ".right-sidebar"
-          )?.getBoundingClientRect().width ||
-          320;
-
-        applyWidth(currentWidth);
-
-      },
-      {
-        passive: true
-      }
-    );
-
-  }
-
-
-  function initialiseResizablePanels() {
-
-    const sidebar =
-      document.querySelector(".right-sidebar");
-
-    if (!sidebar) {
-      return;
-    }
-
-    const savedLayout =
-      readWorkspaceLayout();
-
-    const savedPanelHeights =
-      savedLayout.panelHeights ||
-      {};
-
-    const getPanelKey =
-      (panel, index) =>
-        panel.id ||
-        Array.from(panel.classList)
-          .find(
-            (className) =>
-              className !== "editor-panel"
-          ) ||
-        `panel-${index}`;
-
-    const installHandles = () => {
-
-      Array.from(
-        sidebar.querySelectorAll(
-          ":scope > .editor-panel"
-        )
-      ).forEach(
-        (panel, index, panels) => {
-
-          if (
-            panel.dataset.resizablePanel ===
-            "true"
-          ) {
-            return;
-          }
-
-          panel.dataset.resizablePanel =
-            "true";
-
-          const panelKey =
-            getPanelKey(panel, index);
-
-          panel.dataset.panelKey =
-            panelKey;
-
-          const savedHeight =
-            Number(
-              savedPanelHeights[panelKey]
-            );
-
-          if (
-            Number.isFinite(savedHeight) &&
-            savedHeight >= 90
-          ) {
-
-            panel.style.height =
-              `${savedHeight}px`;
-
-            panel.dataset.panelHeight =
-              String(savedHeight);
-
-          }
-
-          if (
-            index === panels.length - 1
-          ) {
-            return;
-          }
-
-          const handle =
-            document.createElement("div");
-
-          handle.className =
-            "panel-resize-handle";
-
-          handle.setAttribute(
-            "role",
-            "separator"
-          );
-
-          handle.setAttribute(
-            "aria-label",
-            `Resize ${panelKey} panel`
-          );
-
-          handle.setAttribute(
-            "aria-orientation",
-            "horizontal"
-          );
-
-          panel.appendChild(handle);
-
-          let startY = 0;
-          let startHeight = 0;
-
-          const finishResize = () => {
-
-            if (
-              !handle.classList.contains(
-                "is-dragging"
-              )
-            ) {
-              return;
-            }
-
-            handle.classList.remove(
-              "is-dragging"
-            );
-
-            document.body.classList.remove(
-              "is-resizing-panel"
-            );
-
-            const panelHeights = {
-              ...(readWorkspaceLayout()
-                .panelHeights || {})
-            };
-
-            panelHeights[panelKey] =
-              Math.round(
-                panel.getBoundingClientRect()
-                  .height
-              );
-
-            saveWorkspaceLayout({
-              panelHeights
-            });
-
-          };
-
-          handle.addEventListener(
-            "pointerdown",
-            (event) => {
-
-              event.preventDefault();
-              event.stopPropagation();
-
-              startY = event.clientY;
-              startHeight =
-                panel.getBoundingClientRect()
-                  .height;
-
-              handle.setPointerCapture?.(
-                event.pointerId
-              );
-
-              handle.classList.add(
-                "is-dragging"
-              );
-
-              document.body.classList.add(
-                "is-resizing-panel"
-              );
-
-            }
-          );
-
-          handle.addEventListener(
-            "pointermove",
-            (event) => {
-
-              if (
-                !handle.classList.contains(
-                  "is-dragging"
-                )
-              ) {
-                return;
-              }
-
-              const maximumHeight =
-                Math.max(
-                  120,
-                  sidebar.clientHeight - 90
-                );
-
-              const nextHeight =
-                clamp(
-                  startHeight +
-                  event.clientY -
-                  startY,
-                  90,
-                  maximumHeight
-                );
-
-              panel.style.height =
-                `${nextHeight}px`;
-
-              panel.dataset.panelHeight =
-                String(
-                  Math.round(nextHeight)
-                );
-
-            }
-          );
-
-          handle.addEventListener(
-            "pointerup",
-            finishResize
-          );
-
-          handle.addEventListener(
-            "pointercancel",
-            finishResize
-          );
-
-        }
-      );
-
-    };
-
-    installHandles();
-
-    const observer =
-      new MutationObserver(
-        installHandles
-      );
-
-    observer.observe(
-      sidebar,
-      {
-        childList: true
-      }
-    );
-
-  }
-
-
-  function initialiseWorkspaceLayout() {
-
-    organiseLateToolbarButtons();
-    initialiseResizableSidebar();
-    initialiseResizablePanels();
-
-  }
-
-
   /* =======================================================
      13. INITIALISE APPLICATION
   ======================================================= */
@@ -3112,8 +2507,6 @@
 
 
   installApplicationMenuStyles();
-
-  initialiseWorkspaceLayout();
 
   syncAdjustmentInputs();
 
@@ -3203,6 +2596,127 @@
   };
 
 
+
+  /* =======================================================
+     PAINTLESS UI 2.0 HOTFIX — WORKSPACE LAYOUT
+  ======================================================= */
+  function initialisePaintlessWorkspaceLayout() {
+    const root = document.documentElement;
+    const editorLayout = document.querySelector('.editor-layout');
+    const sidebar = document.querySelector('.right-sidebar');
+    const sidebarHandle = document.getElementById('sidebar-resize-handle');
+    const toolbox = document.querySelector('.toolbox');
+    if (!editorLayout || !sidebar || !sidebarHandle || !toolbox) return;
+
+    const sidebarKey = 'paintless:right-sidebar-width';
+    const clampWidth = (value) => Math.min(620, Math.max(260, Number(value) || 300));
+    const applySidebarWidth = (value) => {
+      const width = clampWidth(value);
+      root.style.setProperty('--sidebar-width', `${width}px`);
+      sidebarHandle.setAttribute('aria-valuenow', String(Math.round(width)));
+      return width;
+    };
+    applySidebarWidth(localStorage.getItem(sidebarKey) || 300);
+
+    let draggingSidebar = false;
+    const finishSidebarDrag = () => {
+      if (!draggingSidebar) return;
+      draggingSidebar = false;
+      sidebarHandle.classList.remove('is-dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      const width = parseFloat(getComputedStyle(root).getPropertyValue('--sidebar-width')) || 300;
+      localStorage.setItem(sidebarKey, String(Math.round(width)));
+    };
+    sidebarHandle.addEventListener('pointerdown', (event) => {
+      draggingSidebar = true;
+      sidebarHandle.classList.add('is-dragging');
+      sidebarHandle.setPointerCapture?.(event.pointerId);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      event.preventDefault();
+    });
+    window.addEventListener('pointermove', (event) => {
+      if (!draggingSidebar) return;
+      applySidebarWidth(window.innerWidth - event.clientX);
+    });
+    window.addEventListener('pointerup', finishSidebarDrag);
+    window.addEventListener('pointercancel', finishSidebarDrag);
+    sidebarHandle.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+      const current = parseFloat(getComputedStyle(root).getPropertyValue('--sidebar-width')) || 300;
+      const next = event.key === 'Home' ? 260 : event.key === 'End' ? 620 : current + (event.key === 'ArrowLeft' ? 16 : -16);
+      localStorage.setItem(sidebarKey, String(Math.round(applySidebarWidth(next))));
+      event.preventDefault();
+    });
+
+    const panelKey = 'paintless:panel-heights';
+    let panelHeights = {};
+    try { panelHeights = JSON.parse(localStorage.getItem(panelKey) || '{}') || {}; } catch (_) { panelHeights = {}; }
+
+    const setupPanel = (panel, index) => {
+      if (panel.dataset.paintlessResizable === 'true') return;
+      panel.dataset.paintlessResizable = 'true';
+      const identity = [...panel.classList].find((name) => name.endsWith('-panel') && name !== 'editor-panel') || `panel-${index}`;
+      panel.dataset.panelIdentity = identity;
+      if (panelHeights[identity]) panel.style.height = `${Math.max(120, Number(panelHeights[identity]))}px`;
+      const handle = document.createElement('div');
+      handle.className = 'panel-resize-handle';
+      handle.setAttribute('role','separator');
+      handle.setAttribute('aria-orientation','horizontal');
+      handle.setAttribute('aria-label',`Resize ${identity.replace(/-/g,' ')}`);
+      panel.appendChild(handle);
+      let active = false, startY = 0, startHeight = 0;
+      const finish = () => {
+        if (!active) return;
+        active = false;
+        handle.classList.remove('is-dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        panelHeights[identity] = Math.round(panel.getBoundingClientRect().height);
+        localStorage.setItem(panelKey, JSON.stringify(panelHeights));
+      };
+      handle.addEventListener('pointerdown',(event)=>{
+        active = true; startY = event.clientY; startHeight = panel.getBoundingClientRect().height;
+        handle.setPointerCapture?.(event.pointerId); handle.classList.add('is-dragging');
+        document.body.style.cursor='row-resize'; document.body.style.userSelect='none'; event.preventDefault(); event.stopPropagation();
+      });
+      window.addEventListener('pointermove',(event)=>{ if(active) panel.style.height = `${Math.max(120, Math.min(sidebar.clientHeight - 40, startHeight + event.clientY - startY))}px`; });
+      window.addEventListener('pointerup',finish);
+      window.addEventListener('pointercancel',finish);
+    };
+    const setupPanels = () => Array.from(sidebar.querySelectorAll('.editor-panel')).forEach(setupPanel);
+    setupPanels();
+    new MutationObserver(setupPanels).observe(sidebar,{childList:true,subtree:true});
+
+    const groupForTool = {
+      move:'navigate', select:'navigate', crop:'navigate', transform:'navigate',
+      brush:'paint', eraser:'paint', fill:'paint', gradient:'paint',
+      clone:'retouch', eyedropper:'retouch', blur:'retouch', sharpen:'retouch', smudge:'retouch', liquify:'retouch',
+      text:'create', shape:'create'
+    };
+    let tidying = false;
+    const tidyToolbar = () => {
+      if (tidying) return;
+      tidying = true;
+      try {
+        const seen = new Map();
+        Array.from(toolbox.querySelectorAll('.tool-button[data-tool]')).forEach((button) => {
+          const tool = button.dataset.tool;
+          if (!tool) return;
+          if (seen.has(tool)) { button.closest('.tool-family')?.remove?.() || button.remove(); return; }
+          seen.set(tool, button);
+          const group = toolbox.querySelector(`[data-tool-group="${groupForTool[tool] || 'create'}"] .toolbox-grid`);
+          const item = button.closest('.tool-family') || button;
+          if (group && item.parentElement !== group) group.appendChild(item);
+        });
+        Array.from(toolbox.querySelectorAll('.support-tool-button')).slice(1).forEach((item)=>item.remove());
+      } finally { tidying = false; }
+    };
+    tidyToolbar();
+    new MutationObserver(() => requestAnimationFrame(tidyToolbar)).observe(toolbox,{childList:true,subtree:true});
+  }
+
   /* =======================================================
      15. START
   ======================================================= */
@@ -3225,6 +2739,13 @@
 
     initialiseApplication();
 
+  }
+
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialisePaintlessWorkspaceLayout, { once: true });
+  } else {
+    initialisePaintlessWorkspaceLayout();
   }
 
 })();
