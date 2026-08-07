@@ -465,15 +465,176 @@
      7. TRANSFORM GEOMETRY
   ======================================================= */
 
+    function getVisiblePixelBounds(
+    layer
+  ) {
+
+    if (!layer?.canvas) {
+      return null;
+    }
+
+    const canvas =
+      layer.canvas;
+
+    const context =
+      layer.context ||
+      canvas.getContext(
+        "2d",
+        {
+          willReadFrequently: true
+        }
+      );
+
+    if (
+      !context ||
+      canvas.width <= 0 ||
+      canvas.height <= 0
+    ) {
+      return null;
+    }
+
+    let imageData;
+
+    try {
+
+      imageData =
+        context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+    } catch (error) {
+
+      console.warn(
+        "Paintless Transform could not inspect visible layer pixels:",
+        error
+      );
+
+      return null;
+    }
+
+    const data =
+      imageData.data;
+
+    let minX =
+      canvas.width;
+
+    let minY =
+      canvas.height;
+
+    let maxX =
+      -1;
+
+    let maxY =
+      -1;
+
+
+    for (
+      let y = 0;
+      y < canvas.height;
+      y += 1
+    ) {
+
+      const rowOffset =
+        y *
+        canvas.width *
+        4;
+
+
+      for (
+        let x = 0;
+        x < canvas.width;
+        x += 1
+      ) {
+
+        const alpha =
+          data[
+            rowOffset +
+            x * 4 +
+            3
+          ];
+
+
+        if (alpha === 0) {
+          continue;
+        }
+
+
+        if (x < minX) {
+          minX = x;
+        }
+
+        if (x > maxX) {
+          maxX = x;
+        }
+
+        if (y < minY) {
+          minY = y;
+        }
+
+        if (y > maxY) {
+          maxY = y;
+        }
+
+      }
+
+    }
+
+
+    if (
+      maxX < minX ||
+      maxY < minY
+    ) {
+      return null;
+    }
+
+
+    const width =
+      maxX -
+      minX +
+      1;
+
+
+    const height =
+      maxY -
+      minY +
+      1;
+
+
+    return {
+
+      x:
+        minX,
+
+      y:
+        minY,
+
+      width,
+
+      height,
+
+      centreX:
+        minX +
+        width / 2,
+
+      centreY:
+        minY +
+        height / 2
+
+    };
+
+  }
+
+
   function getLayerBounds(
     layer =
       getActiveLayer()
   ) {
 
     if (!layer?.canvas) {
-
       return null;
-
     }
 
 
@@ -491,14 +652,123 @@
       );
 
 
+    const rotation =
+      normaliseNumber(
+        layer.rotation,
+        0
+      );
+
+
+    /*
+     * IMPORTANT:
+     * A layer canvas can be the size of the entire document even
+     * when the artwork only occupies a small transparent region.
+     *
+     * Transform should follow the visible artwork, not all that
+     * empty transparent canvas.
+     */
+
+    const visibleBounds =
+      getVisiblePixelBounds(
+        layer
+      ) ||
+      {
+
+        x:
+          0,
+
+        y:
+          0,
+
+        width:
+          layer.canvas.width,
+
+        height:
+          layer.canvas.height,
+
+        centreX:
+          layer.canvas.width / 2,
+
+        centreY:
+          layer.canvas.height / 2
+
+      };
+
+
     const width =
-      layer.canvas.width *
-      Math.abs(scaleX);
+      visibleBounds.width *
+      Math.abs(
+        scaleX
+      );
 
 
     const height =
-      layer.canvas.height *
-      Math.abs(scaleY);
+      visibleBounds.height *
+      Math.abs(
+        scaleY
+      );
+
+
+    /*
+     * Paintless transforms the layer around the centre of its
+     * backing canvas. Work out how far the visible image centre
+     * sits from that canvas centre, then apply scale + rotation.
+     */
+
+    const canvasCentreX =
+      layer.canvas.width / 2;
+
+
+    const canvasCentreY =
+      layer.canvas.height / 2;
+
+
+    const localOffsetX =
+      (
+        visibleBounds.centreX -
+        canvasCentreX
+      ) *
+      scaleX;
+
+
+    const localOffsetY =
+      (
+        visibleBounds.centreY -
+        canvasCentreY
+      ) *
+      scaleY;
+
+
+    const radians =
+      degreesToRadians(
+        rotation
+      );
+
+
+    const cosine =
+      Math.cos(
+        radians
+      );
+
+
+    const sine =
+      Math.sin(
+        radians
+      );
+
+
+    const rotatedOffsetX =
+      localOffsetX *
+      cosine -
+      localOffsetY *
+      sine;
+
+
+    const rotatedOffsetY =
+      localOffsetX *
+      sine +
+      localOffsetY *
+      cosine;
 
 
     const centreX =
@@ -506,7 +776,8 @@
         layer.transformX,
         0
       ) +
-      layer.canvas.width / 2;
+      canvasCentreX +
+      rotatedOffsetX;
 
 
     const centreY =
@@ -514,7 +785,8 @@
         layer.transformY,
         0
       ) +
-      layer.canvas.height / 2;
+      canvasCentreY +
+      rotatedOffsetY;
 
 
     return {
@@ -533,20 +805,17 @@
       halfHeight:
         height / 2,
 
-      rotation:
-        normaliseNumber(
-          layer.rotation,
-          0
-        ),
+      rotation,
 
       scaleX,
 
-      scaleY
+      scaleY,
+
+      visibleBounds
 
     };
 
   }
-
 
   function canvasPointToLocal(
     point,
@@ -1358,16 +1627,20 @@
     const baseHalfWidth =
       Math.max(
         1,
-        transformState.layer
-          .canvas.width / 2
+        (
+          startBounds.visibleBounds?.width ||
+          transformState.layer.canvas.width
+        ) / 2
       );
 
 
     const baseHalfHeight =
       Math.max(
         1,
-        transformState.layer
-          .canvas.height / 2
+        (
+          startBounds.visibleBounds?.height ||
+          transformState.layer.canvas.height
+        ) / 2
       );
 
 
