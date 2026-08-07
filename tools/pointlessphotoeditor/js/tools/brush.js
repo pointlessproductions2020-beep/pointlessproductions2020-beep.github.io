@@ -1556,18 +1556,29 @@
       );
 
 
-    const point = {
+        const point =
+      getCore()
+        ?.documentPointToLayerPoint?.(
+          {
+            x:
+              payload.point.x,
 
-      x:
-        payload.point.x,
+            y:
+              payload.point.y,
 
-      y:
-        payload.point.y,
+            pressure
+          },
+          layer
+        ) ||
+      {
+        x:
+          payload.point.x,
 
-      pressure
+        y:
+          payload.point.y,
 
-    };
-
+        pressure
+      };
 
     brushState.drawing =
       true;
@@ -1674,18 +1685,29 @@
       );
 
 
-    const incomingPoint = {
+    const incomingPoint =
+      getCore()
+        ?.documentPointToLayerPoint?.(
+          {
+            x:
+              payload.point.x,
 
-      x:
-        payload.point.x,
+            y:
+              payload.point.y,
 
-      y:
-        payload.point.y,
+            pressure
+          },
+          brushState.layer
+        ) ||
+      {
+        x:
+          payload.point.x,
 
-      pressure
+        y:
+          payload.point.y,
 
-    };
-
+        pressure
+      };
 
     const smoothedPoint =
       smoothIncomingPoint(
@@ -1748,17 +1770,41 @@
       );
 
 
-    const finalPoint = {
+        const finalPoint =
+      brushState.layer
+        ? (
+            getCore()
+              ?.documentPointToLayerPoint?.(
+                {
+                  x:
+                    payload.point.x,
 
-      x:
-        payload.point.x,
+                  y:
+                    payload.point.y,
 
-      y:
-        payload.point.y,
+                  pressure
+                },
+                brushState.layer
+              ) ||
+            {
+              x:
+                payload.point.x,
 
-      pressure
+              y:
+                payload.point.y,
 
-    };
+              pressure
+            }
+          )
+        : {
+            x:
+              payload.point.x,
+
+            y:
+              payload.point.y,
+
+            pressure
+          };
 
 
     /*
