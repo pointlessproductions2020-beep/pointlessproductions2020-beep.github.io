@@ -3628,11 +3628,40 @@
     ) {
 
       closePanel();
+      updateControls();
+      return;
 
     }
 
 
-    updateControls();
+    /*
+     * Entering 3D mode must fully wake and synchronise the
+     * Ultra controls. Previously the panel could appear before
+     * the active layer and renderer had finished updating, which
+     * left the controls dormant until Refresh 3D / Reset Stereo.
+     */
+    const wakeUltraControls = () => {
+
+      collectDomReferences();
+      updateControls();
+
+      getRendererApi()
+        ?.requestRender?.(
+          "3d-mode-ultra-wake"
+        );
+
+    };
+
+
+    requestAnimationFrame(
+      wakeUltraControls
+    );
+
+
+    window.setTimeout(
+      wakeUltraControls,
+      80
+    );
 
   }
 
@@ -3758,7 +3787,19 @@
 
   function handleLayerChanged() {
 
-    updateActiveLayerDisplay();
+    /* Keep every Ultra control synced to the newly active layer. */
+    updateControls();
+
+    if (
+      previewState.active
+    ) {
+
+      getRendererApi()
+        ?.requestRender?.(
+          "active-layer-ultra-sync"
+        );
+
+    }
 
   }
 
