@@ -1580,6 +1580,179 @@
 
   }
 
+     function documentPointToLayerPoint(
+    point,
+    layer =
+      getActiveLayer()
+  ) {
+
+    if (
+      !point ||
+      !layer?.canvas
+    ) {
+      return copyPoint(
+        point
+      );
+    }
+
+
+    const width =
+      Math.max(
+        1,
+        layer.canvas.width
+      );
+
+
+    const height =
+      Math.max(
+        1,
+        layer.canvas.height
+      );
+
+
+    const transformX =
+      Number.isFinite(
+        Number(
+          layer.transformX
+        )
+      )
+        ? Number(
+            layer.transformX
+          )
+        : 0;
+
+
+    const transformY =
+      Number.isFinite(
+        Number(
+          layer.transformY
+        )
+      )
+        ? Number(
+            layer.transformY
+          )
+        : 0;
+
+
+    const scaleX =
+      Number.isFinite(
+        Number(
+          layer.scaleX
+        )
+      ) &&
+      Number(
+        layer.scaleX
+      ) !== 0
+        ? Number(
+            layer.scaleX
+          )
+        : 1;
+
+
+    const scaleY =
+      Number.isFinite(
+        Number(
+          layer.scaleY
+        )
+      ) &&
+      Number(
+        layer.scaleY
+      ) !== 0
+        ? Number(
+            layer.scaleY
+          )
+        : 1;
+
+
+    const rotation =
+      (
+        Number(
+          layer.rotation
+        ) ||
+        0
+      ) *
+      Math.PI /
+      180;
+
+
+    const centreX =
+      transformX +
+      width / 2;
+
+
+    const centreY =
+      transformY +
+      height / 2;
+
+
+    const offsetX =
+      point.x -
+      centreX;
+
+
+    const offsetY =
+      point.y -
+      centreY;
+
+
+    const cosine =
+      Math.cos(
+        -rotation
+      );
+
+
+    const sine =
+      Math.sin(
+        -rotation
+      );
+
+
+    const rotatedX =
+      offsetX *
+      cosine -
+      offsetY *
+      sine;
+
+
+    const rotatedY =
+      offsetX *
+      sine +
+      offsetY *
+      cosine;
+
+
+    const x =
+      rotatedX /
+      scaleX +
+      width / 2;
+
+
+    const y =
+      rotatedY /
+      scaleY +
+      height / 2;
+
+
+    return {
+
+      x,
+
+      y,
+
+      inside:
+        x >= 0 &&
+        y >= 0 &&
+        x <= width &&
+        y <= height,
+
+      pressure:
+        point.pressure ??
+        1
+
+    };
+
+  }
+
 
   /* =======================================================
      10. POINTER STATE
@@ -3934,10 +4107,11 @@
 
     getCanvasPoint,
 
+    documentPointToLayerPoint,
+
     canvasToClient,
 
     constrainPointToCanvas,
-
 
     beginPointerAction,
 
