@@ -4142,9 +4142,9 @@
       '700 11px/1.5 "Segoe UI", Arial, sans-serif';
 
     helper.style.pointerEvents =
-      "none";
+     "auto";
 
-
+     
     viewport.appendChild(
       helper
     );
@@ -4187,7 +4187,21 @@
           : "<strong style=\"color:#d49aff\">Rectangle Select</strong> · Drag: select · Shift: add · Alt: subtract · Shift+Alt: intersect";
 
 
-    helper.innerHTML =
+        helper.innerHTML =
+      "";
+
+
+    const content =
+      document.createElement(
+        "div"
+      );
+
+
+    content.style.paddingRight =
+      "28px";
+
+
+    content.innerHTML =
       `${modeInstructions}<br>` +
       "<span style=\"color:#ffffff\">Ctrl+C</span> Copy · " +
       "<span style=\"color:#ffffff\">Ctrl+X</span> Cut · " +
@@ -4197,8 +4211,135 @@
       "<span style=\"color:#ffffff\">Ctrl+D</span> Deselect";
 
 
-    return true;
+    const closeButton =
+      document.createElement(
+        "button"
+      );
 
+
+    closeButton.type =
+      "button";
+
+
+    closeButton.textContent =
+      "×";
+
+
+    closeButton.setAttribute(
+      "aria-label",
+      "Hide selection shortcuts"
+    );
+
+
+    closeButton.style.position =
+      "absolute";
+
+
+    closeButton.style.top =
+      "5px";
+
+
+    closeButton.style.right =
+      "7px";
+
+
+    closeButton.style.width =
+      "22px";
+
+
+    closeButton.style.height =
+      "22px";
+
+
+    closeButton.style.padding =
+      "0";
+
+
+    closeButton.style.border =
+      "0";
+
+
+    closeButton.style.borderRadius =
+      "6px";
+
+
+    closeButton.style.background =
+      "transparent";
+
+
+    closeButton.style.color =
+      "rgba(255,255,255,0.65)";
+
+
+    closeButton.style.fontSize =
+      "17px";
+
+
+    closeButton.style.fontWeight =
+      "800";
+
+
+    closeButton.style.lineHeight =
+      "22px";
+
+
+    closeButton.style.cursor =
+      "pointer";
+
+
+    closeButton.addEventListener(
+      "mouseenter",
+      () => {
+
+        closeButton.style.color =
+          "#ffffff";
+
+
+        closeButton.style.background =
+          "rgba(168,76,255,0.18)";
+
+      }
+    );
+
+
+    closeButton.addEventListener(
+      "mouseleave",
+      () => {
+
+        closeButton.style.color =
+          "rgba(255,255,255,0.65)";
+
+
+        closeButton.style.background =
+          "transparent";
+
+      }
+    );
+
+
+    closeButton.addEventListener(
+      "click",
+      (event) => {
+
+        event.preventDefault();
+
+        event.stopPropagation();
+
+
+        helper.style.display =
+          "none";
+
+      }
+    );
+
+
+    helper.append(
+      content,
+      closeButton
+    );
+
+
+    return true;
   }
 
 
