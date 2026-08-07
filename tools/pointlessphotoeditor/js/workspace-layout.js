@@ -210,14 +210,14 @@
       return true;
     };
 
-    setupLayersUltraSplitter();
-    new MutationObserver(() => requestAnimationFrame(setupLayersUltraSplitter))
-      .observe(sidebar, { childList: true, subtree: true });
+  //  setupLayersUltraSplitter();
+  //  new MutationObserver(() => requestAnimationFrame(setupLayersUltraSplitter))
+  //    .observe(sidebar, { childList: true, subtree: true });
 
-    document.addEventListener('paintless3d:module-ready', () => {
-      requestAnimationFrame(setupLayersUltraSplitter);
-      window.setTimeout(setupLayersUltraSplitter, 100);
-    });
+ //   document.addEventListener('paintless3d:module-ready', () => {
+ //     requestAnimationFrame(setupLayersUltraSplitter);
+ //     window.setTimeout(setupLayersUltraSplitter, 100);
+ //   });
 
     const groupForTool = {
       move:'navigate', select:'navigate', crop:'navigate', transform:'navigate',
