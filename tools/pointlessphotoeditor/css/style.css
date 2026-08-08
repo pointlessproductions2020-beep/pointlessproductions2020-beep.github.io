@@ -869,8 +869,17 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 6px 16px rgba(0,0,0,.4), 0 0 12px rgba(168,76,255,.08);
 }
 
-.colour-chip--primary { top: 3px; left: 5px; z-index: 2; background: var(--purple); }
-.colour-chip--secondary { top: 22px; left: 21px; z-index: 1; background: #fff; }
+.colour-chip--primary {
+  top: 3px;
+  left: 5px;
+  z-index: 2;
+}
+
+.colour-chip--secondary {
+  top: 22px;
+  left: 21px;
+  z-index: 1;
+}
 
 .swap-colours-button {
   position: absolute;
