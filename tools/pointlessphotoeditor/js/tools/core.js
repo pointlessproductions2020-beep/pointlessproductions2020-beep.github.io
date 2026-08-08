@@ -3554,12 +3554,6 @@
       );
 
 
-    dom.swapColoursButton
-      ?.addEventListener(
-        "click",
-        swapColours
-      );
-
 
     dom.shapeTypeInput
       ?.addEventListener(
@@ -3715,18 +3709,6 @@
         ) {
 
           cancelPointerAction();
-
-        }
-
-
-        if (
-          event.key.toLowerCase() ===
-          "x"
-        ) {
-
-          event.preventDefault();
-
-          swapColours();
 
         }
 
