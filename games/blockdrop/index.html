@@ -1136,6 +1136,43 @@
 
 
           <button
+            class="game-button game-button--secondary anaglyph-toggle"
+            id="anaglyph-toggle-button"
+            type="button"
+            aria-pressed="false"
+            aria-label="Enable anaglyph 3D mode"
+          >
+            <span aria-hidden="true">🔴🔵</span>
+            <span id="anaglyph-toggle-label">3D Off</span>
+          </button>
+
+
+          <label
+            class="anaglyph-depth-control"
+            for="anaglyph-depth-slider"
+          >
+            <span>Depth</span>
+
+            <input
+              id="anaglyph-depth-slider"
+              class="anaglyph-slider"
+              type="range"
+              min="0"
+              max="200"
+              step="5"
+              value="100"
+            >
+
+            <output
+              id="anaglyph-depth-output"
+              for="anaglyph-depth-slider"
+            >
+              100%
+            </output>
+          </label>
+
+
+          <button
             class="game-button game-button--secondary"
             id="audio-settings-button"
             type="button"
@@ -1424,6 +1461,43 @@
       </strong>
 
     </button>
+
+
+    <button
+      class="quick-menu-action"
+      id="quick-menu-anaglyph-button"
+      type="button"
+      aria-pressed="false"
+    >
+      <span aria-hidden="true">🔴🔵</span>
+      <strong id="quick-menu-anaglyph-label">3D Off</strong>
+    </button>
+
+
+    <label
+      class="quick-menu-depth"
+      for="quick-menu-anaglyph-depth-slider"
+    >
+      <span>
+        <strong>3D Depth</strong>
+        <output
+          id="quick-menu-anaglyph-depth-output"
+          for="quick-menu-anaglyph-depth-slider"
+        >
+          100%
+        </output>
+      </span>
+
+      <input
+        id="quick-menu-anaglyph-depth-slider"
+        class="anaglyph-slider"
+        type="range"
+        min="0"
+        max="200"
+        step="5"
+        value="100"
+      >
+    </label>
 
 
     <button
