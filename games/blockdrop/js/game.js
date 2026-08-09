@@ -361,6 +361,31 @@ const resetAudioButton =
   document.querySelector("#reset-audio-button");
 
 
+const anaglyphToggleButton =
+  document.querySelector("#anaglyph-toggle-button");
+
+const anaglyphToggleLabel =
+  document.querySelector("#anaglyph-toggle-label");
+
+const anaglyphDepthSlider =
+  document.querySelector("#anaglyph-depth-slider");
+
+const anaglyphDepthOutput =
+  document.querySelector("#anaglyph-depth-output");
+
+const quickMenuAnaglyphButton =
+  document.querySelector("#quick-menu-anaglyph-button");
+
+const quickMenuAnaglyphLabel =
+  document.querySelector("#quick-menu-anaglyph-label");
+
+const quickMenuAnaglyphDepthSlider =
+  document.querySelector("#quick-menu-anaglyph-depth-slider");
+
+const quickMenuAnaglyphDepthOutput =
+  document.querySelector("#quick-menu-anaglyph-depth-output");
+
+
 if (
   !canvas ||
   !context ||
@@ -580,6 +605,21 @@ const AUDIO_STORAGE_KEY =
   "blockDropAudioSettings";
 
 
+const ANAGLYPH_STORAGE_KEY =
+  "blockDropAnaglyphSettings";
+
+const ANAGLYPH_DEPTHS = {
+  grid: -2,
+  settled: 1,
+  ghost: 1,
+  falling: 1,
+  rotating: 2
+};
+
+const ANAGLYPH_MAX_PIXEL_SHIFT = 5;
+const ANAGLYPH_ROTATION_BOOST_MS = 170;
+
+
 const DEFAULT_AUDIO_SETTINGS = {
   music: 0.3,
   effects: 0.55,
@@ -747,6 +787,24 @@ let activeMusic = null;
 let activeMusicName = "";
 
 let activeVoice = null;
+
+
+let anaglyphSettings =
+  loadAnaglyphSettings();
+
+let rotationDepthBoostUntil = 0;
+
+const stereoLayerCanvas =
+  document.createElement("canvas");
+
+const stereoLayerContext =
+  stereoLayerCanvas.getContext("2d");
+
+const stereoTintCanvas =
+  document.createElement("canvas");
+
+const stereoTintContext =
+  stereoTintCanvas.getContext("2d");
 
 
 /* =========================================================
@@ -1057,6 +1115,327 @@ function saveRotationDirection() {
     );
 
   }
+
+}
+
+
+/* =========================================================
+   9B. ANAGLYPH 3D SETTINGS
+========================================================= */
+
+function loadAnaglyphSettings() {
+
+  try {
+
+    const stored =
+      localStorage.getItem(
+        ANAGLYPH_STORAGE_KEY
+      );
+
+    if (!stored) {
+      return {
+        enabled: false,
+        depth: 1
+      };
+    }
+
+    const parsed =
+      JSON.parse(stored);
+
+    return {
+      enabled:
+        Boolean(parsed.enabled),
+      depth:
+        Math.min(
+          2,
+          Math.max(
+            0,
+            Number(parsed.depth) || 1
+          )
+        )
+    };
+
+  } catch (error) {
+
+    return {
+      enabled: false,
+      depth: 1
+    };
+
+  }
+
+}
+
+
+function saveAnaglyphSettings() {
+
+  try {
+
+    localStorage.setItem(
+      ANAGLYPH_STORAGE_KEY,
+      JSON.stringify(
+        anaglyphSettings
+      )
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Block Drop could not save 3D settings.",
+      error
+    );
+
+  }
+
+}
+
+
+function updateAnaglyphInterface() {
+
+  const enabled =
+    anaglyphSettings.enabled;
+
+  const depthPercent =
+    Math.round(
+      anaglyphSettings.depth * 100
+    );
+
+  document.body.classList.toggle(
+    "anaglyph-enabled",
+    enabled
+  );
+
+  anaglyphToggleButton?.classList.toggle(
+    "is-active",
+    enabled
+  );
+
+  anaglyphToggleButton?.setAttribute(
+    "aria-pressed",
+    String(enabled)
+  );
+
+  anaglyphToggleButton?.setAttribute(
+    "aria-label",
+    enabled
+      ? "Disable anaglyph 3D mode"
+      : "Enable anaglyph 3D mode"
+  );
+
+  quickMenuAnaglyphButton?.classList.toggle(
+    "is-active",
+    enabled
+  );
+
+  quickMenuAnaglyphButton?.setAttribute(
+    "aria-pressed",
+    String(enabled)
+  );
+
+  if (anaglyphToggleLabel) {
+    anaglyphToggleLabel.textContent =
+      enabled
+        ? "3D On"
+        : "3D Off";
+  }
+
+  if (quickMenuAnaglyphLabel) {
+    quickMenuAnaglyphLabel.textContent =
+      enabled
+        ? "3D On"
+        : "3D Off";
+  }
+
+  if (anaglyphDepthSlider) {
+    anaglyphDepthSlider.value =
+      String(depthPercent);
+  }
+
+  if (quickMenuAnaglyphDepthSlider) {
+    quickMenuAnaglyphDepthSlider.value =
+      String(depthPercent);
+  }
+
+  if (anaglyphDepthOutput) {
+    anaglyphDepthOutput.textContent =
+      `${depthPercent}%`;
+  }
+
+  if (quickMenuAnaglyphDepthOutput) {
+    quickMenuAnaglyphDepthOutput.textContent =
+      `${depthPercent}%`;
+  }
+
+}
+
+
+function setAnaglyphEnabled(enabled) {
+
+  anaglyphSettings.enabled =
+    Boolean(enabled);
+
+  saveAnaglyphSettings();
+  updateAnaglyphInterface();
+  drawGameBoard();
+
+}
+
+
+function setAnaglyphDepthFromPercent(percent) {
+
+  const numericPercent =
+    Math.min(
+      200,
+      Math.max(
+        0,
+        Number(percent) || 0
+      )
+    );
+
+  anaglyphSettings.depth =
+    numericPercent / 100;
+
+  saveAnaglyphSettings();
+  updateAnaglyphInterface();
+  drawGameBoard();
+
+}
+
+
+function prepareStereoCanvases() {
+
+  if (
+    stereoLayerCanvas.width !==
+      canvas.width ||
+    stereoLayerCanvas.height !==
+      canvas.height
+  ) {
+
+    stereoLayerCanvas.width =
+      canvas.width;
+
+    stereoLayerCanvas.height =
+      canvas.height;
+
+  }
+
+  if (
+    stereoTintCanvas.width !==
+      canvas.width ||
+    stereoTintCanvas.height !==
+      canvas.height
+  ) {
+
+    stereoTintCanvas.width =
+      canvas.width;
+
+    stereoTintCanvas.height =
+      canvas.height;
+
+  }
+
+}
+
+
+function drawTintedStereoCopy(
+  sourceCanvas,
+  tint,
+  offsetX
+) {
+
+  stereoTintContext.clearRect(
+    0,
+    0,
+    stereoTintCanvas.width,
+    stereoTintCanvas.height
+  );
+
+  stereoTintContext.globalCompositeOperation =
+    "source-over";
+
+  stereoTintContext.drawImage(
+    sourceCanvas,
+    0,
+    0
+  );
+
+  stereoTintContext.globalCompositeOperation =
+    "source-in";
+
+  stereoTintContext.fillStyle =
+    tint;
+
+  stereoTintContext.fillRect(
+    0,
+    0,
+    stereoTintCanvas.width,
+    stereoTintCanvas.height
+  );
+
+  stereoTintContext.globalCompositeOperation =
+    "source-over";
+
+  context.drawImage(
+    stereoTintCanvas,
+    offsetX,
+    0
+  );
+
+}
+
+
+function drawStereoLayer(
+  drawLayer,
+  logicalDepth
+) {
+
+  if (
+    !anaglyphSettings.enabled ||
+    !stereoLayerContext ||
+    !stereoTintContext
+  ) {
+
+    drawLayer(context);
+    return;
+
+  }
+
+  prepareStereoCanvases();
+
+  stereoLayerContext.clearRect(
+    0,
+    0,
+    stereoLayerCanvas.width,
+    stereoLayerCanvas.height
+  );
+
+  drawLayer(
+    stereoLayerContext
+  );
+
+  const pixelShift =
+    logicalDepth *
+    anaglyphSettings.depth *
+    ANAGLYPH_MAX_PIXEL_SHIFT;
+
+  context.save();
+
+  context.globalCompositeOperation =
+    "screen";
+
+  drawTintedStereoCopy(
+    stereoLayerCanvas,
+    "rgb(255,0,0)",
+    -pixelShift
+  );
+
+  drawTintedStereoCopy(
+    stereoLayerCanvas,
+    "rgb(0,255,255)",
+    pixelShift
+  );
+
+  context.restore();
 
 }
 
@@ -3001,6 +3380,11 @@ function rotatePlayer(direction) {
       vibrateDevice([9]);
 
 
+      rotationDepthBoostUntil =
+        performance.now() +
+        ANAGLYPH_ROTATION_BOOST_MS;
+
+
       return true;
 
     }
@@ -3960,7 +4344,8 @@ function drawPieceMatrix(
   matrix,
   position,
   type,
-  isGhost = false
+  isGhost = false,
+  drawingContext = context
 ) {
 
   if (!matrix) {
@@ -3980,7 +4365,7 @@ function drawPieceMatrix(
 
 
           drawBlock(
-            context,
+            drawingContext,
             (
               x +
               position.x
@@ -4052,33 +4437,111 @@ function drawGameBoard() {
   );
 
 
-  drawBoardGrid();
+  if (!anaglyphSettings.enabled) {
+
+    drawBoardGrid();
 
 
-  arena.forEach(
-    (row, y) => {
+    arena.forEach(
+      (row, y) => {
 
-      row.forEach(
-        (type, x) => {
+        row.forEach(
+          (type, x) => {
 
-          if (type === 0) {
-            return;
+            if (type === 0) {
+              return;
+            }
+
+
+            drawBlock(
+              context,
+              x * BOARD_BLOCK_SIZE,
+              y * BOARD_BLOCK_SIZE,
+              BOARD_BLOCK_SIZE,
+              type,
+              false
+            );
+
           }
+        );
+
+      }
+    );
 
 
-          drawBlock(
-            context,
-            x * BOARD_BLOCK_SIZE,
-            y * BOARD_BLOCK_SIZE,
-            BOARD_BLOCK_SIZE,
-            type,
-            false
+    if (
+      player.matrix &&
+      !gameOver
+    ) {
+
+      const ghostPosition =
+        getGhostPosition();
+
+
+      drawPieceMatrix(
+        player.matrix,
+        ghostPosition,
+        player.type,
+        true
+      );
+
+
+      drawPieceMatrix(
+        player.matrix,
+        player.position,
+        player.type,
+        false
+      );
+
+    }
+
+
+    return;
+
+  }
+
+
+  drawStereoLayer(
+    (drawingContext) => {
+      drawBoardGrid(
+        drawingContext
+      );
+    },
+    ANAGLYPH_DEPTHS.grid
+  );
+
+
+  drawStereoLayer(
+    (drawingContext) => {
+
+      arena.forEach(
+        (row, y) => {
+
+          row.forEach(
+            (type, x) => {
+
+              if (type === 0) {
+                return;
+              }
+
+
+              drawBlock(
+                drawingContext,
+                x * BOARD_BLOCK_SIZE,
+                y * BOARD_BLOCK_SIZE,
+                BOARD_BLOCK_SIZE,
+                type,
+                false
+              );
+
+            }
           );
 
         }
       );
 
-    }
+    },
+    ANAGLYPH_DEPTHS.settled
   );
 
 
@@ -4091,19 +4554,42 @@ function drawGameBoard() {
       getGhostPosition();
 
 
-    drawPieceMatrix(
-      player.matrix,
-      ghostPosition,
-      player.type,
-      true
+    drawStereoLayer(
+      (drawingContext) => {
+
+        drawPieceMatrix(
+          player.matrix,
+          ghostPosition,
+          player.type,
+          true,
+          drawingContext
+        );
+
+      },
+      ANAGLYPH_DEPTHS.ghost
     );
 
 
-    drawPieceMatrix(
-      player.matrix,
-      player.position,
-      player.type,
-      false
+    const activePieceDepth =
+      performance.now() <
+        rotationDepthBoostUntil
+        ? ANAGLYPH_DEPTHS.rotating
+        : ANAGLYPH_DEPTHS.falling;
+
+
+    drawStereoLayer(
+      (drawingContext) => {
+
+        drawPieceMatrix(
+          player.matrix,
+          player.position,
+          player.type,
+          false,
+          drawingContext
+        );
+
+      },
+      activePieceDepth
     );
 
   }
@@ -4111,16 +4597,18 @@ function drawGameBoard() {
 }
 
 
-function drawBoardGrid() {
+function drawBoardGrid(
+  drawingContext = context
+) {
 
-  context.save();
+  drawingContext.save();
 
 
-  context.strokeStyle =
+  drawingContext.strokeStyle =
     "rgba(181,98,255,0.08)";
 
 
-  context.lineWidth = 1;
+  drawingContext.lineWidth = 1;
 
 
   for (
@@ -4129,22 +4617,22 @@ function drawBoardGrid() {
     column += 1
   ) {
 
-    context.beginPath();
+    drawingContext.beginPath();
 
 
-    context.moveTo(
+    drawingContext.moveTo(
       column * BOARD_BLOCK_SIZE,
       0
     );
 
 
-    context.lineTo(
+    drawingContext.lineTo(
       column * BOARD_BLOCK_SIZE,
       canvas.height
     );
 
 
-    context.stroke();
+    drawingContext.stroke();
 
   }
 
@@ -4155,27 +4643,27 @@ function drawBoardGrid() {
     row += 1
   ) {
 
-    context.beginPath();
+    drawingContext.beginPath();
 
 
-    context.moveTo(
+    drawingContext.moveTo(
       0,
       row * BOARD_BLOCK_SIZE
     );
 
 
-    context.lineTo(
+    drawingContext.lineTo(
       canvas.width,
       row * BOARD_BLOCK_SIZE
     );
 
 
-    context.stroke();
+    drawingContext.stroke();
 
   }
 
 
-  context.restore();
+  drawingContext.restore();
 
 }
 
@@ -6278,6 +6766,54 @@ function initialiseInterfaceEvents() {
   );
 
 
+  anaglyphToggleButton?.addEventListener(
+    "click",
+    () => {
+
+      setAnaglyphEnabled(
+        !anaglyphSettings.enabled
+      );
+
+    }
+  );
+
+
+  quickMenuAnaglyphButton?.addEventListener(
+    "click",
+    () => {
+
+      setAnaglyphEnabled(
+        !anaglyphSettings.enabled
+      );
+
+    }
+  );
+
+
+  anaglyphDepthSlider?.addEventListener(
+    "input",
+    () => {
+
+      setAnaglyphDepthFromPercent(
+        anaglyphDepthSlider.value
+      );
+
+    }
+  );
+
+
+  quickMenuAnaglyphDepthSlider?.addEventListener(
+    "input",
+    () => {
+
+      setAnaglyphDepthFromPercent(
+        quickMenuAnaglyphDepthSlider.value
+      );
+
+    }
+  );
+
+
   pauseControlsButton?.addEventListener(
     "click",
     () => {
@@ -6812,6 +7348,8 @@ function initialiseBlockDrop() {
   applyControlPreferences();
 
   applyAudioSettingsToInterface();
+
+  updateAnaglyphInterface();
 
   updateRotationDirectionInterface();
 
