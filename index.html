@@ -1156,5 +1156,82 @@
     });
   </script>
 
+  <!-- =====================================================
+       POINTLESS ANALYTICS
+       Tracks homepage visits and project/link interest.
+  ====================================================== -->
+  <script>
+    (() => {
+      "use strict";
+
+      const ANALYTICS_ENDPOINT =
+        "https://pointless-analytics.pointlessproductions2020.workers.dev/track";
+
+      function trackPointlessEvent(eventName) {
+        try {
+          fetch(ANALYTICS_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event: eventName,
+              app: "pointlessproduction",
+              page: window.location.pathname || "/",
+              mode: "website",
+              referrer: document.referrer || "direct",
+              device: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                ? "mobile"
+                : "desktop"
+            }),
+            keepalive: true
+          }).catch(() => {});
+        } catch (_) {
+          // Analytics must never interfere with the website.
+        }
+      }
+
+      window.addEventListener("load", () => {
+        trackPointlessEvent("page_view");
+      });
+
+      const trackedDestinations = [
+        ["games/blockythebrave/", "blocky_clicked"],
+        ["games/blockdrop/", "blockdrop_clicked"],
+        ["games/thnake/", "thnake_clicked"],
+        ["https://paintless.app/", "paintless_clicked"],
+        ["books.html", "books_clicked"],
+        ["games.html", "arcade_clicked"],
+        ["com.pointlessproductions.stopmotion3d", "stopmotion3d_clicked"],
+        ["com.PointlessProductions2020.TwoCanPlayMiniGames", "2canplay_clicked"],
+        ["com.PointlessProductions2020.SpiderSplat3D", "spidersplat_clicked"],
+        ["com.pointlessproductions.colourit.adstest", "colourme_clicked"],
+        ["com.pointlessproductions.mymoneymanager", "money_manager_clicked"],
+        ["com.pointlessproductions.wristwriggler", "wrist_wriggler_clicked"]
+      ];
+
+      document.addEventListener("click", (event) => {
+        const link = event.target.closest("a[href]");
+
+        if (link) {
+          const href = link.getAttribute("href") || "";
+          const match = trackedDestinations.find(([needle]) =>
+            href.includes(needle)
+          );
+
+          if (match) {
+            trackPointlessEvent(match[1]);
+          }
+        }
+
+        if (event.target.closest("#surprise-button")) {
+          trackPointlessEvent("surprise_me_clicked");
+        }
+
+        if (event.target.closest("#feeling-pointless-button")) {
+          trackPointlessEvent("feeling_pointless_clicked");
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>
