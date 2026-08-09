@@ -170,6 +170,76 @@
   };
 
 
+     /* =======================================================
+     MAJOR PAINTLESS EVENTS
+  ======================================================= */
+
+  document.addEventListener(
+    "paintless:image-imported",
+    () => {
+      track(
+        "image_imported"
+      );
+    }
+  );
+
+
+  document.addEventListener(
+    "paintless:file-exported",
+    () => {
+      track(
+        "exported"
+      );
+    }
+  );
+
+
+  document.addEventListener(
+    "paintless3d:mode-changed",
+    (event) => {
+
+      const mode =
+        event.detail?.mode === "3d"
+          ? "3d"
+          : "2d";
+
+
+      if (
+        mode === "3d"
+      ) {
+
+        track(
+          "3d_enabled",
+          {
+            mode:
+              "3d"
+          }
+        );
+
+      }
+
+    }
+  );
+
+
+  const supportButton =
+    document.querySelector(
+      ".support-tool-button"
+    );
+
+
+  supportButton
+    ?.addEventListener(
+      "click",
+      () => {
+
+        track(
+          "support_clicked"
+        );
+
+      }
+    );
+
   /* =======================================================
      START
   ======================================================= */
