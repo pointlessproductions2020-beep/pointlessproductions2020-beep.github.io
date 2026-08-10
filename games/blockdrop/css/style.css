@@ -3743,3 +3743,40 @@ body.anaglyph-enabled .playfield-frame {
     grid-template-columns: auto minmax(70px, 100px) auto;
   }
 }
+
+
+
+/* =========================================================
+   ANAGLYPH 3D V2 — "MAKE IT POP"
+========================================================= */
+
+.anaglyph-toggle.is-active {
+  color: #ffffff;
+
+  text-shadow:
+    -2px 0 8px rgba(255, 77, 95, 0.58),
+    2px 0 8px rgba(53, 231, 255, 0.58);
+}
+
+body.anaglyph-enabled #tetris {
+  background: #020105;
+
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.42);
+}
+
+body.anaglyph-enabled .playfield-lights span {
+  animation: anaglyph-cabinet-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes anaglyph-cabinet-breathe {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
