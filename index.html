@@ -59,6 +59,19 @@
     href="assets/css/main.css"
   >
 
+  <style>
+    /* Multiple browser tools inside the existing Create section */
+    .tool-showcase-stack {
+      display: grid;
+      gap: 18px;
+      width: 100%;
+    }
+
+    .tool-showcase-stack .tool-showcase {
+      width: 100%;
+    }
+  </style>
+
   <script
     async
     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3870628046924057"
@@ -747,49 +760,57 @@
 
       </div>
 
-      <a
-        class="tool-showcase"
-        href="https://paintless.app/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <img
-          src="assets/images/tools/paintless-logo.webp"
-          alt="Paintless browser image editor"
-          loading="lazy"
+      <div class="tool-showcase-stack">
+
+        <!-- Paintless -->
+        <a
+          class="tool-showcase"
+          href="https://paintless.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Launch Paintless"
         >
+          <img
+            src="assets/images/tools/paintless-logo.webp"
+            alt="Paintless browser image editor"
+            loading="lazy"
+          >
 
-              <span>
-          <small>Free browser editor</small>
-          <strong>Paintless</strong>
-          <em>
-            Create without limits.
-          </em>
-        </span>
-      </a>
+          <span>
+            <small>Free browser editor</small>
+            <strong>Paintless</strong>
+            <em>
+              Create without limits.
+            </em>
+          </span>
+        </a>
 
-      <!-- ParaL-Easy -->
-      <a
-        class="tool-card"
-        href="/tools/paraleasy/"
-        aria-label="Launch ParaL-Easy"
-      >
-        <img
-          src="/tools/paraleasy/assets/images/logo.webp"
-          alt="ParaL-Easy"
-          loading="lazy"
+
+        <!-- ParaL-Easy -->
+        <a
+          class="tool-showcase"
+          href="/tools/paraleasy/"
+          aria-label="Launch ParaL-Easy"
         >
+          <img
+            src="/tools/paraleasy/assets/images/logo.webp"
+            alt="ParaL-Easy parallax watch face designer"
+            loading="lazy"
+          >
 
-        <span>
-          <small>Parallax watch face designer</small>
-          <strong>ParaL-Easy</strong>
-          <em>
-            Parallax made easy.
-          </em>
-        </span>
-      </a>
+          <span>
+            <small>Parallax watch face designer</small>
+            <strong>ParaL-Easy</strong>
+            <em>
+              Parallax made easy.
+            </em>
+          </span>
+        </a>
+
+      </div>
 
     </section>
+
 
     <!-- =====================================================
          DISCOVER / APPS / BOOKS
@@ -1218,6 +1239,7 @@
         ["games/blockdrop/", "blockdrop_clicked"],
         ["games/thnake/", "thnake_clicked"],
         ["https://paintless.app/", "paintless_clicked"],
+        ["tools/paraleasy/", "paraleasy_clicked"],
         ["books.html", "books_clicked"],
         ["games.html", "arcade_clicked"],
         ["com.pointlessproductions.stopmotion3d", "stopmotion3d_clicked"],
