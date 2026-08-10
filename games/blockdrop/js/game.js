@@ -616,8 +616,15 @@ const ANAGLYPH_DEPTHS = {
   rotating: 2
 };
 
-const ANAGLYPH_MAX_PIXEL_SHIFT = 5;
-const ANAGLYPH_ROTATION_BOOST_MS = 170;
+const ANAGLYPH_MAX_PIXEL_SHIFT = 4.25;
+const ANAGLYPH_ROTATION_BOOST_MS = 190;
+
+const ANAGLYPH_GRID_DRIFT_SPEED = 0.012;
+const ANAGLYPH_GRID_PERSPECTIVE_SPEED = 0.0007;
+const ANAGLYPH_GRID_PULSE_DECAY = 0.0035;
+
+const ANAGLYPH_EDGE_ALPHA = 0.72;
+const ANAGLYPH_ORIGINAL_ALPHA = 1;
 
 
 const DEFAULT_AUDIO_SETTINGS = {
@@ -793,6 +800,10 @@ let anaglyphSettings =
   loadAnaglyphSettings();
 
 let rotationDepthBoostUntil = 0;
+
+let anaglyphGridPulse = 0;
+let anaglyphGridPulseStartedAt = 0;
+let anaglyphLastHardDropPulse = 0;
 
 const stereoLayerCanvas =
   document.createElement("canvas");
@@ -1147,7 +1158,7 @@ function loadAnaglyphSettings() {
         Boolean(parsed.enabled),
       depth:
         Math.min(
-          2,
+          5,
           Math.max(
             0,
             Number(parsed.depth) || 1
@@ -1276,6 +1287,15 @@ function setAnaglyphEnabled(enabled) {
 
   saveAnaglyphSettings();
   updateAnaglyphInterface();
+
+  if (anaglyphSettings.enabled) {
+
+    triggerAnaglyphGridPulse(
+      1.6
+    );
+
+  }
+
   drawGameBoard();
 
 }
@@ -1285,7 +1305,7 @@ function setAnaglyphDepthFromPercent(percent) {
 
   const numericPercent =
     Math.min(
-      200,
+      500,
       Math.max(
         0,
         Number(percent) || 0
@@ -1340,7 +1360,8 @@ function prepareStereoCanvases() {
 function drawTintedStereoCopy(
   sourceCanvas,
   tint,
-  offsetX
+  offsetX,
+  alpha = ANAGLYPH_EDGE_ALPHA
 ) {
 
   stereoTintContext.clearRect(
@@ -1352,6 +1373,9 @@ function drawTintedStereoCopy(
 
   stereoTintContext.globalCompositeOperation =
     "source-over";
+
+  stereoTintContext.globalAlpha =
+    1;
 
   stereoTintContext.drawImage(
     sourceCanvas,
@@ -1375,19 +1399,59 @@ function drawTintedStereoCopy(
   stereoTintContext.globalCompositeOperation =
     "source-over";
 
+  context.save();
+
+  context.globalAlpha =
+    alpha;
+
+  context.globalCompositeOperation =
+    "screen";
+
   context.drawImage(
     stereoTintCanvas,
     offsetX,
     0
   );
 
+  context.restore();
+
+}
+
+
+function drawOriginalStereoLayer(
+  sourceCanvas
+) {
+
+  context.save();
+
+  context.globalAlpha =
+    ANAGLYPH_ORIGINAL_ALPHA;
+
+  context.globalCompositeOperation =
+    "source-over";
+
+  context.drawImage(
+    sourceCanvas,
+    0,
+    0
+  );
+
+  context.restore();
+
 }
 
 
 function drawStereoLayer(
   drawLayer,
-  logicalDepth
+  logicalDepth,
+  options = {}
 ) {
+
+  const {
+    preserveOriginal = true,
+    edgeAlpha = ANAGLYPH_EDGE_ALPHA
+  } = options;
+
 
   if (
     !anaglyphSettings.enabled ||
@@ -1400,7 +1464,9 @@ function drawStereoLayer(
 
   }
 
+
   prepareStereoCanvases();
+
 
   stereoLayerContext.clearRect(
     0,
@@ -1409,33 +1475,110 @@ function drawStereoLayer(
     stereoLayerCanvas.height
   );
 
+
   drawLayer(
     stereoLayerContext
   );
+
 
   const pixelShift =
     logicalDepth *
     anaglyphSettings.depth *
     ANAGLYPH_MAX_PIXEL_SHIFT;
 
-  context.save();
 
-  context.globalCompositeOperation =
-    "screen";
+  /*
+   * V2 rendering:
+   * keep the actual colourful game artwork in the centre,
+   * then add displaced red/cyan stereo information around it.
+   *
+   * This prevents the coloured tetrominoes becoming white
+   * when the red/cyan views overlap.
+   */
+
+  if (preserveOriginal) {
+
+    drawOriginalStereoLayer(
+      stereoLayerCanvas
+    );
+
+  }
+
+
+  if (
+    Math.abs(pixelShift) <
+    0.01
+  ) {
+    return;
+  }
+
 
   drawTintedStereoCopy(
     stereoLayerCanvas,
     "rgb(255,0,0)",
-    -pixelShift
+    -pixelShift,
+    edgeAlpha
   );
+
 
   drawTintedStereoCopy(
     stereoLayerCanvas,
     "rgb(0,255,255)",
-    pixelShift
+    pixelShift,
+    edgeAlpha
   );
 
-  context.restore();
+}
+
+
+function triggerAnaglyphGridPulse(
+  amount = 1
+) {
+
+  if (!anaglyphSettings.enabled) {
+    return;
+  }
+
+  anaglyphGridPulse =
+    Math.min(
+      2.5,
+      Math.max(
+        anaglyphGridPulse,
+        amount
+      )
+    );
+
+  anaglyphGridPulseStartedAt =
+    performance.now();
+
+}
+
+
+function getAnaglyphGridPulse(
+  now = performance.now()
+) {
+
+  if (anaglyphGridPulse <= 0) {
+    return 0;
+  }
+
+  const elapsed =
+    now -
+    anaglyphGridPulseStartedAt;
+
+  const pulse =
+    anaglyphGridPulse *
+    Math.exp(
+      -elapsed *
+      ANAGLYPH_GRID_PULSE_DECAY
+    );
+
+  if (pulse < 0.01) {
+    anaglyphGridPulse = 0;
+    return 0;
+  }
+
+  return pulse;
 
 }
 
@@ -3259,6 +3402,10 @@ function hardDropPlayer() {
 
   shakeScreen();
 
+  triggerAnaglyphGridPulse(
+    0.65
+  );
+
   lockCurrentPiece();
 
 }
@@ -3383,6 +3530,11 @@ function rotatePlayer(direction) {
       rotationDepthBoostUntil =
         performance.now() +
         ANAGLYPH_ROTATION_BOOST_MS;
+
+
+      triggerAnaglyphGridPulse(
+        0.16
+      );
 
 
       return true;
@@ -3700,6 +3852,13 @@ function clearCompletedLines() {
     numberOfLines === 4
       ? 300
       : 180
+  );
+
+
+  triggerAnaglyphGridPulse(
+    numberOfLines === 4
+      ? 2.15
+      : 0.85 + numberOfLines * 0.22
   );
 
 
@@ -4504,10 +4663,17 @@ function drawGameBoard() {
   drawStereoLayer(
     (drawingContext) => {
       drawBoardGrid(
-        drawingContext
+        drawingContext,
+        {
+          animated: true
+        }
       );
     },
-    ANAGLYPH_DEPTHS.grid
+    ANAGLYPH_DEPTHS.grid,
+    {
+      preserveOriginal: true,
+      edgeAlpha: 0.28
+    }
   );
 
 
@@ -4598,17 +4764,83 @@ function drawGameBoard() {
 
 
 function drawBoardGrid(
-  drawingContext = context
+  drawingContext = context,
+  options = {}
 ) {
+
+  const {
+    animated =
+      anaglyphSettings.enabled
+  } = options;
+
 
   drawingContext.save();
 
 
+  const now =
+    performance.now();
+
+
+  const intensity =
+    anaglyphSettings.enabled
+      ? anaglyphSettings.depth
+      : 0;
+
+
+  const pulse =
+    animated
+      ? getAnaglyphGridPulse(now)
+      : 0;
+
+
+  /*
+   * The grid acts as the rear wall of the 3D cabinet.
+   *
+   * In 3D mode it drifts downward very slowly and breathes
+   * sideways around the centre. Hard drops and line clears
+   * send a short-lived pulse through it.
+   */
+
+  const verticalDrift =
+    animated
+      ? (
+          now *
+          ANAGLYPH_GRID_DRIFT_SPEED *
+          (0.65 + intensity * 0.18) +
+          pulse * 11
+        ) %
+        BOARD_BLOCK_SIZE
+      : 0;
+
+
+  const perspectiveWave =
+    animated
+      ? Math.sin(
+          now *
+          ANAGLYPH_GRID_PERSPECTIVE_SPEED
+        ) *
+        (
+          0.7 +
+          intensity * 0.55
+        ) +
+        pulse * 1.5
+      : 0;
+
+
   drawingContext.strokeStyle =
-    "rgba(181,98,255,0.08)";
+    animated
+      ? "rgba(181,98,255,0.055)"
+      : "rgba(181,98,255,0.08)";
 
 
-  drawingContext.lineWidth = 1;
+  drawingContext.lineWidth =
+    animated
+      ? 0.8
+      : 1;
+
+
+  const centreX =
+    canvas.width / 2;
 
 
   for (
@@ -4617,17 +4849,38 @@ function drawBoardGrid(
     column += 1
   ) {
 
+    const baseX =
+      column *
+      BOARD_BLOCK_SIZE;
+
+
+    const distanceFromCentre =
+      (
+        baseX -
+        centreX
+      ) /
+      centreX;
+
+
+    const shiftedX =
+      baseX +
+      (
+        distanceFromCentre *
+        perspectiveWave
+      );
+
+
     drawingContext.beginPath();
 
 
     drawingContext.moveTo(
-      column * BOARD_BLOCK_SIZE,
+      shiftedX,
       0
     );
 
 
     drawingContext.lineTo(
-      column * BOARD_BLOCK_SIZE,
+      shiftedX,
       canvas.height
     );
 
@@ -4638,25 +4891,82 @@ function drawBoardGrid(
 
 
   for (
-    let row = 0;
-    row <= BOARD_ROWS;
+    let row = -1;
+    row <= BOARD_ROWS + 1;
     row += 1
   ) {
+
+    const y =
+      row *
+      BOARD_BLOCK_SIZE +
+      verticalDrift;
+
 
     drawingContext.beginPath();
 
 
     drawingContext.moveTo(
       0,
-      row * BOARD_BLOCK_SIZE
+      y
     );
 
 
     drawingContext.lineTo(
       canvas.width,
-      row * BOARD_BLOCK_SIZE
+      y
     );
 
+
+    drawingContext.stroke();
+
+  }
+
+
+  if (
+    animated &&
+    pulse > 0.02
+  ) {
+
+    drawingContext.strokeStyle =
+      `rgba(53,231,255,${
+        Math.min(
+          0.18,
+          pulse * 0.07
+        )
+      })`;
+
+
+    drawingContext.lineWidth =
+      1 +
+      pulse * 0.55;
+
+
+    const pulseY =
+      canvas.height -
+      (
+        (
+          now -
+          anaglyphGridPulseStartedAt
+        ) *
+        0.42
+      ) %
+      (
+        canvas.height +
+        120
+      );
+
+
+    drawingContext.beginPath();
+
+    drawingContext.moveTo(
+      0,
+      pulseY
+    );
+
+    drawingContext.lineTo(
+      canvas.width,
+      pulseY
+    );
 
     drawingContext.stroke();
 
