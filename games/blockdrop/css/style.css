@@ -3780,3 +3780,55 @@ body.anaglyph-enabled .playfield-lights span {
   }
 }
 
+
+
+/* =========================================================
+   ANAGLYPH 3D V3 — BIPOLAR DEPTH CONTROL
+========================================================= */
+
+.anaglyph-depth-control {
+  position: relative;
+}
+
+.anaglyph-depth-control::after {
+  content: "";
+
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+
+  width: 2px;
+  height: 9px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.48);
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+.quick-menu-depth {
+  position: relative;
+}
+
+.quick-menu-depth::after {
+  content: "";
+
+  position: absolute;
+  left: 50%;
+  bottom: 11px;
+
+  width: 2px;
+  height: 9px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.48);
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
