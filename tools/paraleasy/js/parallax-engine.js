@@ -1,9 +1,8 @@
 "use strict";
 
-
 /* =========================================================
-   ParaL-Easy
-   LIVE PARALLAX PREVIEW ENGINE
+   ParaL-Easy V2
+   PHYSICAL WATCH + PARALLAX PREVIEW ENGINE
 ========================================================= */
 
 
@@ -12,194 +11,156 @@
 ========================================================= */
 
 const parallaxCanvas =
-  document.querySelector(
-    "#parallax-canvas"
-  );
+  document.querySelector("#parallax-canvas");
 
 const parallaxContext =
-  parallaxCanvas?.getContext(
-    "2d"
-  );
+  parallaxCanvas?.getContext("2d");
 
 const watchDisplay =
-  document.querySelector(
-    "#watch-display"
-  );
+  document.querySelector("#watch-display");
 
 const canvasEmptyState =
-  document.querySelector(
-    "#canvas-empty-state"
-  );
+  document.querySelector("#canvas-empty-state");
 
 const tiltPad =
-  document.querySelector(
-    "#tilt-pad"
-  );
+  document.querySelector("#tilt-pad");
 
 const tiltPuck =
-  document.querySelector(
-    "#tilt-puck"
-  );
+  document.querySelector("#tilt-puck");
 
 const tiltXValue =
-  document.querySelector(
-    "#tilt-x-value"
-  );
+  document.querySelector("#tilt-x-value");
 
 const tiltYValue =
-  document.querySelector(
-    "#tilt-y-value"
-  );
+  document.querySelector("#tilt-y-value");
 
 const centreTiltButton =
-  document.querySelector(
-    "#centre-tilt-btn"
-  );
+  document.querySelector("#centre-tilt-btn");
 
 const flipDepthButton =
-  document.querySelector(
-    "#flip-depth-btn"
-  );
+  document.querySelector("#flip-depth-btn");
+
+/*
+ * These do not exist in the old HTML yet.
+ * That's intentional.
+ *
+ * Once we add them in the next step, the engine automatically
+ * starts using them.
+ */
+
+const springToggle =
+  document.querySelector("#spring-centre-toggle");
+
+const watchTiltShell =
+  document.querySelector("#watch-tilt-shell") ||
+  watchDisplay;
+
+const watchGlass =
+  document.querySelector("#watch-glass");
 
 
 /* =========================================================
    2. ENGINE CONSTANTS
 ========================================================= */
 
+const PARALEASY_MAX_PARALLAX_PIXELS = 72;
+
+const PARALEASY_MAX_SCALE_COMPENSATION = 0.035;
+
 /*
- * Depth is stored as:
+ * The design control can represent ±45°.
  *
- * -100 = deepest into the watch
- *    0 = neutral
- * +100 = strongest out-of-watch movement
- *
- * This constant converts depth into a useful maximum movement
- * in canvas pixels at full Studio preview response.
+ * The physical CSS watch does NOT rotate a ridiculous 45°
+ * because that would look like somebody snapped their wrist.
  */
 
-const PARALEASY_MAX_PARALLAX_PIXELS =
-  72;
+const PARALEASY_PREVIEW_TILT_LIMIT = 45;
 
+const PARALEASY_PHYSICAL_WATCH_MAX_ROTATION = 14;
 
 /*
- * Slight scale compensation prevents moving foreground layers
- * from revealing transparent edges too easily.
+ * Pointer target smoothing.
  */
 
-const PARALEASY_MAX_SCALE_COMPENSATION =
-  0.035;
-
+const PARALEASY_TILT_SMOOTHING = 0.16;
 
 /*
- * Maximum mouse / touch preview angle.
- *
- * Each layer still has its own gyroRange setting.
+ * Spring behaviour.
  */
 
-const PARALEASY_PREVIEW_TILT_LIMIT =
-  45;
-
-
-/*
- * A little smoothing makes the watch feel less like a raw
- * mouse-drag demo and more like physical movement.
- */
-
-const PARALEASY_TILT_SMOOTHING =
-  0.18;
+const PARALEASY_SPRING_STRENGTH = 0.105;
+const PARALEASY_SPRING_DAMPING = 0.78;
 
 
 /* =========================================================
-   3. RENDER STATE
+   3. ENGINE STATE
 ========================================================= */
 
-let targetTiltX =
-  0;
+let targetTiltX = 0;
+let targetTiltY = 0;
 
-let targetTiltY =
-  0;
+let renderedTiltX = 0;
+let renderedTiltY = 0;
 
-let renderedTiltX =
-  0;
+let springVelocityX = 0;
+let springVelocityY = 0;
 
-let renderedTiltY =
-  0;
+let parallaxAnimationFrame = null;
 
-let parallaxAnimationFrame =
-  null;
+let previewDragging = false;
+let previewPointerId = null;
 
-let previewDragging =
-  false;
+/*
+ * ON by default.
+ *
+ * Later the HTML toggle controls this.
+ */
 
-let previewPointerId =
-  null;
+let springToCentre = true;
 
 
 /* =========================================================
-   4. INITIAL CANVAS SIZE
+   4. CANVAS SIZE
 ========================================================= */
 
 function syncParallaxCanvasSize() {
 
-  if (
-    !parallaxCanvas
-  ) {
+  if (!parallaxCanvas) {
     return;
   }
 
-
   const project =
     getProject();
-
 
   const width =
     Math.max(
       1,
       Math.round(
-        Number(
-          project.canvas.width
-        ) || 450
+        Number(project.canvas.width) || 450
       )
     );
-
 
   const height =
     Math.max(
       1,
       Math.round(
-        Number(
-          project.canvas.height
-        ) || 450
+        Number(project.canvas.height) || 450
       )
     );
 
-
-  if (
-    parallaxCanvas.width !==
-      width
-  ) {
-
-    parallaxCanvas.width =
-      width;
-
+  if (parallaxCanvas.width !== width) {
+    parallaxCanvas.width = width;
   }
 
-
-  if (
-    parallaxCanvas.height !==
-      height
-  ) {
-
-    parallaxCanvas.height =
-      height;
-
+  if (parallaxCanvas.height !== height) {
+    parallaxCanvas.height = height;
   }
 
 }
 
 
 /* =========================================================
-   5. MAIN RENDER
+   5. MAIN CANVAS RENDER
 ========================================================= */
 
 function renderParallaxPreview() {
@@ -211,13 +172,10 @@ function renderParallaxPreview() {
     return;
   }
 
-
   syncParallaxCanvasSize();
-
 
   const project =
     getProject();
-
 
   parallaxContext.clearRect(
     0,
@@ -226,51 +184,30 @@ function renderParallaxPreview() {
     parallaxCanvas.height
   );
 
+  if (project.layers.length === 0) {
 
-  if (
-    project.layers.length === 0
-  ) {
-
-    if (
-      canvasEmptyState
-    ) {
-
-      canvasEmptyState.hidden =
-        false;
-
+    if (canvasEmptyState) {
+      canvasEmptyState.hidden = false;
     }
 
+    updatePhysicalWatch();
 
     return;
-
   }
 
-
-  if (
-    canvasEmptyState
-  ) {
-
-    canvasEmptyState.hidden =
-      true;
-
+  if (canvasEmptyState) {
+    canvasEmptyState.hidden = true;
   }
-
 
   const responseMultiplier =
     getPreviewResponseMultiplier();
 
-
   /*
-   * Painter order:
-   *
-   * project.layers[0] = back
-   * final layer       = front
+   * Normal painter order:
+   * back → front.
    */
 
-  for (
-    const layer
-    of project.layers
-  ) {
+  for (const layer of project.layers) {
 
     if (
       !layer.visible ||
@@ -279,13 +216,14 @@ function renderParallaxPreview() {
       continue;
     }
 
-
     renderParallaxLayer(
       layer,
       responseMultiplier
     );
 
   }
+
+  updatePhysicalWatch();
 
 }
 
@@ -300,10 +238,7 @@ function renderParallaxLayer(
 ) {
 
   const image =
-    getCachedLayerImage(
-      layer.id
-    );
-
+    getCachedLayerImage(layer.id);
 
   if (
     !image ||
@@ -312,13 +247,11 @@ function renderParallaxLayer(
     return;
   }
 
-
   const movement =
     calculateLayerMovement(
       layer,
       responseMultiplier
     );
-
 
   const sourceWidth =
     image.naturalWidth ||
@@ -328,7 +261,6 @@ function renderParallaxLayer(
     image.naturalHeight ||
     image.height;
 
-
   if (
     !sourceWidth ||
     !sourceHeight
@@ -336,24 +268,11 @@ function renderParallaxLayer(
     return;
   }
 
-
-  /*
-   * Images are fitted inside the project canvas while
-   * preserving their aspect ratio.
-   *
-   * This makes full 450x450 layers line up naturally, while
-   * smaller transparent foreground objects also remain usable.
-   */
-
   const baseScale =
     Math.min(
-      parallaxCanvas.width /
-        sourceWidth,
-
-      parallaxCanvas.height /
-        sourceHeight
+      parallaxCanvas.width / sourceWidth,
+      parallaxCanvas.height / sourceHeight
     );
-
 
   const parallaxScale =
     calculateScaleCompensation(
@@ -361,18 +280,15 @@ function renderParallaxLayer(
       movement
     );
 
-
   const userScale =
     Number(
       layer.transform?.scale
     ) || 1;
 
-
   const finalScale =
     baseScale *
     parallaxScale *
     userScale;
-
 
   const drawWidth =
     sourceWidth *
@@ -382,13 +298,11 @@ function renderParallaxLayer(
     sourceHeight *
     finalScale;
 
-
   const centreX =
     parallaxCanvas.width / 2;
 
   const centreY =
     parallaxCanvas.height / 2;
-
 
   const baseX =
     Number(
@@ -405,9 +319,7 @@ function renderParallaxLayer(
       layer.transform?.rotation
     ) || 0;
 
-
   parallaxContext.save();
-
 
   parallaxContext.globalAlpha =
     clampNumber(
@@ -416,7 +328,6 @@ function renderParallaxLayer(
       1,
       1
     );
-
 
   parallaxContext.translate(
     centreX +
@@ -428,24 +339,19 @@ function renderParallaxLayer(
       movement.y
   );
 
-
   parallaxContext.rotate(
     rotation *
       Math.PI /
       180
   );
 
-
   parallaxContext.drawImage(
     image,
-
     -drawWidth / 2,
     -drawHeight / 2,
-
     drawWidth,
     drawHeight
   );
-
 
   parallaxContext.restore();
 
@@ -453,7 +359,7 @@ function renderParallaxLayer(
 
 
 /* =========================================================
-   7. CALCULATE LAYER MOVEMENT
+   7. PHYSICAL PARALLAX MODEL
 ========================================================= */
 
 function calculateLayerMovement(
@@ -464,13 +370,10 @@ function calculateLayerMovement(
   const project =
     getProject();
 
-
   const depthDirection =
     Number(
-      project.preview
-        .depthDirection
+      project.preview.depthDirection
     ) || 1;
-
 
   const depth =
     clampNumber(
@@ -480,19 +383,18 @@ function calculateLayerMovement(
       0
     );
 
+  /*
+   * Flip Depth changes DEPTH interpretation only.
+   *
+   * It does not change which way the physical watch tilts.
+   */
 
-  const signedDepth =
+  const effectiveDepth =
     depth *
     depthDirection;
 
-
-  /*
-   * Convert -100..100 to -1..1.
-   */
-
   const normalisedDepth =
-    signedDepth / 100;
-
+    effectiveDepth / 100;
 
   const xStrength =
     clampNumber(
@@ -502,7 +404,6 @@ function calculateLayerMovement(
       1
     );
 
-
   const yStrength =
     clampNumber(
       layer.yStrength,
@@ -510,7 +411,6 @@ function calculateLayerMovement(
       2,
       1
     );
-
 
   const gyroRange =
     clampNumber(
@@ -520,84 +420,66 @@ function calculateLayerMovement(
       45
     );
 
-
-  /*
-   * How far through this layer's configured gyro range the
-   * current preview tilt has travelled.
-   */
-
   const xTiltRatio =
     clampNumber(
-      renderedTiltX /
-        gyroRange,
+      renderedTiltX / gyroRange,
       -1,
       1,
       0
     );
-
 
   const yTiltRatio =
     clampNumber(
-      renderedTiltY /
-        gyroRange,
+      renderedTiltY / gyroRange,
       -1,
       1,
       0
     );
 
-
-  const maxMovement =
-    PARALEASY_MAX_PARALLAX_PIXELS *
-    Math.abs(
-      normalisedDepth
-    );
-
-
   /*
-   * Positive depth:
-   * layer travels with preview direction.
-   *
-   * Negative depth:
-   * layer travels opposite the preview direction.
-   *
-   * Flip Depth reverses all layers globally.
+   * Depth magnitude determines how much it moves.
    */
 
-  const direction =
+  const movementMagnitude =
+    PARALEASY_MAX_PARALLAX_PIXELS *
+    Math.abs(normalisedDepth);
+
+  /*
+   * IMPORTANT V2 CHANGE
+   * -------------------------------------------------------
+   *
+   * We're treating the screen like a window into the watch.
+   *
+   * When the physical watch tilts RIGHT, an object sitting
+   * deeper behind the glass appears to shift LEFT.
+   *
+   * A layer projected toward the viewer does the opposite.
+   *
+   * Both axes now follow the SAME physical rule.
+   */
+
+  const depthSign =
     normalisedDepth === 0
       ? 0
-      : Math.sign(
-          normalisedDepth
-        );
-
+      : Math.sign(normalisedDepth);
 
   const x =
-    xTiltRatio *
-    maxMovement *
-    direction *
+    -xTiltRatio *
+    movementMagnitude *
+    depthSign *
     xStrength *
     responseMultiplier;
 
-
-  /*
-   * Screen Y coordinates grow downward.
-   *
-   * Negating Y here makes upward wrist tilt feel visually
-   * natural in the preview.
-   */
-
   const y =
     -yTiltRatio *
-    maxMovement *
-    direction *
+    movementMagnitude *
+    depthSign *
     yStrength *
     responseMultiplier;
-
 
   return {
     x,
     y,
-
     normalisedDepth,
     xTiltRatio,
     yTiltRatio
@@ -620,13 +502,9 @@ function calculateScaleCompensation(
       movement.normalisedDepth
     );
 
-
-  if (
-    depthAmount <= 0
-  ) {
+  if (depthAmount <= 0) {
     return 1;
   }
-
 
   const movementStrength =
     Math.max(
@@ -638,23 +516,149 @@ function calculateScaleCompensation(
       )
     );
 
-
   const extraScale =
     PARALEASY_MAX_SCALE_COMPENSATION *
     depthAmount *
     movementStrength;
 
+  return 1 + extraScale;
 
-  return (
-    1 +
-    extraScale
+}
+
+
+/* =========================================================
+   9. PHYSICAL WATCH TRANSFORM
+========================================================= */
+
+function updatePhysicalWatch() {
+
+  if (!watchTiltShell) {
+    return;
+  }
+
+  const xRatio =
+    clampNumber(
+      renderedTiltX /
+        PARALEASY_PREVIEW_TILT_LIMIT,
+      -1,
+      1,
+      0
+    );
+
+  const yRatio =
+    clampNumber(
+      renderedTiltY /
+        PARALEASY_PREVIEW_TILT_LIMIT,
+      -1,
+      1,
+      0
+    );
+
+  /*
+   * Horizontal pointer movement controls rotateY.
+   *
+   * Vertical pointer movement controls rotateX.
+   *
+   * CSS rotateX needs the vertical sign reversed to make
+   * dragging upward feel like lifting the top of the watch.
+   */
+
+  const rotateY =
+    xRatio *
+    PARALEASY_PHYSICAL_WATCH_MAX_ROTATION;
+
+  const rotateX =
+    -yRatio *
+    PARALEASY_PHYSICAL_WATCH_MAX_ROTATION;
+
+  /*
+   * When we add #watch-tilt-shell in HTML this transform
+   * applies to the complete watch.
+   *
+   * Until then it applies to the existing watchDisplay.
+   */
+
+  watchTiltShell.style.transform =
+    `perspective(1100px) ` +
+    `rotateX(${rotateX}deg) ` +
+    `rotateY(${rotateY}deg)`;
+
+  watchTiltShell.style.transformStyle =
+    "preserve-3d";
+
+  /*
+   * CSS custom properties let the upcoming CSS drive:
+   *
+   * glass glare
+   * bezel highlights
+   * shadow
+   * rim lighting
+   */
+
+  watchTiltShell.style.setProperty(
+    "--watch-tilt-x",
+    String(xRatio)
+  );
+
+  watchTiltShell.style.setProperty(
+    "--watch-tilt-y",
+    String(yRatio)
+  );
+
+  watchTiltShell.style.setProperty(
+    "--watch-rotate-x",
+    `${rotateX}deg`
+  );
+
+  watchTiltShell.style.setProperty(
+    "--watch-rotate-y",
+    `${rotateY}deg`
+  );
+
+  updateGlassReflection(
+    xRatio,
+    yRatio
   );
 
 }
 
 
 /* =========================================================
-   9. SET TARGET TILT
+   10. GLASS REFLECTION POSITION
+========================================================= */
+
+function updateGlassReflection(
+  xRatio,
+  yRatio
+) {
+
+  if (!watchGlass) {
+    return;
+  }
+
+  const glareX =
+    50 -
+    xRatio * 32;
+
+  const glareY =
+    50 -
+    yRatio * 28;
+
+  watchGlass.style.setProperty(
+    "--glare-x",
+    `${glareX}%`
+  );
+
+  watchGlass.style.setProperty(
+    "--glare-y",
+    `${glareY}%`
+  );
+
+}
+
+
+/* =========================================================
+   11. SET TARGET TILT
 ========================================================= */
 
 function setPreviewTiltTarget(
@@ -670,7 +674,6 @@ function setPreviewTiltTarget(
       0
     );
 
-
   targetTiltY =
     clampNumber(
       tiltY,
@@ -679,12 +682,19 @@ function setPreviewTiltTarget(
       0
     );
 
+  /*
+   * User interaction cancels residual spring momentum.
+   */
+
+  if (previewDragging) {
+    springVelocityX = 0;
+    springVelocityY = 0;
+  }
 
   setProjectTilt(
     targetTiltX,
     targetTiltY
   );
-
 
   updateTiltReadout();
 
@@ -694,27 +704,21 @@ function setPreviewTiltTarget(
 
 
 /* =========================================================
-   10. CENTRE TILT
+   12. CENTRE IMMEDIATELY
 ========================================================= */
 
 function centrePreviewTilt() {
 
-  targetTiltX =
-    0;
+  targetTiltX = 0;
+  targetTiltY = 0;
 
-  targetTiltY =
-    0;
+  renderedTiltX = 0;
+  renderedTiltY = 0;
 
-
-  renderedTiltX =
-    0;
-
-  renderedTiltY =
-    0;
-
+  springVelocityX = 0;
+  springVelocityY = 0;
 
   centreProjectTilt();
-
 
   updateTiltReadout();
 
@@ -726,14 +730,90 @@ function centrePreviewTilt() {
 
 
 /* =========================================================
-   11. TILT READOUT
+   13. BEGIN SPRING RETURN
+========================================================= */
+
+function springPreviewToCentre() {
+
+  targetTiltX = 0;
+  targetTiltY = 0;
+
+  setProjectTilt(
+    0,
+    0
+  );
+
+  updateTiltReadout();
+  updateTiltPuck();
+
+}
+
+
+/* =========================================================
+   14. SPRING SETTING
+========================================================= */
+
+function setSpringToCentre(
+  enabled
+) {
+
+  springToCentre =
+    Boolean(enabled);
+
+  if (springToggle) {
+
+    if (
+      springToggle instanceof
+      HTMLInputElement
+    ) {
+      springToggle.checked =
+        springToCentre;
+    }
+
+    springToggle.setAttribute(
+      "aria-pressed",
+      String(springToCentre)
+    );
+
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(
+      "paraleasy:status",
+      {
+        detail: {
+          message:
+            springToCentre
+              ? "Spring to Centre: On"
+              : "Spring to Centre: Off"
+        }
+      }
+    )
+  );
+
+}
+
+
+/* =========================================================
+   15. TOGGLE SPRING
+========================================================= */
+
+function toggleSpringToCentre() {
+
+  setSpringToCentre(
+    !springToCentre
+  );
+
+}
+
+
+/* =========================================================
+   16. TILT READOUT
 ========================================================= */
 
 function updateTiltReadout() {
 
-  if (
-    tiltXValue
-  ) {
+  if (tiltXValue) {
 
     tiltXValue.textContent =
       formatSignedDegrees(
@@ -742,10 +822,7 @@ function updateTiltReadout() {
 
   }
 
-
-  if (
-    tiltYValue
-  ) {
+  if (tiltYValue) {
 
     tiltYValue.textContent =
       formatSignedDegrees(
@@ -758,7 +835,7 @@ function updateTiltReadout() {
 
 
 /* =========================================================
-   12. SIGNED DEGREES
+   17. SIGNED DEGREES
 ========================================================= */
 
 function formatSignedDegrees(
@@ -770,61 +847,43 @@ function formatSignedDegrees(
       Number(value) || 0
     );
 
-
-  if (
-    rounded > 0
-  ) {
-
-    return (
-      `+${rounded}°`
-    );
-
+  if (rounded > 0) {
+    return `+${rounded}°`;
   }
 
-
-  return (
-    `${rounded}°`
-  );
+  return `${rounded}°`;
 
 }
 
 
 /* =========================================================
-   13. UPDATE TILT PUCK
+   18. TILT PUCK
 ========================================================= */
 
 function updateTiltPuck() {
 
-  if (
-    !tiltPuck
-  ) {
+  if (!tiltPuck) {
     return;
   }
-
 
   const xRatio =
     targetTiltX /
     PARALEASY_PREVIEW_TILT_LIMIT;
 
-
   const yRatio =
     targetTiltY /
     PARALEASY_PREVIEW_TILT_LIMIT;
-
 
   const xPercent =
     50 +
     xRatio * 44;
 
-
   const yPercent =
     50 +
     yRatio * 40;
 
-
   tiltPuck.style.left =
     `${xPercent}%`;
-
 
   tiltPuck.style.top =
     `${yPercent}%`;
@@ -833,7 +892,7 @@ function updateTiltPuck() {
 
 
 /* =========================================================
-   14. POINTER -> TILT
+   19. POINTER -> PHYSICAL TILT
 ========================================================= */
 
 function updateTiltFromPointer(
@@ -841,16 +900,12 @@ function updateTiltFromPointer(
   surface
 ) {
 
-  if (
-    !surface
-  ) {
+  if (!surface) {
     return;
   }
 
-
   const rect =
     surface.getBoundingClientRect();
-
 
   if (
     rect.width <= 0 ||
@@ -859,26 +914,21 @@ function updateTiltFromPointer(
     return;
   }
 
-
   const localX =
     clampNumber(
-      event.clientX -
-        rect.left,
+      event.clientX - rect.left,
       0,
       rect.width,
       rect.width / 2
     );
 
-
   const localY =
     clampNumber(
-      event.clientY -
-        rect.top,
+      event.clientY - rect.top,
       0,
       rect.height,
       rect.height / 2
     );
-
 
   const normalisedX =
     (
@@ -888,7 +938,6 @@ function updateTiltFromPointer(
     2 -
     1;
 
-
   const normalisedY =
     (
       localY /
@@ -897,16 +946,13 @@ function updateTiltFromPointer(
     2 -
     1;
 
-
   const tiltX =
     normalisedX *
     PARALEASY_PREVIEW_TILT_LIMIT;
 
-
   const tiltY =
     normalisedY *
     PARALEASY_PREVIEW_TILT_LIMIT;
-
 
   setPreviewTiltTarget(
     tiltX,
@@ -917,7 +963,7 @@ function updateTiltFromPointer(
 
 
 /* =========================================================
-   15. START POINTER DRAG
+   20. START DRAG
 ========================================================= */
 
 function startPreviewDrag(
@@ -925,25 +971,21 @@ function startPreviewDrag(
   surface
 ) {
 
-  if (
-    previewDragging
-  ) {
+  if (previewDragging) {
     return;
   }
 
-
-  previewDragging =
-    true;
-
+  previewDragging = true;
 
   previewPointerId =
     event.pointerId;
 
+  springVelocityX = 0;
+  springVelocityY = 0;
 
   surface.setPointerCapture?.(
     event.pointerId
   );
-
 
   updateTiltFromPointer(
     event,
@@ -954,7 +996,7 @@ function startPreviewDrag(
 
 
 /* =========================================================
-   16. MOVE POINTER DRAG
+   21. MOVE DRAG
 ========================================================= */
 
 function movePreviewDrag(
@@ -970,7 +1012,6 @@ function movePreviewDrag(
     return;
   }
 
-
   updateTiltFromPointer(
     event,
     surface
@@ -980,7 +1021,7 @@ function movePreviewDrag(
 
 
 /* =========================================================
-   17. END POINTER DRAG
+   22. END DRAG
 ========================================================= */
 
 function endPreviewDrag(
@@ -988,59 +1029,59 @@ function endPreviewDrag(
   surface
 ) {
 
-  if (
-    !previewDragging
-  ) {
+  if (!previewDragging) {
     return;
   }
 
-
   if (
-    previewPointerId !==
-      null &&
+    previewPointerId !== null &&
     event.pointerId !==
       previewPointerId
   ) {
     return;
   }
 
-
   surface.releasePointerCapture?.(
     event.pointerId
   );
 
+  previewDragging = false;
+  previewPointerId = null;
 
-  previewDragging =
-    false;
+  /*
+   * THIS is the V2 behaviour.
+   *
+   * Release either the puck or watch:
+   *
+   * ON  → return naturally to centre.
+   * OFF → hold the inspection angle.
+   */
 
-
-  previewPointerId =
-    null;
+  if (springToCentre) {
+    springPreviewToCentre();
+  }
 
 }
 
 
 /* =========================================================
-   18. INITIALISE TILT PAD
+   23. INITIALISE TILT PAD
 ========================================================= */
 
 function initialiseTiltPad() {
 
-  if (
-    !tiltPad
-  ) {
+  if (!tiltPad) {
     return;
   }
 
+  tiltPad.style.touchAction =
+    "none";
 
   tiltPad.addEventListener(
     "pointerdown",
-    (
-      event
-    ) => {
+    event => {
 
       event.preventDefault();
-
 
       startPreviewDrag(
         event,
@@ -1050,12 +1091,9 @@ function initialiseTiltPad() {
     }
   );
 
-
   tiltPad.addEventListener(
     "pointermove",
-    (
-      event
-    ) => {
+    event => {
 
       movePreviewDrag(
         event,
@@ -1065,12 +1103,9 @@ function initialiseTiltPad() {
     }
   );
 
-
   tiltPad.addEventListener(
     "pointerup",
-    (
-      event
-    ) => {
+    event => {
 
       endPreviewDrag(
         event,
@@ -1080,12 +1115,9 @@ function initialiseTiltPad() {
     }
   );
 
-
   tiltPad.addEventListener(
     "pointercancel",
-    (
-      event
-    ) => {
+    event => {
 
       endPreviewDrag(
         event,
@@ -1099,30 +1131,29 @@ function initialiseTiltPad() {
 
 
 /* =========================================================
-   19. WATCH DISPLAY DRAG
+   24. INITIALISE WATCH DRAG
 ========================================================= */
 
 function initialiseWatchDisplayTilt() {
 
-  if (
-    !watchDisplay
-  ) {
+  if (!watchDisplay) {
     return;
   }
-
 
   watchDisplay.style.touchAction =
     "none";
 
+  watchDisplay.style.cursor =
+    "grab";
 
   watchDisplay.addEventListener(
     "pointerdown",
-    (
-      event
-    ) => {
+    event => {
 
       event.preventDefault();
 
+      watchDisplay.style.cursor =
+        "grabbing";
 
       startPreviewDrag(
         event,
@@ -1132,12 +1163,9 @@ function initialiseWatchDisplayTilt() {
     }
   );
 
-
   watchDisplay.addEventListener(
     "pointermove",
-    (
-      event
-    ) => {
+    event => {
 
       movePreviewDrag(
         event,
@@ -1147,12 +1175,12 @@ function initialiseWatchDisplayTilt() {
     }
   );
 
-
   watchDisplay.addEventListener(
     "pointerup",
-    (
-      event
-    ) => {
+    event => {
+
+      watchDisplay.style.cursor =
+        "grab";
 
       endPreviewDrag(
         event,
@@ -1162,12 +1190,12 @@ function initialiseWatchDisplayTilt() {
     }
   );
 
-
   watchDisplay.addEventListener(
     "pointercancel",
-    (
-      event
-    ) => {
+    event => {
+
+      watchDisplay.style.cursor =
+        "grab";
 
       endPreviewDrag(
         event,
@@ -1181,7 +1209,7 @@ function initialiseWatchDisplayTilt() {
 
 
 /* =========================================================
-   20. FLIP DEPTH
+   25. FLIP DEPTH
 ========================================================= */
 
 function flipPreviewDepth() {
@@ -1189,9 +1217,7 @@ function flipPreviewDepth() {
   const direction =
     flipProjectDepthDirection();
 
-
   renderParallaxPreview();
-
 
   window.dispatchEvent(
     new CustomEvent(
@@ -1203,7 +1229,6 @@ function flipPreviewDepth() {
       }
     )
   );
-
 
   window.dispatchEvent(
     new CustomEvent(
@@ -1223,7 +1248,7 @@ function flipPreviewDepth() {
 
 
 /* =========================================================
-   21. BUTTON EVENTS
+   26. BUTTON EVENTS
 ========================================================= */
 
 function initialiseParallaxButtons() {
@@ -1231,18 +1256,40 @@ function initialiseParallaxButtons() {
   centreTiltButton?.addEventListener(
     "click",
     () => {
-
       centrePreviewTilt();
-
     }
   );
-
 
   flipDepthButton?.addEventListener(
     "click",
     () => {
-
       flipPreviewDepth();
+    }
+  );
+
+  springToggle?.addEventListener(
+    "click",
+    event => {
+
+      /*
+       * Checkbox gets its state directly.
+       * Normal button simply toggles.
+       */
+
+      if (
+        event.currentTarget instanceof
+        HTMLInputElement
+      ) {
+
+        setSpringToCentre(
+          event.currentTarget.checked
+        );
+
+      } else {
+
+        toggleSpringToCentre();
+
+      }
 
     }
   );
@@ -1251,61 +1298,139 @@ function initialiseParallaxButtons() {
 
 
 /* =========================================================
-   22. ANIMATION LOOP
+   27. SPRING PHYSICS
+========================================================= */
+
+function updateSpringPhysics() {
+
+  /*
+   * While actively dragging we want smooth tracking rather
+   * than spring simulation.
+   */
+
+  if (previewDragging) {
+
+    renderedTiltX +=
+      (
+        targetTiltX -
+        renderedTiltX
+      ) *
+      PARALEASY_TILT_SMOOTHING;
+
+    renderedTiltY +=
+      (
+        targetTiltY -
+        renderedTiltY
+      ) *
+      PARALEASY_TILT_SMOOTHING;
+
+    return;
+  }
+
+  /*
+   * Spring OFF:
+   * smoothly settle at the released target.
+   */
+
+  if (!springToCentre) {
+
+    renderedTiltX +=
+      (
+        targetTiltX -
+        renderedTiltX
+      ) *
+      PARALEASY_TILT_SMOOTHING;
+
+    renderedTiltY +=
+      (
+        targetTiltY -
+        renderedTiltY
+      ) *
+      PARALEASY_TILT_SMOOTHING;
+
+    return;
+  }
+
+  /*
+   * Spring ON:
+   *
+   * Hooke-ish spring:
+   *
+   * velocity += distance * strength
+   * velocity *= damping
+   * position += velocity
+   */
+
+  const forceX =
+    (
+      targetTiltX -
+      renderedTiltX
+    ) *
+    PARALEASY_SPRING_STRENGTH;
+
+  const forceY =
+    (
+      targetTiltY -
+      renderedTiltY
+    ) *
+    PARALEASY_SPRING_STRENGTH;
+
+  springVelocityX +=
+    forceX;
+
+  springVelocityY +=
+    forceY;
+
+  springVelocityX *=
+    PARALEASY_SPRING_DAMPING;
+
+  springVelocityY *=
+    PARALEASY_SPRING_DAMPING;
+
+  renderedTiltX +=
+    springVelocityX;
+
+  renderedTiltY +=
+    springVelocityY;
+
+  /*
+   * Kill microscopic wobbling once centred.
+   */
+
+  if (
+    Math.abs(renderedTiltX) < 0.01 &&
+    Math.abs(springVelocityX) < 0.01 &&
+    targetTiltX === 0
+  ) {
+
+    renderedTiltX = 0;
+    springVelocityX = 0;
+
+  }
+
+  if (
+    Math.abs(renderedTiltY) < 0.01 &&
+    Math.abs(springVelocityY) < 0.01 &&
+    targetTiltY === 0
+  ) {
+
+    renderedTiltY = 0;
+    springVelocityY = 0;
+
+  }
+
+}
+
+
+/* =========================================================
+   28. ANIMATION LOOP
 ========================================================= */
 
 function animateParallaxPreview() {
 
-  renderedTiltX +=
-    (
-      targetTiltX -
-      renderedTiltX
-    ) *
-    PARALEASY_TILT_SMOOTHING;
-
-
-  renderedTiltY +=
-    (
-      targetTiltY -
-      renderedTiltY
-    ) *
-    PARALEASY_TILT_SMOOTHING;
-
-
-  /*
-   * Avoid endless microscopic interpolation.
-   */
-
-  if (
-    Math.abs(
-      targetTiltX -
-      renderedTiltX
-    ) <
-    0.001
-  ) {
-
-    renderedTiltX =
-      targetTiltX;
-
-  }
-
-
-  if (
-    Math.abs(
-      targetTiltY -
-      renderedTiltY
-    ) <
-    0.001
-  ) {
-
-    renderedTiltY =
-      targetTiltY;
-
-  }
-
+  updateSpringPhysics();
 
   renderParallaxPreview();
-
 
   parallaxAnimationFrame =
     requestAnimationFrame(
@@ -1316,18 +1441,16 @@ function animateParallaxPreview() {
 
 
 /* =========================================================
-   23. START ENGINE
+   29. START ENGINE
 ========================================================= */
 
 function startParallaxEngine() {
 
   if (
-    parallaxAnimationFrame !==
-      null
+    parallaxAnimationFrame !== null
   ) {
     return;
   }
-
 
   parallaxAnimationFrame =
     requestAnimationFrame(
@@ -1338,39 +1461,34 @@ function startParallaxEngine() {
 
 
 /* =========================================================
-   24. STOP ENGINE
+   30. STOP ENGINE
 ========================================================= */
 
 function stopParallaxEngine() {
 
   if (
-    parallaxAnimationFrame ===
-      null
+    parallaxAnimationFrame === null
   ) {
     return;
   }
-
 
   cancelAnimationFrame(
     parallaxAnimationFrame
   );
 
-
-  parallaxAnimationFrame =
-    null;
+  parallaxAnimationFrame = null;
 
 }
 
 
 /* =========================================================
-   25. RESTORE PROJECT TILT
+   31. RESTORE PROJECT TILT
 ========================================================= */
 
 function restoreProjectTiltToEngine() {
 
   const preview =
     getProject().preview;
-
 
   targetTiltX =
     clampNumber(
@@ -1380,7 +1498,6 @@ function restoreProjectTiltToEngine() {
       0
     );
 
-
   targetTiltY =
     clampNumber(
       preview.tiltY,
@@ -1389,24 +1506,24 @@ function restoreProjectTiltToEngine() {
       0
     );
 
-
   renderedTiltX =
     targetTiltX;
-
 
   renderedTiltY =
     targetTiltY;
 
+  springVelocityX = 0;
+  springVelocityY = 0;
 
   updateTiltReadout();
-
   updateTiltPuck();
+  updatePhysicalWatch();
 
 }
 
 
 /* =========================================================
-   26. EXTERNAL EVENT LISTENERS
+   32. EXTERNAL EVENTS
 ========================================================= */
 
 function initialiseParallaxEngineEvents() {
@@ -1414,22 +1531,16 @@ function initialiseParallaxEngineEvents() {
   window.addEventListener(
     "paraleasy:layerschanged",
     () => {
-
       renderParallaxPreview();
-
     }
   );
-
 
   window.addEventListener(
     "paraleasy:selectionchanged",
     () => {
-
       renderParallaxPreview();
-
     }
   );
-
 
   window.addEventListener(
     "paraleasy:projectloaded",
@@ -1442,13 +1553,10 @@ function initialiseParallaxEngineEvents() {
     }
   );
 
-
   window.addEventListener(
     "resize",
     () => {
-
       renderParallaxPreview();
-
     }
   );
 
@@ -1456,7 +1564,7 @@ function initialiseParallaxEngineEvents() {
 
 
 /* =========================================================
-   27. INITIALISE ENGINE
+   33. INITIALISE ENGINE
 ========================================================= */
 
 function initialiseParallaxEngine() {
@@ -1474,7 +1582,6 @@ function initialiseParallaxEngine() {
 
   }
 
-
   initialiseTiltPad();
 
   initialiseWatchDisplayTilt();
@@ -1482,6 +1589,20 @@ function initialiseParallaxEngine() {
   initialiseParallaxButtons();
 
   initialiseParallaxEngineEvents();
+
+  /*
+   * Default spring state.
+   */
+
+  if (
+    springToggle instanceof
+    HTMLInputElement
+  ) {
+
+    springToCentre =
+      springToggle.checked;
+
+  }
 
   restoreProjectTiltToEngine();
 
@@ -1493,12 +1614,11 @@ function initialiseParallaxEngine() {
 
 
 /* =========================================================
-   28. AUTO START
+   34. AUTO START
 ========================================================= */
 
 if (
-  document.readyState ===
-    "loading"
+  document.readyState === "loading"
 ) {
 
   document.addEventListener(
