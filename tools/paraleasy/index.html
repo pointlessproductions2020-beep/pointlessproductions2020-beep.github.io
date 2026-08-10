@@ -252,50 +252,68 @@
           <div class="watch-glow"></div>
 
 
-          <!-- Watch -->
+          <!--
+            V2 3D Watch Simulator
+
+            The tilt shell is transformed by parallax-engine.js.
+            Keeping the physical watch inside this wrapper means the
+            bezel, crown, display and glass all tilt as one object,
+            while the artwork still performs its own parallax motion.
+          -->
           <div
-            id="watch-shell"
-            class="watch-shell"
+            id="watch-tilt-shell"
+            class="watch-tilt-shell"
           >
 
-            <div class="watch-crown"></div>
-
             <div
-              id="watch-display"
-              class="watch-display"
+              id="watch-shell"
+              class="watch-shell"
             >
 
-              <canvas
-                id="parallax-canvas"
-                width="450"
-                height="450"
-              ></canvas>
+              <div class="watch-crown"></div>
 
-
-              <!-- Empty canvas message -->
               <div
-                id="canvas-empty-state"
-                class="canvas-empty-state"
+                id="watch-display"
+                class="watch-display"
               >
 
-                <img
-                  src="./assets/images/logo.webp"
-                  alt=""
+                <canvas
+                  id="parallax-canvas"
+                  width="450"
+                  height="450"
+                ></canvas>
+
+
+                <!-- Empty canvas message -->
+                <div
+                  id="canvas-empty-state"
+                  class="canvas-empty-state"
                 >
 
-                <strong>
-                  Your watch is waiting.
-                </strong>
+                  <img
+                    src="./assets/images/logo.webp"
+                    alt=""
+                  >
 
-                <span>
-                  Add image layers, then drag the preview to tilt.
-                </span>
+                  <strong>
+                    Your watch is waiting.
+                  </strong>
+
+                  <span>
+                    Add image layers, then drag the preview to tilt.
+                  </span>
+
+                </div>
+
+
+                <!-- Reactive glass overlay -->
+                <div
+                  id="watch-glass"
+                  class="watch-glass"
+                  aria-hidden="true"
+                ></div>
 
               </div>
-
-
-              <!-- Glass -->
-              <div class="watch-glass"></div>
 
             </div>
 
@@ -376,6 +394,20 @@
             >
               Flip Depth
             </button>
+
+            <label
+              class="spring-centre-control"
+              for="spring-centre-toggle"
+              title="Return the watch smoothly to centre when you release it"
+            >
+              <input
+                id="spring-centre-toggle"
+                type="checkbox"
+                checked
+              >
+
+              <span>Spring to Centre</span>
+            </label>
 
           </div>
 
