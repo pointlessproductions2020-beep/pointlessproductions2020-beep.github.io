@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="description"
+    content="ParaL-Easy — a visual parallax designer for creating and previewing layered watch face effects."
+  >
+
+  <meta name="theme-color" content="#07080d">
+
+  <title>ParaL-Easy | Parallax Made Easy</title>
+
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+
+  <div id="app">
+
+    <!-- =========================================================
+         TOP BAR
+    ========================================================== -->
+    <header class="topbar">
+
+      <div class="brand">
+        <img
+          class="brand-logo"
+          src="./assets/images/logo.webp"
+          alt="ParaL-Easy"
+        >
+
+        <div class="brand-copy">
+          <h1>ParaL-Easy</h1>
+          <span>Parallax Made Easy</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+
+        <button
+          id="new-project-btn"
+          class="button button-secondary"
+          type="button"
+        >
+          New
+        </button>
+
+        <button
+          id="open-project-btn"
+          class="button button-secondary"
+          type="button"
+        >
+          Open
+        </button>
+
+        <button
+          id="save-project-btn"
+          class="button button-secondary"
+          type="button"
+        >
+          Save
+        </button>
+
+        <button
+          id="export-wfs-btn"
+          class="button button-primary"
+          type="button"
+        >
+          WFS Settings
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- =========================================================
+         MAIN EDITOR
+    ========================================================== -->
+    <main class="editor">
+
+      <!-- =======================================================
+           LEFT PANEL — LAYERS
+      ======================================================== -->
+      <aside class="panel panel-left">
+
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">PROJECT</span>
+            <h2>Layers</h2>
+          </div>
+
+          <button
+            id="add-layer-btn"
+            class="icon-button"
+            type="button"
+            title="Add image layer"
+            aria-label="Add image layer"
+          >
+            +
+          </button>
+        </div>
+
+
+        <!-- Import/drop area -->
+        <label
+          id="layer-drop-zone"
+          class="drop-zone"
+          for="layer-file-input"
+        >
+
+          <span class="drop-zone-icon">＋</span>
+
+          <strong>Drop your layers here</strong>
+
+          <span>
+            PNG, WebP or JPG
+          </span>
+
+          <span class="drop-zone-action">
+            or choose files
+          </span>
+
+        </label>
+
+        <input
+          id="layer-file-input"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          multiple
+          hidden
+        >
+
+
+        <!-- Layer stack -->
+        <div
+          id="layer-list"
+          class="layer-list"
+          aria-label="Project layers"
+        >
+
+          <div
+            id="empty-layers-message"
+            class="empty-state"
+          >
+            <strong>No layers yet.</strong>
+
+            <span>
+              Add separated artwork to start building your parallax watch face.
+            </span>
+          </div>
+
+        </div>
+
+
+        <div class="layer-footer">
+
+          <button
+            id="duplicate-layer-btn"
+            class="small-button"
+            type="button"
+            disabled
+          >
+            Duplicate
+          </button>
+
+          <button
+            id="delete-layer-btn"
+            class="small-button danger"
+            type="button"
+            disabled
+          >
+            Delete
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      <!-- =======================================================
+           CENTRE — WATCH PREVIEW
+      ======================================================== -->
+      <section class="workspace">
+
+        <div class="workspace-toolbar">
+
+          <div class="project-title">
+
+            <span class="eyebrow">
+              LIVE PREVIEW
+            </span>
+
+            <strong id="project-name">
+              Untitled Watch
+            </strong>
+
+          </div>
+
+
+          <div class="preview-mode">
+
+            <span>Preview</span>
+
+            <div
+              class="segmented-control"
+              role="group"
+              aria-label="Preview mode"
+            >
+
+              <button
+                class="preview-mode-btn active"
+                data-preview-mode="studio"
+                type="button"
+              >
+                Studio
+              </button>
+
+              <button
+                class="preview-mode-btn"
+                data-preview-mode="real"
+                type="button"
+              >
+                Real Watch
+              </button>
+
+              <button
+                class="preview-mode-btn"
+                data-preview-mode="custom"
+                type="button"
+              >
+                Custom
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="preview-stage">
+
+          <!-- Decorative glow behind watch -->
+          <div class="watch-glow"></div>
+
+
+          <!-- Watch -->
+          <div
+            id="watch-shell"
+            class="watch-shell"
+          >
+
+            <div class="watch-crown"></div>
+
+            <div
+              id="watch-display"
+              class="watch-display"
+            >
+
+              <canvas
+                id="parallax-canvas"
+                width="450"
+                height="450"
+              ></canvas>
+
+
+              <!-- Empty canvas message -->
+              <div
+                id="canvas-empty-state"
+                class="canvas-empty-state"
+              >
+
+                <img
+                  src="./assets/images/logo.webp"
+                  alt=""
+                >
+
+                <strong>
+                  Your watch is waiting.
+                </strong>
+
+                <span>
+                  Add image layers, then drag the preview to tilt.
+                </span>
+
+              </div>
+
+
+              <!-- Glass -->
+              <div class="watch-glass"></div>
+
+            </div>
+
+          </div>
+
+
+          <!-- Tilt instruction -->
+          <div
+            id="tilt-hint"
+            class="tilt-hint"
+          >
+            <span class="tilt-icon">↔</span>
+
+            <span>
+              Click + drag the watch to simulate wrist movement
+            </span>
+          </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             TILT CONTROLS
+        ====================================================== -->
+        <div class="tilt-panel">
+
+          <div class="tilt-readout">
+
+            <div>
+              <span>X TILT</span>
+              <strong id="tilt-x-value">0°</strong>
+            </div>
+
+            <div>
+              <span>Y TILT</span>
+              <strong id="tilt-y-value">0°</strong>
+            </div>
+
+          </div>
+
+
+          <div class="tilt-pad-wrap">
+
+            <div
+              id="tilt-pad"
+              class="tilt-pad"
+            >
+
+              <div class="tilt-axis tilt-axis-x"></div>
+              <div class="tilt-axis tilt-axis-y"></div>
+
+              <button
+                id="tilt-puck"
+                class="tilt-puck"
+                type="button"
+                aria-label="Parallax tilt control"
+              ></button>
+
+            </div>
+
+          </div>
+
+
+          <div class="tilt-actions">
+
+            <button
+              id="centre-tilt-btn"
+              class="small-button"
+              type="button"
+            >
+              Centre
+            </button>
+
+            <button
+              id="flip-depth-btn"
+              class="small-button"
+              type="button"
+            >
+              Flip Depth
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =======================================================
+           RIGHT PANEL — INSPECTOR
+      ======================================================== -->
+      <aside class="panel panel-right">
+
+        <div class="panel-heading">
+
+          <div>
+            <span class="eyebrow">INSPECTOR</span>
+            <h2>Layer Settings</h2>
+          </div>
+
+        </div>
+
+
+        <!-- Nothing selected -->
+        <div
+          id="inspector-empty"
+          class="inspector-empty"
+        >
+
+          <div class="inspector-empty-icon">
+            ◫
+          </div>
+
+          <strong>
+            Select a layer
+          </strong>
+
+          <span>
+            Choose a layer to control its depth and movement.
+          </span>
+
+        </div>
+
+
+        <!-- Selected layer controls -->
+        <div
+          id="layer-inspector"
+          class="layer-inspector"
+          hidden
+        >
+
+          <!-- Layer name -->
+          <section class="control-section">
+
+            <label
+              class="field-label"
+              for="layer-name-input"
+            >
+              Layer Name
+            </label>
+
+            <input
+              id="layer-name-input"
+              class="text-input"
+              type="text"
+              value=""
+            >
+
+          </section>
+
+
+          <!-- ===================================================
+               SIMPLE PARALLAX
+          ==================================================== -->
+          <section class="control-section">
+
+            <div class="section-title-row">
+
+              <div>
+                <span class="eyebrow">
+                  SIMPLE MODE
+                </span>
+
+                <h3>Parallax Depth</h3>
+              </div>
+
+              <output
+                id="depth-value"
+                class="value-pill"
+              >
+                0
+              </output>
+
+            </div>
+
+
+            <div class="depth-scale">
+
+              <span>Into</span>
+              <span>Neutral</span>
+              <span>Out</span>
+
+            </div>
+
+
+            <input
+              id="depth-slider"
+              class="range-input"
+              type="range"
+              min="-100"
+              max="100"
+              step="1"
+              value="0"
+            >
+
+
+            <div class="range-values">
+              <span>-100</span>
+              <span>0</span>
+              <span>+100</span>
+            </div>
+
+          </section>
+
+
+          <!-- Axis strength -->
+          <section class="control-section">
+
+            <div class="control-row">
+
+              <label for="x-strength-slider">
+                X Strength
+              </label>
+
+              <output id="x-strength-value">
+                100%
+              </output>
+
+            </div>
+
+            <input
+              id="x-strength-slider"
+              class="range-input"
+              type="range"
+              min="0"
+              max="200"
+              step="1"
+              value="100"
+            >
+
+
+            <div class="control-row">
+
+              <label for="y-strength-slider">
+                Y Strength
+              </label>
+
+              <output id="y-strength-value">
+                100%
+              </output>
+
+            </div>
+
+            <input
+              id="y-strength-slider"
+              class="range-input"
+              type="range"
+              min="0"
+              max="200"
+              step="1"
+              value="100"
+            >
+
+          </section>
+
+
+          <!-- ===================================================
+               WFS RANGE
+          ==================================================== -->
+          <section class="control-section">
+
+            <div class="section-title-row">
+
+              <div>
+                <span class="eyebrow">
+                  WATCH FACE STUDIO
+                </span>
+
+                <h3>Gyro Range</h3>
+              </div>
+
+              <output
+                id="gyro-range-value"
+                class="value-pill"
+              >
+                ±45°
+              </output>
+
+            </div>
+
+
+            <input
+              id="gyro-range-slider"
+              class="range-input"
+              type="range"
+              min="10"
+              max="90"
+              step="1"
+              value="45"
+            >
+
+            <div class="range-values">
+              <span>±10°</span>
+              <span>±45°</span>
+              <span>±90°</span>
+            </div>
+
+          </section>
+
+
+          <!-- ===================================================
+               ADVANCED
+          ==================================================== -->
+          <section class="control-section">
+
+            <button
+              id="advanced-toggle"
+              class="advanced-toggle"
+              type="button"
+              aria-expanded="false"
+            >
+              <span>
+                Advanced WFS Values
+              </span>
+
+              <span id="advanced-arrow">
+                ▾
+              </span>
+            </button>
+
+
+            <div
+              id="advanced-controls"
+              class="advanced-controls"
+              hidden
+            >
+
+              <div class="advanced-grid">
+
+                <label>
+                  X -
+                  <input
+                    id="wfs-x-negative"
+                    type="number"
+                    value="0"
+                  >
+                </label>
+
+                <label>
+                  X +
+                  <input
+                    id="wfs-x-positive"
+                    type="number"
+                    value="0"
+                  >
+                </label>
+
+                <label>
+                  Y -
+                  <input
+                    id="wfs-y-negative"
+                    type="number"
+                    value="0"
+                  >
+                </label>
+
+                <label>
+                  Y +
+                  <input
+                    id="wfs-y-positive"
+                    type="number"
+                    value="0"
+                  >
+                </label>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- ===================================================
+               LAYER DISPLAY
+          ==================================================== -->
+          <section class="control-section">
+
+            <h3>Layer Display</h3>
+
+
+            <div class="control-row">
+
+              <label for="layer-opacity-slider">
+                Opacity
+              </label>
+
+              <output id="layer-opacity-value">
+                100%
+              </output>
+
+            </div>
+
+            <input
+              id="layer-opacity-slider"
+              class="range-input"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value="100"
+            >
+
+
+            <label class="checkbox-row">
+
+              <input
+                id="layer-visible-checkbox"
+                type="checkbox"
+                checked
+              >
+
+              <span>
+                Layer visible
+              </span>
+
+            </label>
+
+          </section>
+
+        </div>
+
+      </aside>
+
+    </main>
+
+
+    <!-- =========================================================
+         BOTTOM STATUS BAR
+    ========================================================== -->
+    <footer class="statusbar">
+
+      <div class="status-left">
+
+        <span
+          id="status-indicator"
+          class="status-indicator"
+        ></span>
+
+        <span id="status-text">
+          ParaL-Easy ready
+        </span>
+
+      </div>
+
+
+      <div class="status-centre">
+
+        <span>
+          Canvas
+        </span>
+
+        <strong id="canvas-size-label">
+          450 × 450
+        </strong>
+
+      </div>
+
+
+      <div class="status-right">
+
+        <span>
+          Layers
+        </span>
+
+        <strong id="layer-count">
+          0
+        </strong>
+
+      </div>
+
+    </footer>
+
+  </div>
+
+
+  <!-- ===========================================================
+       WFS SETTINGS MODAL
+  ============================================================ -->
+  <div
+    id="wfs-modal"
+    class="modal-backdrop"
+    hidden
+  >
+
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wfs-modal-title"
+    >
+
+      <div class="modal-header">
+
+        <div>
+          <span class="eyebrow">
+            EXPORT
+          </span>
+
+          <h2 id="wfs-modal-title">
+            Watch Face Studio Settings
+          </h2>
+        </div>
+
+        <button
+          id="close-wfs-modal-btn"
+          class="icon-button"
+          type="button"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="modal-intro">
+
+        <p>
+          Configure each image layer in Watch Face Studio using
+          these calculated gyro values.
+        </p>
+
+      </div>
+
+
+      <div
+        id="wfs-settings-list"
+        class="wfs-settings-list"
+      >
+
+        <div class="empty-state">
+          Add some layers first and ParaL-Easy will calculate
+          your Watch Face Studio settings here.
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          id="copy-all-wfs-btn"
+          class="button button-primary"
+          type="button"
+        >
+          Copy All Settings
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ===========================================================
+       JAVASCRIPT
+  ============================================================ -->
+  <script src="./js/project.js"></script>
+  <script src="./js/layers.js"></script>
+  <script src="./js/parallax-engine.js"></script>
+  <script src="./js/wfs-export.js"></script>
+  <script src="./js/app.js"></script>
+
+</body>
+</html>
