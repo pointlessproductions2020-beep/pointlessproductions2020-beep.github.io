@@ -1,0 +1,2209 @@
+/* =========================================================
+   ParaL-Easy
+   Parallax Made Easy
+========================================================= */
+
+
+/* =========================================================
+   1. ROOT
+========================================================= */
+
+:root {
+  --bg: #05060a;
+  --bg-soft: #0a0c12;
+
+  --panel: rgba(14, 17, 26, 0.96);
+  --panel-soft: rgba(255, 255, 255, 0.035);
+
+  --text: #f7fbff;
+  --text-soft: #c7d1dd;
+  --text-muted: #7f8b99;
+
+  --cyan: #35e7ff;
+  --cyan-soft: rgba(53, 231, 255, 0.14);
+
+  --orange: #ff7a2f;
+  --orange-soft: rgba(255, 122, 47, 0.14);
+
+  --purple: #8d4cff;
+  --purple-soft: rgba(141, 76, 255, 0.14);
+
+  --green: #6dff9b;
+  --red: #ff5a6b;
+  --yellow: #ffd76a;
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(53, 231, 255, 0.25);
+
+  --radius-small: 10px;
+  --radius-medium: 16px;
+  --radius-large: 24px;
+  --radius-pill: 999px;
+
+  --shadow:
+    0 24px 80px rgba(0, 0, 0, 0.48);
+
+  --shadow-cyan:
+    0 0 30px rgba(53, 231, 255, 0.13);
+
+  --shadow-orange:
+    0 0 30px rgba(255, 122, 47, 0.11);
+
+  --topbar-height: 76px;
+  --statusbar-height: 42px;
+}
+
+
+/* =========================================================
+   2. RESET
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+
+html {
+  min-height: 100%;
+}
+
+
+body {
+  margin: 0;
+  min-height: 100vh;
+
+  background:
+    radial-gradient(
+      circle at 20% 12%,
+      rgba(53, 231, 255, 0.08),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 84% 20%,
+      rgba(255, 122, 47, 0.07),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 50% 100%,
+      rgba(141, 76, 255, 0.08),
+      transparent 40%
+    ),
+    var(--bg);
+
+  color: var(--text);
+
+  font-family:
+    Inter,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+
+button,
+input {
+  font: inherit;
+}
+
+
+button {
+  color: inherit;
+}
+
+
+img,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+
+button,
+input,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+
+/* =========================================================
+   3. APP SHELL
+========================================================= */
+
+#app {
+  min-height: 100vh;
+
+  display: grid;
+
+  grid-template-rows:
+    var(--topbar-height)
+    minmax(0, 1fr)
+    var(--statusbar-height);
+}
+
+
+/* =========================================================
+   4. TOP BAR
+========================================================= */
+
+.topbar {
+  position: relative;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  min-height: var(--topbar-height);
+  padding: 10px 18px;
+
+  border-bottom: 1px solid var(--border);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 12, 18, 0.98),
+      rgba(6, 7, 11, 0.96)
+    );
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+
+.brand {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-width: 0;
+}
+
+
+.brand-logo {
+  width: 58px;
+  height: 58px;
+
+  object-fit: contain;
+
+  filter:
+    drop-shadow(
+      0 0 14px rgba(53, 231, 255, 0.22)
+    );
+}
+
+
+.brand-copy {
+  min-width: 0;
+}
+
+
+.brand-copy h1 {
+  margin: 0;
+
+  font-size: 1rem;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+}
+
+
+.brand-copy span {
+  display: block;
+
+  margin-top: 5px;
+
+  color: var(--cyan);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
+}
+
+
+/* =========================================================
+   5. BUTTONS
+========================================================= */
+
+.button,
+.small-button,
+.icon-button,
+.advanced-toggle,
+.preview-mode-btn {
+  border: 1px solid var(--border);
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+
+.button:hover,
+.small-button:hover,
+.icon-button:hover,
+.advanced-toggle:hover,
+.preview-mode-btn:hover {
+  transform: translateY(-1px);
+
+  border-color:
+    rgba(53, 231, 255, 0.32);
+
+  background:
+    rgba(53, 231, 255, 0.07);
+}
+
+
+.button:active,
+.small-button:active,
+.icon-button:active,
+.advanced-toggle:active,
+.preview-mode-btn:active {
+  transform: translateY(0);
+}
+
+
+.button {
+  min-height: 42px;
+  padding: 10px 15px;
+
+  border-radius: var(--radius-pill);
+
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+
+.button-primary {
+  border-color:
+    rgba(53, 231, 255, 0.34);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(53, 231, 255, 0.18),
+      rgba(141, 76, 255, 0.13)
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    var(--shadow-cyan);
+}
+
+
+.button-secondary {
+  color: var(--text-soft);
+}
+
+
+.icon-button {
+  display: grid;
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  padding: 0;
+
+  border-radius: 12px;
+
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+
+.small-button {
+  min-height: 34px;
+  padding: 7px 11px;
+
+  border-radius: 10px;
+
+  color: var(--text-soft);
+
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+
+.small-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+
+.small-button.danger {
+  color: #ff95a0;
+}
+
+
+.small-button.danger:hover {
+  border-color:
+    rgba(255, 90, 107, 0.32);
+
+  background:
+    rgba(255, 90, 107, 0.08);
+}
+
+
+/* =========================================================
+   6. EDITOR LAYOUT
+========================================================= */
+
+.editor {
+  min-height: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(240px, 300px)
+    minmax(460px, 1fr)
+    minmax(260px, 330px);
+
+  gap: 14px;
+
+  padding: 14px;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   7. PANELS
+========================================================= */
+
+.panel {
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17, 20, 29, 0.96),
+      rgba(8, 10, 15, 0.98)
+    );
+
+  box-shadow:
+    var(--shadow);
+}
+
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 18px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+
+.panel-heading h2 {
+  margin: 3px 0 0;
+
+  font-size: 1rem;
+}
+
+
+.eyebrow {
+  color: var(--cyan);
+
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+
+/* =========================================================
+   8. DROP ZONE
+========================================================= */
+
+.drop-zone {
+  display: grid;
+  place-items: center;
+
+  gap: 6px;
+
+  margin: 14px;
+  padding: 22px 14px;
+
+  border: 1px dashed
+    rgba(53, 231, 255, 0.25);
+
+  border-radius: var(--radius-medium);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(53, 231, 255, 0.045),
+      rgba(141, 76, 255, 0.035)
+    );
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+
+.drop-zone:hover {
+  transform: translateY(-1px);
+
+  border-color:
+    rgba(53, 231, 255, 0.5);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(53, 231, 255, 0.075),
+      rgba(141, 76, 255, 0.055)
+    );
+}
+
+
+.drop-zone-icon {
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid
+    rgba(53, 231, 255, 0.22);
+
+  border-radius: 13px;
+
+  background:
+    rgba(53, 231, 255, 0.07);
+
+  color: var(--cyan);
+
+  font-size: 1.35rem;
+}
+
+
+.drop-zone strong {
+  font-size: 0.76rem;
+}
+
+
+.drop-zone > span:not(.drop-zone-icon) {
+  color: var(--text-muted);
+
+  font-size: 0.64rem;
+}
+
+
+.drop-zone-action {
+  color: var(--cyan) !important;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   9. LAYER LIST
+========================================================= */
+
+.layer-list {
+  min-height: 0;
+  flex: 1;
+
+  padding: 4px 10px 12px;
+
+  overflow-y: auto;
+}
+
+
+.layer-list::-webkit-scrollbar,
+.layer-inspector::-webkit-scrollbar,
+.wfs-settings-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+
+.layer-list::-webkit-scrollbar-thumb,
+.layer-inspector::-webkit-scrollbar-thumb,
+.wfs-settings-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.09);
+}
+
+
+.empty-state {
+  display: grid;
+  place-items: center;
+
+  gap: 8px;
+
+  min-height: 150px;
+  padding: 18px;
+
+  color: var(--text-muted);
+
+  text-align: center;
+}
+
+
+.empty-state strong {
+  color: var(--text-soft);
+
+  font-size: 0.75rem;
+}
+
+
+.empty-state span {
+  max-width: 210px;
+
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+
+.layer-footer {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  padding: 12px 14px;
+
+  border-top: 1px solid var(--border);
+}
+
+
+/* Future JS-created layer item styling */
+
+.layer-item {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    48px
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 9px;
+
+  min-height: 58px;
+  margin-bottom: 8px;
+  padding: 8px;
+
+  border: 1px solid var(--border);
+  border-radius: 13px;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  cursor: pointer;
+
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+
+.layer-item:hover {
+  transform: translateY(-1px);
+
+  border-color:
+    rgba(53, 231, 255, 0.22);
+
+  background:
+    rgba(53, 231, 255, 0.04);
+}
+
+
+.layer-item.is-selected {
+  border-color:
+    rgba(53, 231, 255, 0.48);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(53, 231, 255, 0.07),
+      rgba(141, 76, 255, 0.035)
+    );
+
+  box-shadow:
+    0 0 16px
+    rgba(53, 231, 255, 0.07);
+}
+
+
+.layer-drag-handle {
+  color: var(--text-muted);
+
+  font-size: 0.8rem;
+
+  cursor: grab;
+}
+
+
+.layer-thumb {
+  width: 48px;
+  height: 48px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  background:
+    #030408;
+}
+
+
+.layer-thumb img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+
+.layer-info {
+  min-width: 0;
+}
+
+
+.layer-info strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: var(--text-soft);
+
+  font-size: 0.7rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.layer-info span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: var(--text-muted);
+
+  font-size: 0.58rem;
+}
+
+
+.layer-visibility {
+  display: grid;
+  place-items: center;
+
+  width: 28px;
+  height: 28px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  color: var(--text-muted);
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   10. WORKSPACE
+========================================================= */
+
+.workspace {
+  min-width: 0;
+  min-height: 0;
+
+  display: grid;
+
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+
+  background:
+    radial-gradient(
+      circle at 50% 44%,
+      rgba(53, 231, 255, 0.05),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 50% 52%,
+      rgba(255, 122, 47, 0.035),
+      transparent 45%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(8, 10, 15, 0.98),
+      rgba(4, 5, 8, 0.99)
+    );
+
+  box-shadow:
+    var(--shadow);
+}
+
+
+.workspace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 13px 16px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+
+.project-title strong {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 0.78rem;
+}
+
+
+.preview-mode {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+.preview-mode > span {
+  color: var(--text-muted);
+
+  font-size: 0.62rem;
+}
+
+
+.segmented-control {
+  display: inline-flex;
+
+  padding: 3px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+
+.preview-mode-btn {
+  min-height: 30px;
+  padding: 6px 11px;
+
+  border: 0;
+  border-radius: var(--radius-pill);
+
+  background: transparent;
+
+  color: var(--text-muted);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+
+.preview-mode-btn.active {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(53, 231, 255, 0.17),
+      rgba(141, 76, 255, 0.12)
+    );
+
+  color: #ffffff;
+
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(53, 231, 255, 0.16);
+}
+
+
+/* =========================================================
+   11. WATCH PREVIEW
+========================================================= */
+
+.preview-stage {
+  position: relative;
+
+  min-height: 0;
+
+  display: grid;
+  place-items: center;
+
+  padding: 22px;
+
+  overflow: hidden;
+}
+
+
+.preview-stage::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(
+      rgba(53, 231, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(53, 231, 255, 0.025) 1px,
+      transparent 1px
+    );
+
+  background-size: 32px 32px;
+
+  mask-image:
+    radial-gradient(
+      circle at center,
+      black,
+      transparent 72%
+    );
+}
+
+
+.watch-glow {
+  position: absolute;
+
+  width: min(58vw, 520px);
+  aspect-ratio: 1;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(53, 231, 255, 0.09),
+      rgba(141, 76, 255, 0.045) 40%,
+      transparent 68%
+    );
+
+  filter: blur(28px);
+
+  pointer-events: none;
+}
+
+
+.watch-shell {
+  position: relative;
+  z-index: 2;
+
+  width: min(64vh, 500px, 78%);
+
+  aspect-ratio: 1;
+
+  padding: clamp(12px, 2vw, 20px);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.16);
+
+  border-radius: 50%;
+
+  background:
+    conic-gradient(
+      from 220deg,
+      #0e1015,
+      #242b34,
+      #090b10,
+      #27313c,
+      #0a0c11,
+      #151921,
+      #0e1015
+    );
+
+  box-shadow:
+    0 0 0 5px
+    rgba(255, 255, 255, 0.025),
+
+    0 0 0 7px
+    rgba(53, 231, 255, 0.045),
+
+    0 26px 80px
+    rgba(0, 0, 0, 0.72),
+
+    -12px 0 30px
+    rgba(53, 231, 255, 0.06),
+
+    12px 0 30px
+    rgba(255, 122, 47, 0.05);
+}
+
+
+.watch-shell::before {
+  content: "";
+
+  position: absolute;
+  inset: 7px;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.08);
+
+  pointer-events: none;
+}
+
+
+.watch-crown {
+  position: absolute;
+
+  right: -17px;
+  top: 37%;
+
+  width: 22px;
+  height: 58px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.14);
+
+  border-radius: 8px 13px 13px 8px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #11141a,
+      #303743,
+      #101218
+    );
+
+  box-shadow:
+    4px 0 12px
+    rgba(0, 0, 0, 0.45);
+}
+
+
+.watch-display {
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(22, 27, 38, 0.95),
+      #010205 74%
+    );
+
+  box-shadow:
+    inset 0 0 48px
+    rgba(0, 0, 0, 0.9),
+
+    inset 0 0 0 1px
+    rgba(255, 255, 255, 0.045);
+}
+
+
+#parallax-canvas {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+
+.canvas-empty-state {
+  position: absolute;
+  inset: 0;
+
+  z-index: 4;
+
+  display: grid;
+  place-items: center;
+  align-content: center;
+
+  gap: 9px;
+
+  padding: 70px;
+
+  text-align: center;
+
+  pointer-events: none;
+}
+
+
+.canvas-empty-state img {
+  width: min(130px, 38%);
+  margin-bottom: 8px;
+
+  opacity: 0.82;
+
+  filter:
+    drop-shadow(
+      0 0 14px rgba(53, 231, 255, 0.14)
+    );
+}
+
+
+.canvas-empty-state strong {
+  font-size: 0.78rem;
+}
+
+
+.canvas-empty-state span {
+  max-width: 240px;
+
+  color: var(--text-muted);
+
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+
+.watch-glass {
+  position: absolute;
+  inset: 0;
+
+  z-index: 10;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.07),
+      transparent 27%,
+      transparent 74%,
+      rgba(255, 255, 255, 0.025)
+    );
+}
+
+
+.tilt-hint {
+  position: absolute;
+  z-index: 5;
+
+  left: 50%;
+  bottom: 18px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 12px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+
+  background:
+    rgba(5, 7, 11, 0.78);
+
+  color: var(--text-muted);
+
+  font-size: 0.6rem;
+
+  transform:
+    translateX(-50%);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+
+.tilt-icon {
+  color: var(--cyan);
+
+  font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   12. TILT PANEL
+========================================================= */
+
+.tilt-panel {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(170px, 260px)
+    auto;
+
+  align-items: center;
+
+  gap: 18px;
+
+  padding: 13px 16px;
+
+  border-top: 1px solid var(--border);
+
+  background:
+    rgba(255, 255, 255, 0.018);
+}
+
+
+.tilt-readout {
+  display: flex;
+
+  gap: 8px;
+}
+
+
+.tilt-readout > div {
+  min-width: 68px;
+
+  padding: 8px 10px;
+
+  border: 1px solid var(--border);
+  border-radius: 11px;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+
+.tilt-readout span {
+  display: block;
+
+  color: var(--text-muted);
+
+  font-size: 0.53rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+
+.tilt-readout strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color: var(--cyan);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.78rem;
+}
+
+
+.tilt-pad-wrap {
+  display: grid;
+  place-items: center;
+}
+
+
+.tilt-pad {
+  position: relative;
+
+  width: min(240px, 100%);
+  aspect-ratio: 2.8 / 1;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: 17px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(53, 231, 255, 0.065),
+      transparent 45%
+    ),
+    rgba(255, 255, 255, 0.018);
+}
+
+
+.tilt-axis {
+  position: absolute;
+
+  background:
+    rgba(255, 255, 255, 0.075);
+
+  pointer-events: none;
+}
+
+
+.tilt-axis-x {
+  left: 8px;
+  right: 8px;
+  top: 50%;
+
+  height: 1px;
+}
+
+
+.tilt-axis-y {
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+
+  width: 1px;
+}
+
+
+.tilt-puck {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 28px;
+  height: 28px;
+
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--cyan),
+      var(--purple)
+    );
+
+  box-shadow:
+    0 0 18px
+    rgba(53, 231, 255, 0.38);
+
+  transform:
+    translate(-50%, -50%);
+
+  cursor: grab;
+}
+
+
+.tilt-puck:active {
+  cursor: grabbing;
+}
+
+
+.tilt-actions {
+  display: flex;
+
+  gap: 7px;
+}
+
+
+/* =========================================================
+   13. INSPECTOR
+========================================================= */
+
+.panel-right {
+  min-width: 0;
+}
+
+
+.inspector-empty {
+  flex: 1;
+
+  display: grid;
+  place-items: center;
+  align-content: center;
+
+  gap: 8px;
+
+  padding: 28px;
+
+  color: var(--text-muted);
+
+  text-align: center;
+}
+
+
+.inspector-empty-icon {
+  display: grid;
+  place-items: center;
+
+  width: 52px;
+  height: 52px;
+
+  margin-bottom: 6px;
+
+  border: 1px solid var(--border);
+  border-radius: 16px;
+
+  background:
+    rgba(53, 231, 255, 0.04);
+
+  color: var(--cyan);
+
+  font-size: 1.4rem;
+}
+
+
+.inspector-empty strong {
+  color: var(--text-soft);
+
+  font-size: 0.76rem;
+}
+
+
+.inspector-empty span {
+  max-width: 210px;
+
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+
+.layer-inspector {
+  min-height: 0;
+  overflow-y: auto;
+
+  padding-bottom: 16px;
+}
+
+
+.control-section {
+  padding: 16px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+
+.control-section h3 {
+  margin: 0;
+
+  font-size: 0.74rem;
+}
+
+
+.field-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: var(--text-muted);
+
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+
+.text-input,
+.advanced-grid input {
+  width: 100%;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.03);
+
+  color: var(--text);
+
+  outline: 0;
+}
+
+
+.text-input {
+  min-height: 38px;
+
+  padding: 9px 10px;
+
+  font-size: 0.7rem;
+}
+
+
+.text-input:focus,
+.advanced-grid input:focus {
+  border-color:
+    rgba(53, 231, 255, 0.42);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(53, 231, 255, 0.06);
+}
+
+
+.section-title-row,
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+
+.section-title-row {
+  margin-bottom: 14px;
+}
+
+
+.value-pill {
+  min-width: 46px;
+
+  padding: 5px 8px;
+
+  border: 1px solid
+    rgba(53, 231, 255, 0.18);
+
+  border-radius: var(--radius-pill);
+
+  background:
+    rgba(53, 231, 255, 0.07);
+
+  color: var(--cyan);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.64rem;
+  font-weight: 900;
+
+  text-align: center;
+}
+
+
+.depth-scale,
+.range-values {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  color: var(--text-muted);
+
+  font-size: 0.52rem;
+}
+
+
+.depth-scale {
+  margin-bottom: 7px;
+}
+
+
+.range-values {
+  margin-top: 5px;
+}
+
+
+.range-input {
+  width: 100%;
+  height: 22px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+
+.range-input::-webkit-slider-runnable-track {
+  height: 5px;
+
+  border-radius: var(--radius-pill);
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--orange),
+      rgba(255, 255, 255, 0.18) 50%,
+      var(--cyan)
+    );
+}
+
+
+.range-input::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+
+  margin-top: -6.5px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+
+  background: var(--purple);
+
+  box-shadow:
+    0 0 12px
+    rgba(141, 76, 255, 0.5);
+}
+
+
+.range-input::-moz-range-track {
+  height: 5px;
+
+  border-radius: var(--radius-pill);
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--orange),
+      rgba(255, 255, 255, 0.18) 50%,
+      var(--cyan)
+    );
+}
+
+
+.range-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+
+  background: var(--purple);
+
+  box-shadow:
+    0 0 12px
+    rgba(141, 76, 255, 0.5);
+}
+
+
+.control-row {
+  margin-bottom: 7px;
+
+  color: var(--text-muted);
+
+  font-size: 0.62rem;
+}
+
+
+.control-row + .range-input {
+  margin-bottom: 15px;
+}
+
+
+.control-row output {
+  color: var(--cyan);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.62rem;
+}
+
+
+/* =========================================================
+   14. ADVANCED WFS
+========================================================= */
+
+.advanced-toggle {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 11px;
+
+  border-radius: 11px;
+
+  color: var(--text-soft);
+
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+
+.advanced-controls {
+  margin-top: 12px;
+}
+
+
+.advanced-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 9px;
+}
+
+
+.advanced-grid label {
+  color: var(--text-muted);
+
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+
+.advanced-grid input {
+  min-height: 35px;
+
+  margin-top: 5px;
+  padding: 7px 8px;
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.64rem;
+}
+
+
+/* =========================================================
+   15. CHECKBOX
+========================================================= */
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  margin-top: 12px;
+
+  color: var(--text-soft);
+
+  font-size: 0.64rem;
+
+  cursor: pointer;
+}
+
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+
+  accent-color: var(--cyan);
+}
+
+
+/* =========================================================
+   16. STATUS BAR
+========================================================= */
+
+.statusbar {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    auto
+    1fr;
+
+  align-items: center;
+
+  gap: 18px;
+
+  min-height: var(--statusbar-height);
+  padding: 0 16px;
+
+  border-top: 1px solid var(--border);
+
+  background:
+    rgba(6, 7, 11, 0.98);
+
+  color: var(--text-muted);
+
+  font-size: 0.58rem;
+}
+
+
+.status-left,
+.status-centre,
+.status-right {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+
+.status-centre {
+  justify-content: center;
+}
+
+
+.status-right {
+  justify-content: flex-end;
+}
+
+
+.statusbar strong {
+  color: var(--text-soft);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.62rem;
+}
+
+
+.status-indicator {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: var(--green);
+
+  box-shadow:
+    0 0 9px
+    rgba(109, 255, 155, 0.7);
+}
+
+
+/* =========================================================
+   17. MODAL
+========================================================= */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+
+  z-index: 5000;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background:
+    rgba(0, 0, 0, 0.76);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+
+.modal {
+  width: min(760px, 100%);
+  max-height: min(82vh, 760px);
+
+  display: grid;
+
+  grid-template-rows:
+    auto
+    auto
+    minmax(0, 1fr)
+    auto;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17, 20, 29, 0.99),
+      rgba(7, 9, 14, 0.99)
+    );
+
+  box-shadow:
+    0 32px 100px
+    rgba(0, 0, 0, 0.72),
+
+    var(--shadow-cyan);
+}
+
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 18px 20px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+
+.modal-header h2 {
+  margin: 4px 0 0;
+
+  font-size: 1rem;
+}
+
+
+.modal-intro {
+  padding: 14px 20px 0;
+}
+
+
+.modal-intro p {
+  margin: 0;
+
+  color: var(--text-muted);
+
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+
+.wfs-settings-list {
+  min-height: 0;
+
+  padding: 16px 20px;
+
+  overflow-y: auto;
+}
+
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+
+  padding: 14px 20px 18px;
+
+  border-top: 1px solid var(--border);
+}
+
+
+/* Future JS-created export rows */
+
+.wfs-layer-card {
+  margin-bottom: 10px;
+  padding: 13px;
+
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+
+.wfs-layer-card h3 {
+  margin: 0 0 10px;
+
+  font-size: 0.72rem;
+}
+
+
+.wfs-value-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 8px;
+}
+
+
+.wfs-value {
+  padding: 8px 10px;
+
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.026);
+}
+
+
+.wfs-value span {
+  display: block;
+
+  color: var(--text-muted);
+
+  font-size: 0.54rem;
+}
+
+
+.wfs-value strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color: var(--cyan);
+
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 0.67rem;
+}
+
+
+/* =========================================================
+   18. HIDDEN
+========================================================= */
+
+[hidden] {
+  display: none !important;
+}
+
+
+/* =========================================================
+   19. RESPONSIVE
+========================================================= */
+
+@media (max-width: 1180px) {
+
+  .editor {
+    grid-template-columns:
+      230px
+      minmax(400px, 1fr)
+      260px;
+  }
+
+
+  .tilt-panel {
+    grid-template-columns:
+      auto
+      minmax(130px, 1fr)
+      auto;
+
+    gap: 10px;
+  }
+
+
+  .tilt-actions {
+    flex-direction: column;
+  }
+
+}
+
+
+@media (max-width: 920px) {
+
+  #app {
+    display: block;
+  }
+
+
+  .topbar {
+    position: sticky;
+    top: 0;
+
+    min-height: 68px;
+
+    padding: 8px 10px;
+  }
+
+
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+
+  .brand-copy span {
+    display: none;
+  }
+
+
+  .topbar-actions {
+    gap: 5px;
+  }
+
+
+  .button {
+    min-height: 36px;
+
+    padding: 8px 10px;
+
+    font-size: 0.62rem;
+  }
+
+
+  .editor {
+    display: block;
+
+    padding: 10px;
+
+    overflow: visible;
+  }
+
+
+  .panel,
+  .workspace {
+    margin-bottom: 10px;
+  }
+
+
+  .panel {
+    min-height: auto;
+  }
+
+
+  .panel-left,
+  .panel-right {
+    max-height: none;
+  }
+
+
+  .workspace {
+    min-height: 720px;
+  }
+
+
+  .preview-stage {
+    min-height: 500px;
+  }
+
+
+  .watch-shell {
+    width: min(78vw, 480px);
+  }
+
+
+  .tilt-panel {
+    grid-template-columns: 1fr;
+
+    justify-items: stretch;
+  }
+
+
+  .tilt-readout {
+    justify-content: center;
+  }
+
+
+  .tilt-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+
+  .statusbar {
+    display: none;
+  }
+
+}
+
+
+@media (max-width: 560px) {
+
+  .brand-copy h1 {
+    font-size: 0.82rem;
+  }
+
+
+  #open-project-btn,
+  #save-project-btn {
+    display: none;
+  }
+
+
+  .workspace-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+
+  .preview-mode {
+    width: 100%;
+
+    justify-content: space-between;
+  }
+
+
+  .segmented-control {
+    flex: 1;
+  }
+
+
+  .preview-mode-btn {
+    flex: 1;
+  }
+
+
+  .preview-stage {
+    min-height: 410px;
+
+    padding: 18px 10px 50px;
+  }
+
+
+  .watch-shell {
+    width: min(88vw, 390px);
+  }
+
+
+  .tilt-hint {
+    width: calc(100% - 28px);
+
+    justify-content: center;
+
+    text-align: center;
+  }
+
+
+  .advanced-grid,
+  .wfs-value-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
