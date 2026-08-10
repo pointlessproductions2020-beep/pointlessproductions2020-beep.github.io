@@ -1158,10 +1158,14 @@ function loadAnaglyphSettings() {
         Boolean(parsed.enabled),
       depth:
         Math.min(
-          5,
+          3,
           Math.max(
-            0,
-            Number(parsed.depth) || 1
+            -3,
+            Number.isFinite(
+              Number(parsed.depth)
+            )
+              ? Number(parsed.depth)
+              : 1
           )
         )
     };
@@ -1210,6 +1214,11 @@ function updateAnaglyphInterface() {
     Math.round(
       anaglyphSettings.depth * 100
     );
+
+  const depthLabel =
+    depthPercent > 0
+      ? `+${depthPercent}%`
+      : `${depthPercent}%`;
 
   document.body.classList.toggle(
     "anaglyph-enabled",
@@ -1269,12 +1278,12 @@ function updateAnaglyphInterface() {
 
   if (anaglyphDepthOutput) {
     anaglyphDepthOutput.textContent =
-      `${depthPercent}%`;
+      depthLabel;
   }
 
   if (quickMenuAnaglyphDepthOutput) {
     quickMenuAnaglyphDepthOutput.textContent =
-      `${depthPercent}%`;
+      depthLabel;
   }
 
 }
@@ -1305,9 +1314,9 @@ function setAnaglyphDepthFromPercent(percent) {
 
   const numericPercent =
     Math.min(
-      500,
+      300,
       Math.max(
-        0,
+        -300,
         Number(percent) || 0
       )
     );
@@ -4783,7 +4792,9 @@ function drawBoardGrid(
 
   const intensity =
     anaglyphSettings.enabled
-      ? anaglyphSettings.depth
+      ? Math.abs(
+          anaglyphSettings.depth
+        )
       : 0;
 
 
