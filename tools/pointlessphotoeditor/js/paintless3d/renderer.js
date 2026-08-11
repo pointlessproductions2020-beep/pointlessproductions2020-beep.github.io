@@ -1910,17 +1910,24 @@
       );
 
 
+    const paraluxiousTransform =
+      window.PaintlessParaluxious?.getLayerTransform?.(layer) ||
+      { x: 0, y: 0, scale: 1 };
+
+
     context.translate(
       offsetX +
       (
         transformX +
-        centreX
+        centreX +
+        (Number(paraluxiousTransform.x) || 0)
       ) *
       renderScaleX,
 
       (
         transformY +
-        centreY
+        centreY +
+        (Number(paraluxiousTransform.y) || 0)
       ) *
       renderScaleY
     );
@@ -2011,11 +2018,17 @@
     }
 
 
+    const paraluxiousScale =
+      Number(paraluxiousTransform.scale) || 1;
+
+
     context.scale(
       layerScaleX *
+      paraluxiousScale *
       renderScaleX,
 
       layerScaleY *
+      paraluxiousScale *
       renderScaleY
     );
 
