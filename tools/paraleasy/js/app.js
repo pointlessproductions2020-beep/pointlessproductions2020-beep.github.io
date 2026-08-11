@@ -114,6 +114,18 @@ const gyroRangeValue =
   );
 
 
+const layerScaleSlider =
+  document.querySelector(
+    "#layer-scale-slider"
+  );
+
+const layerScaleValue =
+  document.querySelector(
+    "#layer-scale-value"
+  );
+
+
+
 const layerOpacitySlider =
   document.querySelector(
     "#layer-opacity-slider"
@@ -487,6 +499,44 @@ function renderInspector() {
       )}°`;
 
   }
+
+     /* ---------------------------------------------------------
+     Layer Scale
+  --------------------------------------------------------- */
+
+  const layerScalePercent =
+    Math.round(
+      (
+        Number(
+          layer.transform?.scale
+        ) || 1
+      ) *
+      100
+    );
+
+
+  if (
+    layerScaleSlider
+  ) {
+
+    layerScaleSlider.value =
+      String(
+        layerScalePercent
+      );
+
+  }
+
+
+  if (
+    layerScaleValue
+  ) {
+
+    layerScaleValue.textContent =
+      `${layerScalePercent}%`;
+
+  }
+
+
 
 
   /* ---------------------------------------------------------
@@ -900,6 +950,64 @@ function initialiseGyroRangeControl() {
       updateSelectedLayerFromInspector({
         gyroRange:
           value
+      });
+
+    }
+  );
+
+}
+
+/* =========================================================
+   14. LAYER SCALE
+========================================================= */
+
+function initialiseLayerScaleControl() {
+
+  layerScaleSlider?.addEventListener(
+    "input",
+    () => {
+
+      if (
+        inspectorUpdating
+      ) {
+        return;
+      }
+
+
+      const layer =
+        getSelectedLayer();
+
+
+      if (!layer) {
+        return;
+      }
+
+
+      const percent =
+        Number(
+          layerScaleSlider.value
+        ) || 100;
+
+
+      if (
+        layerScaleValue
+      ) {
+
+        layerScaleValue.textContent =
+          `${Math.round(
+            percent
+          )}%`;
+
+      }
+
+
+      updateSelectedLayerFromInspector({
+        transform: {
+          ...(layer.transform || {}),
+          scale:
+            percent /
+            100
+        }
       });
 
     }
@@ -2008,6 +2116,8 @@ function initialiseInspector() {
 
   initialiseGyroRangeControl();
 
+  initialiseLayerScaleControl();
+   
   initialiseOpacityControl();
 
   initialiseVisibilityControl();
