@@ -731,11 +731,18 @@ width:
       layer.blendMode;
 
 
+    const paraluxiousTransform =
+      window.PaintlessParaluxious?.getLayerTransform?.(layer) ||
+      { x: 0, y: 0, scale: 1 };
+
+
     editorContext.translate(
       Number(layer.transformX) +
-        centreX,
+        centreX +
+        (Number(paraluxiousTransform.x) || 0),
       Number(layer.transformY) +
-        centreY
+        centreY +
+        (Number(paraluxiousTransform.y) || 0)
     );
 
 
@@ -744,9 +751,13 @@ width:
     );
 
 
+    const paraluxiousScale =
+      Number(paraluxiousTransform.scale) || 1;
+
+
     editorContext.scale(
-      Number(layer.scaleX) || 1,
-      Number(layer.scaleY) || 1
+      (Number(layer.scaleX) || 1) * paraluxiousScale,
+      (Number(layer.scaleY) || 1) * paraluxiousScale
     );
 
 
