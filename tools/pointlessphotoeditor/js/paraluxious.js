@@ -1,8 +1,13 @@
 "use strict";
 
 /* =========================================================
-   PAINTLESS — PARALUXIOUS v0.2
+   PAINTLESS — PARALUXIOUS v0.3
    Independent parallax power-up for Paintless + Paintless3D.
+
+   v0.3 fixes:
+   - Device shell is derived from the rendered canvas bounds
+   - Canvas + shell zoom/resize/tilt as one physical unit
+   - Screen clips artwork correctly during strong tilt
 
    v0.2 adds:
    - ParaL-Easy style hand/tilt preview + spring return
@@ -56,6 +61,7 @@
 
   let ui = {};
   let deviceShell = null;
+  let deviceScreen = null;
   let orientationOverlay = null;
   let deviceObserver = null;
   let springFrame = 0;
@@ -120,8 +126,52 @@
     updateUi();
   }
 
+  function syncDeviceToCanvas() {
+    const stage = document.getElementById("canvas-stage");
+
+    if (!deviceShell || !deviceScreen || !stage) return;
+
+    const zoom = Math.max(0.01, Number(window.PaintlessCanvas?.getZoom?.()) || 1);
+    const sourceWidth = Math.max(1, stage.offsetWidth || 1);
+    const sourceHeight = Math.max(1, stage.offsetHeight || 1);
+    const screenWidth = sourceWidth * zoom;
+    const screenHeight = sourceHeight * zoom;
+
+    /*
+     * The fake device is NOT an independent object. Its geometry is derived
+     * directly from the currently rendered Paintless canvas. This means
+     * zoom, Fit Screen and document-size changes resize the shell with it.
+     */
+    const bezel = state.enabled
+      ? clamp(Math.min(screenWidth, screenHeight) * 0.024, 7, 18)
+      : 0;
+
+    deviceShell.style.setProperty("--paraluxious-bezel", `${bezel}px`);
+    deviceShell.style.width = `${screenWidth + bezel * 2}px`;
+    deviceShell.style.height = `${screenHeight + bezel * 2}px`;
+
+    deviceScreen.style.left = `${bezel}px`;
+    deviceScreen.style.top = `${bezel}px`;
+    deviceScreen.style.width = `${screenWidth}px`;
+    deviceScreen.style.height = `${screenHeight}px`;
+
+    /*
+     * canvas.js owns the stage's scale() transform. Keeping the unscaled
+     * stage inside a screen whose layout dimensions equal the scaled result
+     * makes the physical shell and artwork behave as one object.
+     */
+    stage.style.position = "absolute";
+    stage.style.left = "0";
+    stage.style.top = "0";
+    stage.style.margin = "0";
+
+    deviceShell.classList.toggle("paraluxious-enabled", state.enabled);
+  }
+
   function updatePhysicalDevice() {
     if (!deviceShell) return;
+
+    syncDeviceToCanvas();
 
     const input = getCombinedInput();
 
@@ -450,6 +500,9 @@
     deviceShell.className = "paraluxious-device-shell";
     deviceShell.setAttribute("aria-label", "Paraluxious canvas preview");
 
+    deviceScreen = document.createElement("div");
+    deviceScreen.className = "paraluxious-device-screen";
+
     orientationOverlay = document.createElement("div");
     orientationOverlay.className = "paraluxious-orientation-overlay";
     orientationOverlay.setAttribute("aria-hidden", "true");
@@ -463,13 +516,15 @@
     glass.setAttribute("aria-hidden", "true");
 
     stage.parentNode.insertBefore(deviceShell, stage);
-    deviceShell.append(stage, orientationOverlay, glass);
+    deviceShell.append(deviceScreen);
+    deviceScreen.append(stage, orientationOverlay, glass);
 
     const syncVisibility = () => {
       deviceShell.classList.toggle(
         "has-canvas",
         stage.classList.contains("is-visible")
       );
+      requestAnimationFrame(syncDeviceToCanvas);
     };
 
     syncVisibility();
@@ -479,6 +534,21 @@
       attributes: true,
       attributeFilter: ["class", "style"]
     });
+
+    if (typeof ResizeObserver !== "undefined") {
+      const resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(syncDeviceToCanvas);
+      });
+      resizeObserver.observe(stage);
+    }
+
+    document.addEventListener("paintless:zoom-changed", () => {
+      requestAnimationFrame(syncDeviceToCanvas);
+    });
+
+    window.addEventListener("resize", () => {
+      requestAnimationFrame(syncDeviceToCanvas);
+    }, { passive: true });
 
     let pointerId = null;
 
@@ -531,6 +601,7 @@
     deviceShell.addEventListener("pointercancel", endDrag);
 
     setViewRotation(state.viewRotation, false);
+    syncDeviceToCanvas();
     updatePhysicalDevice();
   }
 
@@ -1251,8 +1322,8 @@
 
       position: relative;
       display: none;
-      width: max-content;
-      height: max-content;
+      width: 1px;
+      height: 1px;
       flex: 0 0 auto;
       transform-style: preserve-3d;
       transform:
@@ -1271,7 +1342,7 @@
     }
 
     .paraluxious-active .paraluxious-device-shell {
-      padding: 11px;
+      padding: 0;
       border: 1px solid rgba(53,231,255,.19);
       border-radius: 24px;
       background:
@@ -1304,24 +1375,34 @@
       opacity: .62;
     }
 
-    .paraluxious-device-shell .canvas-stage {
-      transform:
-        rotate(var(--paintless-view-rotation, 0deg));
-      transform-origin: center center;
-      transition: transform .18s ease;
+    .paraluxious-device-screen {
+      position: absolute;
+      overflow: hidden;
+      border-radius: 0;
+      transform-style: preserve-3d;
+      background: transparent;
     }
 
-    .paraluxious-active .paraluxious-device-shell .canvas-stage {
+    .paraluxious-active .paraluxious-device-screen {
       border-radius: 14px;
-      overflow: hidden;
       box-shadow:
         inset 0 0 0 1px rgba(255,255,255,.08),
         0 0 18px rgba(0,0,0,.42);
     }
 
+    .paraluxious-device-shell .canvas-stage {
+      transform-origin: top left !important;
+    }
+
+    .paraluxious-active .paraluxious-device-shell .canvas-stage {
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
     .paraluxious-device-glass {
       position: absolute;
-      inset: 11px;
+      inset: 0;
       z-index: 5;
       border-radius: 14px;
       pointer-events: none;
@@ -1336,7 +1417,7 @@
 
     .paraluxious-orientation-overlay {
       position: absolute;
-      inset: 11px;
+      inset: 0;
       z-index: 8;
       pointer-events: none;
       transform: rotate(var(--paintless-view-rotation, 0deg));
@@ -1657,17 +1738,17 @@
     }
 
     .paintless-mobile-mode.paraluxious-active .paraluxious-device-shell {
-      padding: 8px;
+      padding: 0;
       border-radius: 20px;
     }
 
-    .paintless-mobile-mode.paraluxious-active .paraluxious-device-glass,
-    .paintless-mobile-mode .paraluxious-orientation-overlay {
-      inset: 8px;
+    .paintless-mobile-mode.paraluxious-active .paraluxious-device-screen,
+    .paintless-mobile-mode.paraluxious-active .paraluxious-device-glass {
+      border-radius: 12px;
     }
 
-    .paintless-mobile-mode.paraluxious-active .paraluxious-device-shell .canvas-stage {
-      border-radius: 12px;
+    .paintless-mobile-mode .paraluxious-orientation-overlay {
+      inset: 0;
     }
 
     /* Landscape remains MOBILE rather than falling back to desktop. */
