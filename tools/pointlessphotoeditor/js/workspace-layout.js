@@ -735,43 +735,83 @@
           );
 
 
-          panels
-            .sort(
-              (first, second) => {
+          const orderedPanels =
+            panels
+              .slice()
+              .sort(
+                (first, second) => {
 
-                const firstKind =
-                  identifyPanel(
-                    first
+                  const firstKind =
+                    identifyPanel(
+                      first
+                    );
+
+                  const secondKind =
+                    identifyPanel(
+                      second
+                    );
+
+                  return (
+                    panelOrder[firstKind] || 999
+                  ) -
+                  (
+                    panelOrder[secondKind] || 999
                   );
 
-                const secondKind =
-                  identifyPanel(
-                    second
-                  );
+                }
+              );
 
-                return (
-                  panelOrder[firstKind] || 999
-                ) -
-                (
-                  panelOrder[secondKind] || 999
-                );
 
-              }
-            )
-            .forEach(
+          /*
+           * IMPORTANT:
+           * Do not blindly append every panel on every observer pass.
+           * appendChild() creates a childList mutation even when the node
+           * is already inside the sidebar. The MutationObserver would then
+           * schedule this function again forever, causing heavy lag and
+           * making clicks appear dead while the DOM continually reorders.
+           */
+          const currentOrderedPanels =
+            Array.from(
+              sidebar.children
+            ).filter(
+              (child) =>
+                child instanceof HTMLElement &&
+                identifyPanel(child)
+            );
+
+          const orderAlreadyCorrect =
+            orderedPanels.length ===
+              currentOrderedPanels.length &&
+            orderedPanels.every(
+              (panel, index) =>
+                panel ===
+                  currentOrderedPanels[index]
+            );
+
+
+          if (!orderAlreadyCorrect) {
+
+            const fragment =
+              document.createDocumentFragment();
+
+            orderedPanels.forEach(
               (panel) => {
-
                 if (
                   panel.parentElement ===
                     sidebar
                 ) {
-                  sidebar.appendChild(
+                  fragment.appendChild(
                     panel
                   );
                 }
-
               }
             );
+
+            sidebar.appendChild(
+              fragment
+            );
+
+          }
 
         } finally {
 
