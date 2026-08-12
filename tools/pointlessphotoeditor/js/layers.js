@@ -41,6 +41,9 @@
    const duplicateLayerButton =
   document.getElementById("duplicate-layer-button");
 
+  const mergeSelectedLayersButton =
+    document.getElementById("merge-selected-layers-button");
+
    const transformLayerButton =
   document.getElementById("transform-layer-button");
 
@@ -58,6 +61,8 @@
   const layers = [];
 
   let activeLayerId = null;
+
+  const selectedLayerIds = new Set();
 
   let nextLayerNumber = 1;
 
@@ -1079,6 +1084,9 @@ width:
     activeLayerId =
       layer.id;
 
+    selectedLayerIds.clear();
+    selectedLayerIds.add(layer.id);
+
 
     renderLayerList();
 
@@ -1993,6 +2001,136 @@ width:
   }
 
 
+  function toggleLayerSelection(layerId) {
+
+    const layer = getLayerById(layerId);
+    if (!layer) return false;
+
+    if (selectedLayerIds.has(layerId)) {
+      if (selectedLayerIds.size > 1) {
+        selectedLayerIds.delete(layerId);
+      }
+    } else {
+      selectedLayerIds.add(layerId);
+    }
+
+    activeLayerId = layerId;
+    renderLayerList();
+    updateLayerControls();
+
+    dispatchLayerEvent(
+      "paintless:layer-selection-changed",
+      { layers: getSelectedLayers() }
+    );
+
+    return true;
+  }
+
+
+  function getSelectedLayers() {
+    if (selectedLayerIds.size === 0 && activeLayerId) {
+      selectedLayerIds.add(activeLayerId);
+    }
+
+    return layers.filter((layer) => selectedLayerIds.has(layer.id));
+  }
+
+
+  function drawLayerFlattened(targetContext, layer) {
+    if (!layer?.visible || layer.opacity <= 0) return;
+
+    const layerWidth = layer.canvas.width;
+    const layerHeight = layer.canvas.height;
+    const centreX = layerWidth / 2;
+    const centreY = layerHeight / 2;
+    const rotationRadians = (Number(layer.rotation) || 0) * Math.PI / 180;
+
+    targetContext.save();
+    targetContext.globalAlpha = layer.opacity;
+    targetContext.globalCompositeOperation = layer.blendMode;
+    targetContext.translate(
+      (Number(layer.transformX) || 0) + centreX,
+      (Number(layer.transformY) || 0) + centreY
+    );
+    targetContext.rotate(rotationRadians);
+    targetContext.scale(
+      Number(layer.scaleX) || 1,
+      Number(layer.scaleY) || 1
+    );
+    targetContext.drawImage(layer.canvas, -centreX, -centreY);
+    targetContext.restore();
+  }
+
+
+  function mergeSelectedLayers() {
+    const chosen = getSelectedLayers();
+
+    if (chosen.length < 2) {
+      return false;
+    }
+
+    const chosenIndices = chosen
+      .map((layer) => getLayerIndex(layer.id))
+      .sort((a, b) => a - b);
+
+    const lowestIndex = chosenIndices[0];
+    const highestIndex = chosenIndices[chosenIndices.length - 1];
+    const isContiguous = chosenIndices.every(
+      (index, offset) => index === lowestIndex + offset
+    );
+
+    if (!isContiguous) {
+      return false;
+    }
+
+    const chosenIds = new Set(chosen.map((layer) => layer.id));
+    const topmost = layers[highestIndex];
+
+    const mergedLayer = new PaintlessLayer({
+      name: `Merged (${chosen.length} layers)`,
+      width: documentWidth,
+      height: documentHeight,
+      visible: true,
+      opacity: 1,
+      blendMode: "source-over",
+      locked: false,
+      stereo3dEnabled: topmost?.stereo3dEnabled ?? true,
+      depth3d: Number(topmost?.depth3d) || 0
+    });
+
+    chosen.forEach((layer) => drawLayerFlattened(mergedLayer.context, layer));
+
+    const remaining = layers.filter((layer) => !chosenIds.has(layer.id));
+    const insertIndex = remaining.filter((layer) => getLayerIndex(layer.id) < lowestIndex).length;
+    remaining.splice(insertIndex, 0, mergedLayer);
+
+    layers.splice(0, layers.length, ...remaining);
+    activeLayerId = mergedLayer.id;
+    selectedLayerIds.clear();
+    selectedLayerIds.add(mergedLayer.id);
+
+    renderLayerList();
+    renderLayers();
+    updateLayerControls();
+
+    dispatchLayerEvent(
+      "paintless:layers-merged",
+      {
+        mergedLayer,
+        mergedLayers: chosen,
+        multiLayer: true
+      }
+    );
+
+    dispatchLayerEvent(
+      "paintless:history-requested",
+      { reason: "Merge selected layers" }
+    );
+
+    return mergedLayer;
+  }
+
+
   /* =======================================================
      18. MERGE DOWN
   ======================================================= */
@@ -2588,6 +2726,11 @@ function renderLayerList() {
           layer.id === activeLayerId
         );
 
+        layerItem.classList.toggle(
+          "is-multi-selected",
+          selectedLayerIds.has(layer.id)
+        );
+
       layerItem.classList.toggle(
            "is-2d-mode",
             !is3DMode
@@ -2993,7 +3136,14 @@ function renderLayerList() {
             }
 
 
-            selectThisLayer();
+            if (event.ctrlKey || event.metaKey) {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleLayerSelection(layer.id);
+              return;
+            }
+
+            selectLayer(layer.id);
 
           }
         );
@@ -3826,6 +3976,16 @@ restoredLayer.context.putImageData(
     white-space: nowrap;
   }
 
+  .paintless-layer-row.is-multi-selected {
+    outline: 2px solid rgba(124, 58, 237, 0.78);
+    outline-offset: -2px;
+    background: rgba(124, 58, 237, 0.12);
+  }
+
+  .paintless-layer-row.is-multi-selected.is-active {
+    box-shadow: inset 3px 0 0 rgba(196, 181, 253, 0.95);
+  }
+
   .paintless-layer-row.is-depth-behind
   .paintless-depth-value {
     color: #ff6684;
@@ -3963,6 +4123,18 @@ updateLayerControls();
    29. PUBLIC API
 ======================================================= */
 
+  mergeSelectedLayersButton?.addEventListener(
+    "click",
+    () => {
+      if (!mergeSelectedLayers()) {
+        window.alert(
+          "Select at least two adjacent layers with Ctrl/Cmd-click, then press Merge."
+        );
+      }
+    }
+  );
+
+
 window.PaintlessLayers = {
 
   PaintlessLayer,
@@ -4040,6 +4212,10 @@ window.PaintlessLayers = {
   clearActiveLayer,
 
   mergeLayerDown,
+
+  mergeSelectedLayers,
+
+  getSelectedLayers,
 
   flattenImage,
 
