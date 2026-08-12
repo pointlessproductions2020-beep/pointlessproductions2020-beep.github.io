@@ -132,8 +132,14 @@
     sourceMarkerRadius:
       13,
 
+    /*
+     * Keep the interactive hit target deliberately tight.
+     * Clone destinations are very often close to the sampled source;
+     * the old 23px hit radius silently switched into "move source"
+     * mode instead of starting a clone stroke.
+     */
     sourceHitPadding:
-      10,
+      -6,
 
     cursorPoint:
       null,
