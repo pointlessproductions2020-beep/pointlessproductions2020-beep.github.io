@@ -308,7 +308,16 @@
 <button aria-pressed="false" class="tool-family-option" data-shape-choice="rounded-rectangle" data-shape-icon="▢" data-shape-label="Rounded" role="menuitem" type="button"><span aria-hidden="true">▢</span><strong>Rounded rectangle</strong></button>
 <button aria-pressed="false" class="tool-family-option" data-shape-choice="line" data-shape-icon="╱" data-shape-label="Line" role="menuitem" type="button"><span aria-hidden="true">╱</span><strong>Line</strong></button>
 </div>
-</div></div></section><section class="toolbox-group toolbox-group--colour" data-tool-group="colour"><h3>Colour</h3><div aria-label="Current colours" class="colour-stack">
+</div></div></section><section class="toolbox-group toolbox-group--shortcuts" data-tool-group="shortcuts"><h3>Shortcuts</h3><div aria-label="Shortcut keys" class="toolbox-grid" role="group">
+<button aria-label="Copy — Ctrl C" class="tool-button shortcut-tool-button" data-shortcut-action="copy" title="Copy (Ctrl+C)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"></path></svg></span><small>Copy</small></button>
+<button aria-label="Paste — Ctrl V" class="tool-button shortcut-tool-button" data-shortcut-action="paste" title="Paste (Ctrl+V)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 5h6"></path><path d="M9 3h6v4H9z"></path><rect x="5" y="5" width="14" height="16" rx="2"></rect><path d="M9 12h6M9 16h6"></path></svg></span><small>Paste</small></button>
+<button aria-label="Separate to new layer — Ctrl J" class="tool-button shortcut-tool-button" data-shortcut-action="separate" title="Separate to new layer (Ctrl+J)" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h10v10H4z"></path><path d="M10 10h10v10H10z"></path><path d="M17 3v5M14.5 5.5h5"></path></svg></span><small>Ctrl J</small></button>
+<button aria-label="Delete selection" class="tool-button shortcut-tool-button shortcut-tool-button--danger" data-shortcut-action="delete" title="Delete selection" type="button">
+<span class="tool-button__icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"></path></svg></span><small>Delete</small></button>
+</div></section><section class="toolbox-group toolbox-group--colour" data-tool-group="colour"><h3>Colour</h3><div aria-label="Current colours" class="colour-stack">
 <button aria-label="Choose primary colour" class="colour-chip colour-chip--primary" id="primary-colour-chip" title="Primary colour" type="button"></button>
 <button aria-label="Choose secondary colour" class="colour-chip colour-chip--secondary" id="secondary-colour-chip" title="Secondary colour" type="button"></button>
 <button aria-label="Swap colours" class="swap-colours-button" id="swap-colours-button" title="Swap colours (X)" type="button">⇄</button>
@@ -439,6 +448,8 @@
 <button aria-label="Transform selected layer" id="transform-layer-button" title="Transform selected layer" type="button">
   ⛶
               </button>
+<button aria-label="Flip layer horizontally" id="flip-layer-horizontal-button" title="Flip selected layer horizontally" type="button">↔</button>
+<button aria-label="Flip layer vertically" id="flip-layer-vertical-button" title="Flip selected layer vertically" type="button">↕</button>
 <button aria-label="Delete layer" id="delete-layer-button" title="Delete layer" type="button">
                 🗑
               </button>
