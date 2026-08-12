@@ -4035,3 +4035,160 @@ select option:checked {
 }
 .right-sidebar > .layers-ultra-resize-handle { margin: 0 !important; }
 .right-sidebar > .layers-panel--shared-space .layer-list { max-height: none !important; }
+/* =========================================================
+   PAINTLESS v1.0.5 — DRAWER SIDEBAR + SHORTCUT CONTROLS
+========================================================= */
+
+/* Shortcut keys live in the same visual language as tools. */
+.toolbox-group--shortcuts .shortcut-tool-button {
+  min-height: 58px;
+}
+
+.toolbox-group--shortcuts .shortcut-tool-button--danger:hover {
+  border-color: rgba(255, 89, 109, .48);
+  background: linear-gradient(145deg, rgba(255,89,109,.13), rgba(168,76,255,.055));
+}
+
+/* The old drag-height system has been replaced by drawers. */
+.panel-resize-handle,
+.layers-ultra-resize-handle {
+  display: none !important;
+}
+
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.right-sidebar > .paintless-drawer {
+  position: relative;
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 8px 10px 10px !important;
+  overflow: visible !important;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 12px;
+  background: rgba(255,255,255,.018);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+.paintless-drawer-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid rgba(212,154,255,.15);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgba(168,76,255,.07), rgba(53,231,255,.018));
+  color: var(--purple-light);
+  font-size: .66rem;
+  font-weight: 950;
+  letter-spacing: .09em;
+  text-align: left;
+  text-transform: uppercase;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.paintless-drawer-toggle:hover {
+  border-color: rgba(212,154,255,.38);
+  background: linear-gradient(145deg, rgba(168,76,255,.13), rgba(53,231,255,.035));
+  color: #fff;
+  box-shadow: 0 0 16px rgba(168,76,255,.09);
+}
+
+.paintless-drawer-toggle__chevron {
+  flex: 0 0 auto;
+  color: var(--cyan);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.paintless-drawer.is-collapsed {
+  padding-bottom: 8px !important;
+}
+
+.paintless-drawer.is-collapsed > :not(.paintless-drawer-toggle) {
+  display: none !important;
+}
+
+.paintless-drawer:not(.is-collapsed) > .paintless-drawer-toggle {
+  margin-bottom: 9px;
+  border-color: rgba(212,154,255,.28);
+}
+
+/* Existing panel headers still carry actions, but the drawer owns the title. */
+.paintless-drawer > .panel-header {
+  margin: 0 0 10px;
+}
+
+.paintless-drawer > .panel-header h2 {
+  display: none;
+}
+
+.paintless-drawer > .panel-header .panel-header-actions,
+.paintless-drawer > .panel-header .panel-menu-button,
+.paintless-drawer > .panel-header .reset-panel-button {
+  margin-left: auto;
+}
+
+/* Layers no longer hog the entire sidebar. */
+.right-sidebar > .layers-panel,
+.right-sidebar > .layers-panel--shared-space {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.right-sidebar > .layers-panel .layer-list {
+  min-height: 90px;
+  max-height: 300px !important;
+  overflow-y: auto;
+}
+
+.right-sidebar > .paintless-ultra-resizable-panel {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* The extra flip controls fit beside the existing layer buttons. */
+.layers-panel .panel-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+#flip-layer-horizontal-button,
+#flip-layer-vertical-button {
+  color: var(--cyan);
+}
+
+#flip-layer-horizontal-button:hover,
+#flip-layer-vertical-button:hover {
+  color: #fff;
+}
+
+@media (max-width: 680px) {
+  .right-sidebar {
+    padding: 6px;
+  }
+
+  .right-sidebar > .paintless-drawer {
+    padding: 7px 8px 9px !important;
+  }
+
+  .paintless-drawer-toggle {
+    min-height: 40px;
+  }
+}
