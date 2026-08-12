@@ -4065,18 +4065,29 @@ select option:checked {
 }
 
 .right-sidebar > .paintless-drawer {
-  position: relative;
   flex: 0 0 auto !important;
   min-height: 0 !important;
   max-height: none !important;
   height: auto !important;
   margin: 0 !important;
   padding: 8px 10px 10px !important;
-  overflow: visible !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
   border: 1px solid rgba(255,255,255,.075);
   border-radius: 12px;
   background: rgba(255,255,255,.018);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+
+.paintless-drawer-toggle {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.paintless-drawer:not(.is-collapsed) > :not(.paintless-drawer-toggle) {
+  pointer-events: auto;
 }
 
 .paintless-drawer-toggle {
