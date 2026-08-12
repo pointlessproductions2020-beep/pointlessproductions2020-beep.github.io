@@ -101,7 +101,7 @@
 
     ensureLayer(layer);
 
-    const depth = clamp(layer.paraluxiousDepth, -1, 1);
+    const depth = clamp(layer.paraluxiousDepth, -2, 2);
     const input = getCombinedInput();
 
     return {
@@ -778,16 +778,16 @@
     const body = panel.querySelector(".paraluxious-body");
 
     const depthControl = makeRange(
-      "Layer depth",
-      -1,
-      1,
-      0.05,
+      "Layer depth · Extreme",
+      -200,
+      200,
+      5,
       0,
       (value) => {
         const layer = ensureLayer(activeLayer());
 
         if (layer) {
-          layer.paraluxiousDepth = value;
+          layer.paraluxiousDepth = value / 100;
           render("layer-depth");
         }
       }
@@ -947,14 +947,14 @@
     const layer = ensureLayer(activeLayer());
 
     if (ui.depth && layer) {
-      ui.depth.value = String(layer.paraluxiousDepth);
+      ui.depth.value = String(Math.round(Number(layer.paraluxiousDepth) * 100));
     }
 
     const output =
       ui.depth?.previousElementSibling?.querySelector("output");
 
     if (output && layer) {
-      output.textContent = Number(layer.paraluxiousDepth).toFixed(2);
+      output.textContent = String(Math.round(Number(layer.paraluxiousDepth) * 100));
     }
 
     const input = getCombinedInput();
