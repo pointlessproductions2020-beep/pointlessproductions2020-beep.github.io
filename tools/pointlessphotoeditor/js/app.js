@@ -130,6 +130,25 @@
     );
 
 
+  const shortcutCopyButton =
+    document.querySelector('[data-shortcut-action="copy"]');
+
+  const shortcutPasteButton =
+    document.querySelector('[data-shortcut-action="paste"]');
+
+  const shortcutSeparateButton =
+    document.querySelector('[data-shortcut-action="separate"]');
+
+  const shortcutDeleteButton =
+    document.querySelector('[data-shortcut-action="delete"]');
+
+  const flipLayerHorizontalButton =
+    document.getElementById("flip-layer-horizontal-button");
+
+  const flipLayerVerticalButton =
+    document.getElementById("flip-layer-vertical-button");
+
+
   /* =======================================================
      2. APPLICATION STATE
   ======================================================= */
@@ -333,6 +352,203 @@
       1,
       10000
     );
+
+  }
+
+
+  function dispatchPaintlessShortcut(
+    key,
+    {
+      ctrl = false,
+      shift = false
+    } = {}
+  ) {
+
+    const shortcutEvent =
+      new KeyboardEvent(
+        "keydown",
+        {
+          key,
+          code:
+            key.length === 1
+              ? `Key${key.toUpperCase()}`
+              : key,
+          ctrlKey:
+            ctrl,
+          metaKey:
+            false,
+          shiftKey:
+            shift,
+          bubbles:
+            true,
+          cancelable:
+            true
+        }
+      );
+
+
+    document.dispatchEvent(
+      shortcutEvent
+    );
+
+
+    return shortcutEvent.defaultPrevented;
+
+  }
+
+
+  function flipActiveLayer(
+    direction
+  ) {
+
+    const layersApi =
+      getLayersApi();
+
+    const activeLayer =
+      layersApi?.getActiveLayer();
+
+
+    if (!activeLayer) {
+
+      setStatusMessage(
+        "Pick a layer before trying to flip thin air."
+      );
+
+      return false;
+
+    }
+
+
+    if (activeLayer.locked) {
+
+      setStatusMessage(
+        "Unlock the layer before flipping it."
+      );
+
+      return false;
+
+    }
+
+
+    const width =
+      activeLayer.canvas.width;
+
+    const height =
+      activeLayer.canvas.height;
+
+    const snapshot =
+      document.createElement(
+        "canvas"
+      );
+
+
+    snapshot.width =
+      width;
+
+    snapshot.height =
+      height;
+
+
+    snapshot
+      .getContext(
+        "2d",
+        {
+          alpha:
+            true
+        }
+      )
+      .drawImage(
+        activeLayer.canvas,
+        0,
+        0
+      );
+
+
+    activeLayer.context.save();
+
+    activeLayer.context.setTransform(
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    );
+
+    activeLayer.context.globalAlpha =
+      1;
+
+    activeLayer.context.globalCompositeOperation =
+      "source-over";
+
+    activeLayer.context.clearRect(
+      0,
+      0,
+      width,
+      height
+    );
+
+
+    if (
+      direction ===
+        "horizontal"
+    ) {
+
+      activeLayer.context.translate(
+        width,
+        0
+      );
+
+      activeLayer.context.scale(
+        -1,
+        1
+      );
+
+    } else {
+
+      activeLayer.context.translate(
+        0,
+        height
+      );
+
+      activeLayer.context.scale(
+        1,
+        -1
+      );
+
+    }
+
+
+    activeLayer.context.drawImage(
+      snapshot,
+      0,
+      0
+    );
+
+    activeLayer.context.restore();
+
+
+    layersApi.renderLayers?.();
+
+    getHistoryApi()
+      ?.saveHistory(
+        direction === "horizontal"
+          ? "Flip layer horizontally"
+          : "Flip layer vertically"
+      );
+
+
+    captureAdjustmentSource();
+
+
+    setStatusMessage(
+      direction === "horizontal"
+        ? "Layer flipped horizontally."
+        : "Layer flipped vertically."
+    );
+
+
+    return true;
 
   }
 
@@ -2057,6 +2273,78 @@
   newCanvasButton?.addEventListener(
     "click",
     openNewCanvasDialog
+  );
+
+
+  shortcutCopyButton?.addEventListener(
+    "click",
+    () => {
+      dispatchPaintlessShortcut(
+        "c",
+        {
+          ctrl:
+            true
+        }
+      );
+    }
+  );
+
+
+  shortcutPasteButton?.addEventListener(
+    "click",
+    () => {
+      dispatchPaintlessShortcut(
+        "v",
+        {
+          ctrl:
+            true
+        }
+      );
+    }
+  );
+
+
+  shortcutSeparateButton?.addEventListener(
+    "click",
+    () => {
+      dispatchPaintlessShortcut(
+        "j",
+        {
+          ctrl:
+            true
+        }
+      );
+    }
+  );
+
+
+  shortcutDeleteButton?.addEventListener(
+    "click",
+    () => {
+      dispatchPaintlessShortcut(
+        "Delete"
+      );
+    }
+  );
+
+
+  flipLayerHorizontalButton?.addEventListener(
+    "click",
+    () => {
+      flipActiveLayer(
+        "horizontal"
+      );
+    }
+  );
+
+
+  flipLayerVerticalButton?.addEventListener(
+    "click",
+    () => {
+      flipActiveLayer(
+        "vertical"
+      );
+    }
   );
 
 
