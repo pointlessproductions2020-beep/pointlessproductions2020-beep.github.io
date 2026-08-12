@@ -132,14 +132,8 @@
     sourceMarkerRadius:
       13,
 
-    /*
-     * Keep the interactive hit target deliberately tight.
-     * Clone destinations are very often close to the sampled source;
-     * the old 23px hit radius silently switched into "move source"
-     * mode instead of starting a clone stroke.
-     */
     sourceHitPadding:
-      -6,
+      10,
 
     cursorPoint:
       null,
@@ -1703,7 +1697,69 @@
 
 
   /* =======================================================
-     11. CLONE STAMP
+     11. DOCUMENT -> ACTIVE LAYER COORDINATES
+
+     Tool pointer coordinates are document/canvas coordinates,
+     but clone pixels are written directly into layer.canvas.
+     A transformed layer therefore needs the inverse of the
+     compositor transform before we paint into it.
+  ======================================================= */
+
+  function documentPointToLayerPoint(layer, point) {
+
+    if (!layer || !point) {
+      return copyPoint(point);
+    }
+
+    const layerWidth = layer.canvas?.width || 0;
+    const layerHeight = layer.canvas?.height || 0;
+    const centreX = layerWidth / 2;
+    const centreY = layerHeight / 2;
+
+    const para =
+      window.PaintlessParaluxious?.getLayerTransform?.(layer) ||
+      { x: 0, y: 0, scale: 1 };
+
+    const tx =
+      (Number(layer.transformX) || 0) +
+      centreX +
+      (Number(para.x) || 0);
+
+    const ty =
+      (Number(layer.transformY) || 0) +
+      centreY +
+      (Number(para.y) || 0);
+
+    const angle =
+      (Number(layer.rotation) || 0) * Math.PI / 180;
+
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
+
+    let x = Number(point.x) - tx;
+    let y = Number(point.y) - ty;
+
+    const rotatedX = x * cos - y * sin;
+    const rotatedY = x * sin + y * cos;
+
+    const paraScale = Number(para.scale) || 1;
+    const scaleX = (Number(layer.scaleX) || 1) * paraScale;
+    const scaleY = (Number(layer.scaleY) || 1) * paraScale;
+
+    x = rotatedX / (Math.abs(scaleX) > 0.000001 ? scaleX : 1);
+    y = rotatedY / (Math.abs(scaleY) > 0.000001 ? scaleY : 1);
+
+    return {
+      x: x + centreX,
+      y: y + centreY,
+      pressure: point.pressure
+    };
+
+  }
+
+
+  /* =======================================================
+     12. CLONE STAMP
   ======================================================= */
 
   function stampClone(
@@ -1720,6 +1776,13 @@
       return false;
 
     }
+
+
+    const layerPoint =
+      documentPointToLayerPoint(
+        cloneState.layer,
+        destinationPoint
+      );
 
 
     const pressure =
@@ -1752,12 +1815,12 @@
 
 
     const sourceCentreX =
-      destinationPoint.x +
+      layerPoint.x +
       cloneState.sourceOffsetX;
 
 
     const sourceCentreY =
-      destinationPoint.y +
+      layerPoint.y +
       cloneState.sourceOffsetY;
 
 
@@ -1854,10 +1917,10 @@
 
     destinationContext.drawImage(
       stampCanvas,
-      destinationPoint.x -
+      layerPoint.x -
         stampSize /
         2,
-      destinationPoint.y -
+      layerPoint.y -
         stampSize /
         2
     );
@@ -2143,14 +2206,28 @@
       );
 
 
+    const sourceLayerPoint =
+      documentPointToLayerPoint(
+        layer,
+        cloneState.sourcePoint
+      );
+
+
+    const destinationLayerPoint =
+      documentPointToLayerPoint(
+        layer,
+        destinationPoint
+      );
+
+
     cloneState.sourceOffsetX =
-      cloneState.sourcePoint.x -
-      destinationPoint.x;
+      sourceLayerPoint.x -
+      destinationLayerPoint.x;
 
 
     cloneState.sourceOffsetY =
-      cloneState.sourcePoint.y -
-      destinationPoint.y;
+      sourceLayerPoint.y -
+      destinationLayerPoint.y;
 
 
     cloneState.accumulatedDistance =
