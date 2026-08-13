@@ -192,6 +192,7 @@
   locked = false,
   stereo3dEnabled = true,
   depth3d = 0,
+  paraluxiousDepth = 0,
 
   transformX = 0,
   transformY = 0,
@@ -246,6 +247,13 @@
           depth3d,
           -300,
           300
+        );
+
+      this.paraluxiousDepth =
+        clamp(
+          Number(paraluxiousDepth) || 0,
+          -2,
+          2
         );
 
        this.transformX =
@@ -518,6 +526,9 @@ this.ultraHorizontalHingeAmount =
 depth3d:
   this.depth3d,
 
+paraluxiousDepth:
+  this.paraluxiousDepth,
+
 transformX:
   this.transformX,
 
@@ -639,6 +650,42 @@ width:
             this.canvas.width,
             this.canvas.height
           )
+      };
+
+    }
+
+
+    createProjectMetadata() {
+
+      return {
+        id: this.id,
+        name: this.name,
+        visible: this.visible,
+        opacity: this.opacity,
+        blendMode: this.blendMode,
+        locked: this.locked,
+        stereo3dEnabled: this.stereo3dEnabled,
+        depth3d: this.depth3d,
+        paraluxiousDepth: Number(this.paraluxiousDepth) || 0,
+        transformX: this.transformX,
+        transformY: this.transformY,
+        scaleX: this.scaleX,
+        scaleY: this.scaleY,
+        rotation: this.rotation,
+        ultraRotationEnabled: this.ultraRotationEnabled,
+        ultraRotationAmount: this.ultraRotationAmount,
+        ultraSkewEnabled: this.ultraSkewEnabled,
+        ultraSkewAmount: this.ultraSkewAmount,
+        ultraPerspectiveEnabled: this.ultraPerspectiveEnabled,
+        ultraPerspectiveAmount: this.ultraPerspectiveAmount,
+        ultraWarpEnabled: this.ultraWarpEnabled,
+        ultraWarpAmount: this.ultraWarpAmount,
+        ultraVerticalHingeEnabled: this.ultraVerticalHingeEnabled,
+        ultraVerticalHingeAmount: this.ultraVerticalHingeAmount,
+        ultraHorizontalHingeEnabled: this.ultraHorizontalHingeEnabled,
+        ultraHorizontalHingeAmount: this.ultraHorizontalHingeAmount,
+        width: this.canvas.width,
+        height: this.canvas.height
       };
 
     }
@@ -3464,6 +3511,9 @@ function renderLayerList() {
 depth3d:
   savedLayer.depth3d ?? 0,
 
+paraluxiousDepth:
+  savedLayer.paraluxiousDepth ?? 0,
+
 transformX:
   savedLayer.transformX ?? 0,
 
@@ -3590,6 +3640,194 @@ restoredLayer.context.putImageData(
         layers[
           layers.length - 1
         ].id;
+
+    }
+
+
+    renderLayerList();
+
+    renderLayers();
+
+
+    dispatchLayerEvent(
+      "paintless:layers-restored",
+      {
+        activeLayer:
+          getActiveLayer()
+      }
+    );
+
+  }
+
+
+
+  function createProjectManifestSnapshot() {
+
+    return {
+      activeLayerId,
+      nextLayerNumber,
+      documentWidth,
+      documentHeight,
+      layers:
+        layers.map(
+          (layer) =>
+            layer.createProjectMetadata()
+        )
+    };
+
+  }
+
+
+  async function restoreProjectManifestSnapshot(
+    snapshot,
+    imageBlobs
+  ) {
+
+    if (
+      !snapshot ||
+      !Array.isArray(snapshot.layers) ||
+      !Array.isArray(imageBlobs) ||
+      snapshot.layers.length !== imageBlobs.length
+    ) {
+
+      throw new Error(
+        "Invalid Paintless PNT2 layer package."
+      );
+
+    }
+
+
+    const decodedImages = [];
+
+
+    for (
+      let index = 0;
+      index < imageBlobs.length;
+      index += 1
+    ) {
+
+      decodedImages.push(
+        await createImageBitmap(
+          imageBlobs[index]
+        )
+      );
+
+    }
+
+
+    layers.splice(
+      0,
+      layers.length
+    );
+
+
+    selectedLayerIds.clear();
+
+
+    documentWidth =
+      Math.max(
+        1,
+        Number(snapshot.documentWidth) || 1
+      );
+
+
+    documentHeight =
+      Math.max(
+        1,
+        Number(snapshot.documentHeight) || 1
+      );
+
+
+    resizeDocument(
+      documentWidth,
+      documentHeight,
+      {
+        preserveContent:
+          false
+      }
+    );
+
+
+    try {
+
+      snapshot.layers.forEach(
+        (savedLayer, index) => {
+
+          const restoredLayer =
+            new PaintlessLayer({
+              id: savedLayer.id,
+              name: savedLayer.name,
+              width: savedLayer.width,
+              height: savedLayer.height,
+              visible: savedLayer.visible,
+              opacity: savedLayer.opacity,
+              blendMode: savedLayer.blendMode,
+              locked: savedLayer.locked,
+              stereo3dEnabled: savedLayer.stereo3dEnabled ?? false,
+              depth3d: savedLayer.depth3d ?? 0,
+              paraluxiousDepth: savedLayer.paraluxiousDepth ?? 0,
+              transformX: savedLayer.transformX ?? 0,
+              transformY: savedLayer.transformY ?? 0,
+              scaleX: savedLayer.scaleX ?? 1,
+              scaleY: savedLayer.scaleY ?? 1,
+              rotation: savedLayer.rotation ?? 0,
+              ultraRotationEnabled: savedLayer.ultraRotationEnabled ?? false,
+              ultraRotationAmount: savedLayer.ultraRotationAmount ?? 0,
+              ultraSkewEnabled: savedLayer.ultraSkewEnabled ?? false,
+              ultraSkewAmount: savedLayer.ultraSkewAmount ?? 0,
+              ultraPerspectiveEnabled: savedLayer.ultraPerspectiveEnabled ?? false,
+              ultraPerspectiveAmount: savedLayer.ultraPerspectiveAmount ?? 0,
+              ultraWarpEnabled: savedLayer.ultraWarpEnabled ?? false,
+              ultraWarpAmount: savedLayer.ultraWarpAmount ?? 0,
+              ultraVerticalHingeEnabled: savedLayer.ultraVerticalHingeEnabled ?? false,
+              ultraVerticalHingeAmount: savedLayer.ultraVerticalHingeAmount ?? 0,
+              ultraHorizontalHingeEnabled: savedLayer.ultraHorizontalHingeEnabled ?? false,
+              ultraHorizontalHingeAmount: savedLayer.ultraHorizontalHingeAmount ?? 0
+            });
+
+
+          restoredLayer.context.drawImage(
+            decodedImages[index],
+            0,
+            0,
+            restoredLayer.canvas.width,
+            restoredLayer.canvas.height
+          );
+
+
+          layers.push(
+            restoredLayer
+          );
+
+        }
+      );
+
+    } finally {
+
+      decodedImages.forEach(
+        (image) =>
+          image.close?.()
+      );
+
+    }
+
+
+    activeLayerId =
+      snapshot.activeLayerId;
+
+
+    nextLayerNumber =
+      snapshot.nextLayerNumber ||
+      layers.length + 1;
+
+
+    if (
+      !getActiveLayer() &&
+      layers.length > 0
+    ) {
+
+      activeLayerId =
+        layers[layers.length - 1].id;
 
     }
 
@@ -4234,6 +4472,10 @@ window.PaintlessLayers = {
   createLayersSnapshot,
 
   restoreLayersSnapshot,
+
+  createProjectManifestSnapshot,
+
+  restoreProjectManifestSnapshot,
 
   installPaintless3DLayerStyles
 
