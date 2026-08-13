@@ -1782,6 +1782,51 @@ input[type="range"]::-moz-range-thumb {
   padding: 20px 21px;
 }
 
+
+.new-canvas-presets {
+  display: grid;
+  gap: 7px;
+}
+
+.paraluxious-canvas-preset {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid rgba(212, 170, 73, 0.55);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(116, 43, 170, 0.22), rgba(13, 9, 19, 0.96) 58%, rgba(212, 170, 73, 0.09));
+  color: #fff;
+  text-align: left;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
+}
+
+.paraluxious-canvas-preset:hover,
+.paraluxious-canvas-preset.is-selected {
+  border-color: #e2bd65;
+  box-shadow: 0 0 22px rgba(168,76,255,.16), inset 0 0 18px rgba(212,170,73,.06);
+}
+
+.paraluxious-preset-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(226,189,101,.72);
+  border-radius: 11px;
+  background: radial-gradient(circle at 35% 25%, #a84cff, #35104d 58%, #100816);
+  color: #f2d17c;
+  font: 900 1.15rem Georgia, serif;
+}
+
+.paraluxious-preset-copy { display: grid; gap: 2px; }
+.paraluxious-preset-copy strong { color: #f1cf77; font-size: .76rem; letter-spacing: .13em; }
+.paraluxious-preset-copy small { color: #bcaec9; font-size: .68rem; }
+.paraluxious-preset-action { color: #c991ff; font-size: .62rem; font-weight: 900; letter-spacing: .12em; }
+.paraluxious-preset-hint { margin: 0 2px; color: #807489; font-size: .62rem; line-height: 1.35; }
+
 .dialog-body label {
   display: grid;
   gap: 7px;
