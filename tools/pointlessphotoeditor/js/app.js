@@ -46,6 +46,13 @@
       "new-canvas-background"
     );
 
+  const paraluxiousCanvasPreset =
+    document.getElementById(
+      "paraluxious-canvas-preset"
+    );
+
+  let useParaluxiousCanvasPreset = false;
+
 
   const brightnessControl =
     document.getElementById(
@@ -646,6 +653,22 @@
   }
 
 
+  function applyParaluxiousCanvasPreset() {
+
+    useParaluxiousCanvasPreset = true;
+
+    if (newCanvasWidthInput) newCanvasWidthInput.value = "1440";
+    if (newCanvasHeightInput) newCanvasHeightInput.value = "3120";
+    if (newCanvasBackgroundSelect) newCanvasBackgroundSelect.value = "black";
+
+    paraluxiousCanvasPreset?.classList.add("is-selected");
+
+    setStatusMessage(
+      "Paraluxious Live Wallpaper preset ready — 1440 × 3120 portrait."
+    );
+  }
+
+
   async function createNewDocument() {
 
     const layersApi =
@@ -871,6 +894,22 @@
 
 
       canvasApi.fitCanvasToScreen();
+
+
+      if (useParaluxiousCanvasPreset) {
+
+        const paraluxious = window.PaintlessParaluxious;
+
+        if (paraluxious?.state) {
+          paraluxious.state.strengthX = 60;
+          paraluxious.state.strengthY = 60;
+          paraluxious.state.overscan = 1.2;
+          paraluxious.state.springBack = true;
+          paraluxious.state.useDeviceTilt = true;
+        }
+
+        paraluxious?.setEnabled?.(true);
+      }
 
 
       getHistoryApi()
@@ -2273,6 +2312,24 @@
   newCanvasButton?.addEventListener(
     "click",
     openNewCanvasDialog
+  );
+
+
+  paraluxiousCanvasPreset?.addEventListener(
+    "click",
+    applyParaluxiousCanvasPreset
+  );
+
+  [newCanvasWidthInput, newCanvasHeightInput].forEach(
+    (input) => input?.addEventListener("input", () => {
+      if (
+        String(newCanvasWidthInput?.value) !== "1440" ||
+        String(newCanvasHeightInput?.value) !== "3120"
+      ) {
+        useParaluxiousCanvasPreset = false;
+        paraluxiousCanvasPreset?.classList.remove("is-selected");
+      }
+    })
   );
 
 
