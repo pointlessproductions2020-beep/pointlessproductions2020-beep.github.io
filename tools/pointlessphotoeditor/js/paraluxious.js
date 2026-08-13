@@ -508,6 +508,7 @@
     orientationOverlay.setAttribute("aria-hidden", "true");
     orientationOverlay.innerHTML = `
       <span class="paraluxious-orientation-top">▲ TOP</span>
+      <span class="paraluxious-screen-brand">PARALUXIOUS</span>
       <span class="paraluxious-orientation-bottom">BOTTOM ▼</span>
     `;
 
@@ -739,6 +740,173 @@
   }
 
   /* =======================================================
+     .PLX v1 EXPORT
+
+     Binary layout:
+       bytes 0..3   ASCII "PLX1"
+       bytes 4..7   uint32 little-endian manifest byte length
+       next N bytes UTF-8 JSON manifest
+       remaining    PNG layer payloads, bottom -> top
+
+     The manifest stores byteLength for every PNG, so Android
+     can walk the payload sequentially without a ZIP library.
+  ======================================================= */
+
+  function notify(message) {
+    document.dispatchEvent(
+      new CustomEvent(
+        "paintless:status-message",
+        { detail: { message } }
+      )
+    );
+  }
+
+  function canvasToPngBlob(canvas) {
+    return new Promise((resolve, reject) => {
+      if (!canvas) {
+        reject(new Error("Missing layer canvas."));
+        return;
+      }
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("Could not encode layer PNG."));
+        },
+        "image/png"
+      );
+    });
+  }
+
+  function getPlxFilename() {
+    const raw =
+      window.PaintlessCanvas?.getDocumentName?.() ||
+      "paraluxious-wallpaper";
+
+    const clean = String(raw)
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-z0-9 _.-]+/gi, "")
+      .trim() || "paraluxious-wallpaper";
+
+    return `${clean}.plx`;
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = "none";
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  async function exportPlx() {
+    const sourceLayers = layers()
+      .filter((layer) => layer?.canvas && layer.visible && Number(layer.opacity) > 0);
+
+    if (!sourceLayers.length) {
+      notify("Add at least one visible layer before exporting .PLX.");
+      return false;
+    }
+
+    const size =
+      window.PaintlessLayers?.getDocumentSize?.() ||
+      {
+        width: sourceLayers[0].canvas.width,
+        height: sourceLayers[0].canvas.height
+      };
+
+    notify("Building Paraluxious .PLX wallpaper…");
+
+    try {
+      const pngBlobs = [];
+      const manifestLayers = [];
+
+      for (let index = 0; index < sourceLayers.length; index += 1) {
+        const layer = ensureLayer(sourceLayers[index]);
+        const pngBlob = await canvasToPngBlob(layer.canvas);
+        pngBlobs.push(pngBlob);
+
+        manifestLayers.push({
+          index,
+          id: String(layer.id ?? index),
+          name: String(layer.name || `Layer ${index + 1}`),
+          width: Number(layer.canvas.width) || 0,
+          height: Number(layer.canvas.height) || 0,
+          opacity: clamp(layer.opacity ?? 1, 0, 1),
+          blendMode: String(layer.blendMode || "source-over"),
+          transformX: Number(layer.transformX) || 0,
+          transformY: Number(layer.transformY) || 0,
+          scaleX: Number(layer.scaleX) || 1,
+          scaleY: Number(layer.scaleY) || 1,
+          rotation: Number(layer.rotation) || 0,
+          depth: clamp(layer.paraluxiousDepth, -2, 2),
+          mime: "image/png",
+          byteLength: pngBlob.size
+        });
+      }
+
+      const manifest = {
+        format: "Paraluxious",
+        version: 1,
+        created: new Date().toISOString(),
+        coordinateSystem: "paintless-document-centred-transform-v1",
+        layerOrder: "bottom-to-top",
+        canvas: {
+          width: Number(size.width) || 0,
+          height: Number(size.height) || 0
+        },
+        paraluxious: {
+          strengthX: Number(state.strengthX) || 0,
+          strengthY: Number(state.strengthY) || 0,
+          overscan: Math.max(1, Number(state.overscan) || 1),
+          springBack: Boolean(state.springBack),
+          useDeviceTilt: Boolean(state.useDeviceTilt),
+          depthMin: -2,
+          depthMax: 2
+        },
+        layers: manifestLayers
+      };
+
+      const encoder = new TextEncoder();
+      const manifestBytes = encoder.encode(JSON.stringify(manifest));
+      const header = new ArrayBuffer(8);
+      const headerBytes = new Uint8Array(header);
+      headerBytes.set([0x50, 0x4c, 0x58, 0x31], 0); // PLX1
+      new DataView(header).setUint32(4, manifestBytes.byteLength, true);
+
+      const output = new Blob(
+        [header, manifestBytes, ...pngBlobs],
+        { type: "application/x-paraluxious" }
+      );
+
+      downloadBlob(output, getPlxFilename());
+      notify(`Exported ${manifestLayers.length}-layer Paraluxious wallpaper.`);
+
+      document.dispatchEvent(
+        new CustomEvent(
+          "paintless:plx-exported",
+          {
+            detail: {
+              manifest,
+              byteLength: output.size
+            }
+          }
+        )
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Paraluxious .PLX export failed:", error);
+      notify("Could not export .PLX. Check the console for details.");
+      return false;
+    }
+  }
+
+  /* =======================================================
      PARALUXIOUS PANEL
   ======================================================= */
 
@@ -898,6 +1066,31 @@
 
     body.append(actions);
 
+    const exportWrap = document.createElement("div");
+    exportWrap.className = "paraluxious-export-block";
+    exportWrap.innerHTML = `
+      <button type="button" class="paraluxious-export-button" data-export-plx>
+        <strong>⇩ Export .PLX</strong>
+        <small>For Paraluxious Live Wallpaper</small>
+      </button>
+    `;
+
+    const exportButton = exportWrap.querySelector("[data-export-plx]");
+    exportButton.addEventListener("click", async () => {
+      if (exportButton.disabled) return;
+      exportButton.disabled = true;
+      exportButton.classList.add("is-exporting");
+
+      try {
+        await exportPlx();
+      } finally {
+        exportButton.classList.remove("is-exporting");
+        exportButton.disabled = layers().filter((layer) => layer?.canvas && layer.visible).length === 0;
+      }
+    });
+
+    body.append(exportWrap);
+
     document.querySelector(".right-sidebar")?.prepend(panel);
 
     const handFab = document.createElement("button");
@@ -922,12 +1115,15 @@
       panel,
       depth: depthControl.querySelector('input[type="range"]'),
       handFab,
+      exportButton,
       springToggle: spring.input,
       deviceTiltToggle: deviceTilt.input
     };
 
     document.addEventListener("paintless:active-layer-changed", updateUi);
     document.addEventListener("paintless:layer-selected", updateUi);
+    document.addEventListener("paintless:layers-rendered", updateUi);
+    document.addEventListener("paintless:document-opened", updateUi);
 
     updateUi();
   }
@@ -962,6 +1158,11 @@
     if (ui.tiltPuck) {
       ui.tiltPuck.style.left = `${50 + input.x * 43}%`;
       ui.tiltPuck.style.top = `${50 + input.y * 38}%`;
+    }
+
+    if (ui.exportButton && !ui.exportButton.classList.contains("is-exporting")) {
+      ui.exportButton.disabled =
+        layers().filter((item) => item?.canvas && item.visible && Number(item.opacity) > 0).length === 0;
     }
 
     ui.handButton?.classList.toggle("is-active", state.handMode);
@@ -1173,6 +1374,52 @@
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
+    }
+
+    .paraluxious-export-block {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(196, 126, 255, 0.18);
+    }
+
+    .paraluxious-export-button {
+      width: 100%;
+      min-height: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: 1px solid rgba(195, 104, 255, 0.58);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(119, 55, 201, 0.34), rgba(57, 29, 103, 0.74));
+      color: #fff;
+      cursor: pointer;
+      box-shadow: inset 0 0 18px rgba(164, 74, 255, 0.10);
+    }
+
+    .paraluxious-export-button strong {
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    .paraluxious-export-button small {
+      color: #cdb9dd;
+      font-size: 10px;
+    }
+
+    .paraluxious-export-button:hover:not(:disabled) {
+      border-color: #c77cff;
+      background: linear-gradient(135deg, rgba(141, 66, 226, 0.48), rgba(66, 32, 119, 0.84));
+    }
+
+    .paraluxious-export-button:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .paraluxious-export-button.is-exporting strong::after {
+      content: " …";
     }
 
     .paraluxious-actions button,
@@ -1443,6 +1690,15 @@
 
     .paintless-mobile-mode .paraluxious-orientation-overlay span {
       opacity: .92;
+    }
+
+    .paraluxious-screen-brand {
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.72) !important;
+      letter-spacing: 0.16em;
+      font-size: 8px !important;
     }
 
     .paraluxious-orientation-top { top: 7px; }
@@ -1787,7 +2043,8 @@
     setViewRotation,
     setPreview,
     centrePreview,
-    requestMotionPermission
+    requestMotionPermission,
+    exportPlx
   };
 
   const start = () => {
