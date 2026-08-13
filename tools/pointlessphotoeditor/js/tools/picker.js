@@ -369,6 +369,56 @@
   }
 
 
+
+
+  function getActiveLayer() {
+
+    return (
+      getCore()?.getActiveLayer?.() ||
+      getLayersApi()?.getActiveLayer?.() ||
+      null
+    );
+
+  }
+
+
+  function documentPointToLayerPoint(layer, point) {
+
+    if (!layer || !point) {
+      return copyPoint(point);
+    }
+
+    const layerWidth = layer.canvas?.width || 0;
+    const layerHeight = layer.canvas?.height || 0;
+    const centreX = layerWidth / 2;
+    const centreY = layerHeight / 2;
+
+    const para =
+      window.PaintlessParaluxious?.getLayerTransform?.(layer) ||
+      { x: 0, y: 0, scale: 1 };
+
+    const tx = (Number(layer.transformX) || 0) + centreX + (Number(para.x) || 0);
+    const ty = (Number(layer.transformY) || 0) + centreY + (Number(para.y) || 0);
+    const angle = (Number(layer.rotation) || 0) * Math.PI / 180;
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
+
+    let x = Number(point.x) - tx;
+    let y = Number(point.y) - ty;
+    const rotatedX = x * cos - y * sin;
+    const rotatedY = x * sin + y * cos;
+    const paraScale = Number(para.scale) || 1;
+    const scaleX = (Number(layer.scaleX) || 1) * paraScale;
+    const scaleY = (Number(layer.scaleY) || 1) * paraScale;
+
+    x = rotatedX / (Math.abs(scaleX) > 0.000001 ? scaleX : 1);
+    y = rotatedY / (Math.abs(scaleY) > 0.000001 ? scaleY : 1);
+
+    return { x: x + centreX, y: y + centreY, inside: point.inside };
+
+  }
+
+
   /* =======================================================
      7. PIXEL SAMPLING
   ======================================================= */
@@ -414,10 +464,19 @@
     }
 
 
+    const samplePoint =
+      source === "active-layer"
+        ? documentPointToLayerPoint(
+            getActiveLayer(),
+            point
+          )
+        : point;
+
+
     const x =
       clamp(
         Math.floor(
-          point.x
+          samplePoint.x
         ),
         0,
         Math.max(
@@ -431,7 +490,7 @@
     const y =
       clamp(
         Math.floor(
-          point.y
+          samplePoint.y
         ),
         0,
         Math.max(
