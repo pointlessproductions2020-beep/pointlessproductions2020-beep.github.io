@@ -844,6 +844,23 @@
           scaleY: Number(layer.scaleY) || 1,
           rotation: Number(layer.rotation) || 0,
           depth: clamp(layer.paraluxiousDepth, -2, 2),
+
+          /* Paintless round-trip metadata. Older PLX readers simply ignore these. */
+          stereo3dEnabled: Boolean(layer.stereo3dEnabled),
+          depth3d: Number(layer.depth3d) || 0,
+          ultraRotationEnabled: Boolean(layer.ultraRotationEnabled),
+          ultraRotationAmount: Number(layer.ultraRotationAmount) || 0,
+          ultraSkewEnabled: Boolean(layer.ultraSkewEnabled),
+          ultraSkewAmount: Number(layer.ultraSkewAmount) || 0,
+          ultraPerspectiveEnabled: Boolean(layer.ultraPerspectiveEnabled),
+          ultraPerspectiveAmount: Number(layer.ultraPerspectiveAmount) || 0,
+          ultraWarpEnabled: Boolean(layer.ultraWarpEnabled),
+          ultraWarpAmount: Number(layer.ultraWarpAmount) || 0,
+          ultraVerticalHingeEnabled: Boolean(layer.ultraVerticalHingeEnabled),
+          ultraVerticalHingeAmount: Number(layer.ultraVerticalHingeAmount) || 0,
+          ultraHorizontalHingeEnabled: Boolean(layer.ultraHorizontalHingeEnabled),
+          ultraHorizontalHingeAmount: Number(layer.ultraHorizontalHingeAmount) || 0,
+
           mime: "image/png",
           byteLength: pngBlob.size
         });
