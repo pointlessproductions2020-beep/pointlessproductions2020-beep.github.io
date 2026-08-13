@@ -142,6 +142,10 @@ function initialiseRandomProjectButtons() {
       url: "tools/pointlessphotoeditor/"
     },
     {
+      title: "Paraluxious",
+      url: "tools/paraluxious/"
+    },
+    {
       title: "Pointless Arcade",
       url: "games.html"
     },
