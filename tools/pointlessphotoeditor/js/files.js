@@ -153,7 +153,7 @@ const projectFileInput =
 
 
    const paintlessProjectVersion =
-  1;
+  2;
 
 
 const paintlessProjectExtension =
@@ -161,7 +161,7 @@ const paintlessProjectExtension =
 
 
 const paintlessProjectMimeType =
-  "application/json";
+  "application/x-paintless";
 
   const supportedImageTypes = [
     "image/png",
@@ -323,6 +323,135 @@ const paintlessProjectMimeType =
 
     };
 
+  }
+
+
+
+  /* Paintless PNT2 = small JSON manifest + lossless PNG layer payloads. */
+
+  function canvasToPngBlob(canvas) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error("Paintless could not encode a layer as PNG.")),
+        "image/png"
+      );
+    });
+  }
+
+  async function createBinaryProjectBlob() {
+    const layersApi = getLayersApi();
+
+    if (!layersApi?.createProjectManifestSnapshot || !layersApi?.getLayers) {
+      throw new Error("Paintless binary project API unavailable.");
+    }
+
+    const snapshot = layersApi.createProjectManifestSnapshot();
+    const liveLayers = layersApi.getLayers();
+
+    if (snapshot.layers.length !== liveLayers.length) {
+      throw new Error("Paintless layer state changed while saving.");
+    }
+
+    const imageBlobs = [];
+
+    for (let index = 0; index < liveLayers.length; index += 1) {
+      const imageBlob = await canvasToPngBlob(liveLayers[index].canvas);
+      imageBlobs.push(imageBlob);
+
+      snapshot.layers[index].image = {
+        mime: "image/png",
+        byteLength: imageBlob.size
+      };
+    }
+
+    const manifest = {
+      format: "Paintless",
+      version: paintlessProjectVersion,
+      storage: "binary-png-v1",
+      created: new Date().toISOString(),
+      snapshot
+    };
+
+    const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest));
+    const header = new ArrayBuffer(8);
+    const headerBytes = new Uint8Array(header);
+
+    headerBytes.set([0x50, 0x4e, 0x54, 0x32], 0); // PNT2
+    new DataView(header).setUint32(4, manifestBytes.byteLength, true);
+
+    return new Blob(
+      [header, manifestBytes, ...imageBlobs],
+      { type: paintlessProjectMimeType }
+    );
+  }
+
+  function hasPaintlessBinaryHeader(bytes) {
+    return (
+      bytes?.byteLength >= 8 &&
+      bytes[0] === 0x50 &&
+      bytes[1] === 0x4e &&
+      bytes[2] === 0x54 &&
+      bytes[3] === 0x32
+    );
+  }
+
+  async function openBinaryProject(file, layersApi) {
+    const fileBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(fileBuffer);
+
+    if (!hasPaintlessBinaryHeader(bytes)) {
+      return false;
+    }
+
+    const manifestLength = new DataView(fileBuffer, 4, 4).getUint32(0, true);
+
+    if (manifestLength < 2 || manifestLength > fileBuffer.byteLength - 8) {
+      throw new Error("Invalid Paintless PNT2 manifest.");
+    }
+
+    const manifestStart = 8;
+    const manifestEnd = manifestStart + manifestLength;
+    const manifest = JSON.parse(
+      new TextDecoder().decode(bytes.subarray(manifestStart, manifestEnd))
+    );
+
+    if (
+      manifest?.format !== "Paintless" ||
+      manifest?.storage !== "binary-png-v1" ||
+      !manifest.snapshot ||
+      !Array.isArray(manifest.snapshot.layers)
+    ) {
+      throw new Error("Invalid Paintless binary project.");
+    }
+
+    let payloadOffset = manifestEnd;
+
+    const imageBlobs = manifest.snapshot.layers.map((savedLayer) => {
+      const byteLength = Number(savedLayer?.image?.byteLength);
+
+      if (
+        !Number.isFinite(byteLength) ||
+        byteLength <= 0 ||
+        payloadOffset + byteLength > fileBuffer.byteLength
+      ) {
+        throw new Error(`Layer "${savedLayer?.name || "Unknown"}" has invalid image data.`);
+      }
+
+      const blob = new Blob(
+        [fileBuffer.slice(payloadOffset, payloadOffset + byteLength)],
+        { type: savedLayer?.image?.mime || "image/png" }
+      );
+
+      payloadOffset += byteLength;
+      return blob;
+    });
+
+    await layersApi.restoreProjectManifestSnapshot(
+      manifest.snapshot,
+      imageBlobs
+    );
+
+    return true;
   }
 
 
@@ -1970,47 +2099,30 @@ const paintlessProjectMimeType =
     try {
 
       updateLoadingScreen(
-        20,
-        "Collecting layers..."
+        15,
+        "Collecting layer properties..."
       );
 
 
       await delay(
-        250
+        100
       );
-
-
-      const projectData =
-        createProjectData();
-
-
-      const projectJson =
-        JSON.stringify(
-          projectData
-        );
 
 
       updateLoadingScreen(
-        55,
-        "Packing project..."
-      );
-
-
-      await delay(
-        250
+        30,
+        "Compressing layers..."
       );
 
 
       const projectBlob =
-        new Blob(
-          [
-            projectJson
-          ],
-          {
-            type:
-              paintlessProjectMimeType
-          }
-        );
+        await createBinaryProjectBlob();
+
+
+      updateLoadingScreen(
+        80,
+        "Packing project..."
+      );
 
 
       const downloadName =
@@ -2023,13 +2135,8 @@ const paintlessProjectMimeType =
 
 
       updateLoadingScreen(
-        85,
+        90,
         "Preparing download..."
-      );
-
-
-      await delay(
-        250
       );
 
 
@@ -2046,7 +2153,7 @@ const paintlessProjectMimeType =
 
 
       await delay(
-        350
+        300
       );
 
 
@@ -2067,7 +2174,10 @@ const paintlessProjectMimeType =
             downloadName,
 
           size:
-            projectBlob.size
+            projectBlob.size,
+
+          projectVersion:
+            paintlessProjectVersion
         }
       );
 
@@ -2139,38 +2249,66 @@ const paintlessProjectMimeType =
       );
 
 
-      const projectText =
-        await file.text();
-
-
-      const projectData =
-        JSON.parse(
-          projectText
+      const headerBytes =
+        new Uint8Array(
+          await file
+            .slice(
+              0,
+              8
+            )
+            .arrayBuffer()
         );
-
-
-      if (
-        projectData?.format !==
-          "Paintless" ||
-        !projectData.snapshot
-      ) {
-
-        throw new Error(
-          "Invalid Paintless project file."
-        );
-
-      }
 
 
       updateLoadingScreen(
-        55,
+        45,
         "Restoring layers..."
       );
 
 
-      await layersApi.restoreLayersSnapshot(
-        projectData.snapshot
-      );
+      if (
+        hasPaintlessBinaryHeader(
+          headerBytes
+        )
+      ) {
+
+        await openBinaryProject(
+          file,
+          layersApi
+        );
+
+      } else {
+
+        /* Backwards compatibility with Paintless v1 JSON projects. */
+
+        const projectText =
+          await file.text();
+
+
+        const projectData =
+          JSON.parse(
+            projectText
+          );
+
+
+        if (
+          projectData?.format !==
+            "Paintless" ||
+          !projectData.snapshot
+        ) {
+
+          throw new Error(
+            "Invalid Paintless project file."
+          );
+
+        }
+
+
+        await layersApi.restoreLayersSnapshot(
+          projectData.snapshot
+        );
+
+      }
 
 
       canvasApi.setDocumentName?.(
