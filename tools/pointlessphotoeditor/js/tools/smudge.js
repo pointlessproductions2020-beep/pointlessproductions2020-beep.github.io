@@ -876,6 +876,71 @@
   }
 
 
+
+
+  /* =======================================================
+     DOCUMENT -> ACTIVE LAYER COORDINATES
+
+     Pointer coordinates are document/canvas coordinates, but
+     retouch pixels are written directly into layer.canvas.
+     Match Clone's fixed behaviour by applying the inverse of
+     the compositor transform first (including Paraluxious).
+  ======================================================= */
+
+  function documentPointToLayerPoint(layer, point) {
+
+    if (!layer || !point) {
+      return copyPoint(point);
+    }
+
+    const layerWidth = layer.canvas?.width || 0;
+    const layerHeight = layer.canvas?.height || 0;
+    const centreX = layerWidth / 2;
+    const centreY = layerHeight / 2;
+
+    const para =
+      window.PaintlessParaluxious?.getLayerTransform?.(layer) ||
+      { x: 0, y: 0, scale: 1 };
+
+    const tx =
+      (Number(layer.transformX) || 0) +
+      centreX +
+      (Number(para.x) || 0);
+
+    const ty =
+      (Number(layer.transformY) || 0) +
+      centreY +
+      (Number(para.y) || 0);
+
+    const angle =
+      (Number(layer.rotation) || 0) * Math.PI / 180;
+
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
+
+    let x = Number(point.x) - tx;
+    let y = Number(point.y) - ty;
+
+    const rotatedX = x * cos - y * sin;
+    const rotatedY = x * sin + y * cos;
+
+    const paraScale = Number(para.scale) || 1;
+    const scaleX = (Number(layer.scaleX) || 1) * paraScale;
+    const scaleY = (Number(layer.scaleY) || 1) * paraScale;
+
+    x = rotatedX / (Math.abs(scaleX) > 0.000001 ? scaleX : 1);
+    y = rotatedY / (Math.abs(scaleY) > 0.000001 ? scaleY : 1);
+
+    return {
+      x: x + centreX,
+      y: y + centreY,
+      pressure: point.pressure,
+      inside: point.inside
+    };
+
+  }
+
+
   /* =======================================================
      9. SMUDGE STAMP
   ======================================================= */
@@ -896,6 +961,20 @@
       return false;
 
     }
+
+
+    const fromLayerPoint =
+      documentPointToLayerPoint(
+        smudgeState.layer,
+        fromPoint
+      );
+
+
+    const toLayerPoint =
+      documentPointToLayerPoint(
+        smudgeState.layer,
+        toPoint
+      );
 
 
     const pressure =
@@ -937,13 +1016,13 @@
 
 
     const movementX =
-      toPoint.x -
-      fromPoint.x;
+      toLayerPoint.x -
+      fromLayerPoint.x;
 
 
     const movementY =
-      toPoint.y -
-      fromPoint.y;
+      toLayerPoint.y -
+      fromLayerPoint.y;
 
 
     /*
@@ -958,13 +1037,13 @@
 
 
     const sampleCentreX =
-      toPoint.x -
+      toLayerPoint.x -
       movementX *
       pullDistance;
 
 
     const sampleCentreY =
-      toPoint.y -
+      toLayerPoint.y -
       movementY *
       pullDistance;
 
@@ -1040,9 +1119,9 @@
 
     context.drawImage(
       stampCanvas,
-      toPoint.x -
+      toLayerPoint.x -
         halfSize,
-      toPoint.y -
+      toLayerPoint.y -
         halfSize
     );
 
@@ -1085,9 +1164,9 @@
 
     sourceContext.drawImage(
       stampCanvas,
-      toPoint.x -
+      toLayerPoint.x -
         halfSize,
-      toPoint.y -
+      toLayerPoint.y -
         halfSize
     );
 
