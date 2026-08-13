@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08050d">
+  <title>Paraluxious | Live In Depth</title>
+  <meta name="description" content="Preview Paraluxious .PLX live-depth wallpapers directly in your browser.">
+  <link rel="icon" type="image/webp" href="assets/images/logo.webp">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Back to Pointless Productions">
+      <img src="assets/images/logo.webp" alt="Paraluxious">
+    </a>
+    <div class="top-actions">
+      <a class="ghost" href="https://paintless.app/" target="_blank" rel="noopener">Create in Paintless</a>
+      <button id="open-button" class="gold" type="button">Open .PLX</button>
+      <input id="file-input" type="file" accept=".plx,application/x-paraluxious,application/octet-stream" hidden>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="viewer-panel">
+      <div class="device" id="device">
+        <canvas id="viewer-canvas" aria-label="Paraluxious live wallpaper preview"></canvas>
+        <div class="empty-state" id="empty-state">
+          <img src="assets/images/logo.webp" alt="">
+          <strong>LIVE IN DEPTH</strong>
+          <span>Open a .PLX wallpaper to preview it.</span>
+        </div>
+        <div class="screen-brand">PARALUXIOUS</div>
+      </div>
+    </section>
+
+    <aside class="control-panel">
+      <p class="eyebrow">Browser preview</p>
+      <h1>Paraluxious</h1>
+      <p class="intro">Load the same <strong>.PLX</strong> file used by the Android wallpaper app and test its depth here.</p>
+
+      <div class="status-card">
+        <span>Status</span>
+        <strong id="status">Waiting for a .PLX</strong>
+      </div>
+
+      <div class="stats">
+        <div><span>Canvas</span><strong id="canvas-stat">—</strong></div>
+        <div><span>Layers</span><strong id="layers-stat">—</strong></div>
+        <div><span>Motion</span><strong id="motion-stat">—</strong></div>
+      </div>
+
+      <label class="range-row">
+        <span><b>Preview strength</b><output id="strength-output">100%</output></span>
+        <input id="strength" type="range" min="25" max="180" value="100">
+      </label>
+
+      <div class="toggle-row">
+        <button id="centre-button" type="button">Centre</button>
+        <button id="motion-button" type="button">Enable phone tilt</button>
+      </div>
+
+      <p class="hint">Desktop: move the pointer over the phone. Mobile: enable phone tilt, then physically tilt the device.</p>
+
+      <div class="drop-zone" id="drop-zone">
+        <strong>Drop a .PLX here</strong>
+        <span>or use Open .PLX above</span>
+      </div>
+    </aside>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
