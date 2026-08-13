@@ -456,6 +456,142 @@ const paintlessProjectMimeType =
 
 
   /* =======================================================
+     3B. PARALUXIOUS .PLX IMPORT
+
+     PLX is deliberately reopenable in Paintless. That means a
+     wallpaper exported for the Android/Web player can come back
+     into the editor with its layer stack, transforms and
+     Paraluxious depths intact.
+  ======================================================= */
+
+  function hasParaluxiousHeader(bytes) {
+    return (
+      bytes?.byteLength >= 8 &&
+      bytes[0] === 0x50 &&
+      bytes[1] === 0x4c &&
+      bytes[2] === 0x58 &&
+      bytes[3] === 0x31
+    );
+  }
+
+  async function openParaluxiousProject(file, layersApi) {
+    const fileBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(fileBuffer);
+
+    if (!hasParaluxiousHeader(bytes)) {
+      return false;
+    }
+
+    const manifestLength =
+      new DataView(fileBuffer, 4, 4).getUint32(0, true);
+
+    if (manifestLength < 2 || manifestLength > fileBuffer.byteLength - 8) {
+      throw new Error("Invalid Paraluxious PLX manifest.");
+    }
+
+    const manifestStart = 8;
+    const manifestEnd = manifestStart + manifestLength;
+    const manifest = JSON.parse(
+      new TextDecoder().decode(bytes.subarray(manifestStart, manifestEnd))
+    );
+
+    if (
+      manifest?.format !== "Paraluxious" ||
+      Number(manifest?.version) !== 1 ||
+      !manifest.canvas ||
+      !Array.isArray(manifest.layers)
+    ) {
+      throw new Error("Invalid Paraluxious PLX project.");
+    }
+
+    let payloadOffset = manifestEnd;
+    const imageBlobs = [];
+
+    const snapshot = {
+      activeLayerId:
+        manifest.layers.length
+          ? String(manifest.layers[manifest.layers.length - 1].id ?? manifest.layers.length - 1)
+          : null,
+      nextLayerNumber: manifest.layers.length + 1,
+      documentWidth: Math.max(1, Number(manifest.canvas.width) || 1),
+      documentHeight: Math.max(1, Number(manifest.canvas.height) || 1),
+      layers: []
+    };
+
+    manifest.layers.forEach((savedLayer, index) => {
+      const byteLength = Number(savedLayer?.byteLength);
+
+      if (
+        !Number.isFinite(byteLength) ||
+        byteLength <= 0 ||
+        payloadOffset + byteLength > fileBuffer.byteLength
+      ) {
+        throw new Error(`PLX layer "${savedLayer?.name || index + 1}" has invalid image data.`);
+      }
+
+      imageBlobs.push(
+        new Blob(
+          [fileBuffer.slice(payloadOffset, payloadOffset + byteLength)],
+          { type: savedLayer?.mime || "image/png" }
+        )
+      );
+      payloadOffset += byteLength;
+
+      snapshot.layers.push({
+        id: String(savedLayer.id ?? `plx-${index + 1}`),
+        name: String(savedLayer.name || `Layer ${index + 1}`),
+        width: Math.max(1, Number(savedLayer.width) || snapshot.documentWidth),
+        height: Math.max(1, Number(savedLayer.height) || snapshot.documentHeight),
+        visible: savedLayer.visible !== false,
+        opacity: clamp(savedLayer.opacity ?? 1, 0, 1),
+        blendMode: String(savedLayer.blendMode || "source-over"),
+        locked: false,
+        transformX: Number(savedLayer.transformX) || 0,
+        transformY: Number(savedLayer.transformY) || 0,
+        scaleX: Number(savedLayer.scaleX) || 1,
+        scaleY: Number(savedLayer.scaleY) || 1,
+        rotation: Number(savedLayer.rotation) || 0,
+        paraluxiousDepth: clamp(savedLayer.depth ?? 0, -2, 2),
+
+        /* Present on PLX files exported after this upgrade. */
+        stereo3dEnabled: savedLayer.stereo3dEnabled ?? false,
+        depth3d: savedLayer.depth3d ?? 0,
+        ultraRotationEnabled: savedLayer.ultraRotationEnabled ?? false,
+        ultraRotationAmount: savedLayer.ultraRotationAmount ?? 0,
+        ultraSkewEnabled: savedLayer.ultraSkewEnabled ?? false,
+        ultraSkewAmount: savedLayer.ultraSkewAmount ?? 0,
+        ultraPerspectiveEnabled: savedLayer.ultraPerspectiveEnabled ?? false,
+        ultraPerspectiveAmount: savedLayer.ultraPerspectiveAmount ?? 0,
+        ultraWarpEnabled: savedLayer.ultraWarpEnabled ?? false,
+        ultraWarpAmount: savedLayer.ultraWarpAmount ?? 0,
+        ultraVerticalHingeEnabled: savedLayer.ultraVerticalHingeEnabled ?? false,
+        ultraVerticalHingeAmount: savedLayer.ultraVerticalHingeAmount ?? 0,
+        ultraHorizontalHingeEnabled: savedLayer.ultraHorizontalHingeEnabled ?? false,
+        ultraHorizontalHingeAmount: savedLayer.ultraHorizontalHingeAmount ?? 0
+      });
+    });
+
+    await layersApi.restoreProjectManifestSnapshot(snapshot, imageBlobs);
+
+    const paraluxious = window.PaintlessParaluxious;
+    const settings = manifest.paraluxious || {};
+
+    if (paraluxious?.state) {
+      paraluxious.state.strengthX = Number(settings.strengthX) || 0;
+      paraluxious.state.strengthY = Number(settings.strengthY) || 0;
+      paraluxious.state.overscan = Math.max(1, Number(settings.overscan) || 1);
+      paraluxious.state.springBack = settings.springBack !== false;
+      paraluxious.state.useDeviceTilt = settings.useDeviceTilt !== false;
+    }
+
+    paraluxious?.setEnabled?.(true);
+    paraluxious?.centrePreview?.();
+    paraluxious?.render?.();
+
+    return true;
+  }
+
+  /* =======================================================
      4. FILE-NAME HELPERS
   ======================================================= */
 
@@ -2273,6 +2409,22 @@ const paintlessProjectMimeType =
       ) {
 
         await openBinaryProject(
+          file,
+          layersApi
+        );
+
+      } else if (
+        hasParaluxiousHeader(
+          headerBytes
+        )
+      ) {
+
+        updateLoadingScreen(
+          45,
+          "Opening Paraluxious layers..."
+        );
+
+        await openParaluxiousProject(
           file,
           layersApi
         );
