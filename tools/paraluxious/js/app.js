@@ -7,7 +7,6 @@
   function getDeviceType() {
     const width = window.innerWidth || 0;
     const touch = navigator.maxTouchPoints > 0;
-
     if (touch && width <= 768) return "mobile";
     if (touch && width <= 1200) return "tablet";
     return "desktop";
@@ -15,13 +14,10 @@
 
   function trackParaluxiousEvent(eventName) {
     if (!eventName) return;
-
     try {
       fetch(ANALYTICS_ENDPOINT, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           event: String(eventName),
           app: "paraluxious",
@@ -32,9 +28,7 @@
         }),
         keepalive: true
       }).catch(() => {});
-    } catch (_) {
-      // Analytics must never interfere with ParaLuxious.
-    }
+    } catch (_) {}
   }
 
   const fileInput = document.getElementById("file-input");
@@ -50,8 +44,22 @@
   const strength = document.getElementById("strength");
   const strengthOutput = document.getElementById("strength-output");
   const centreButton = document.getElementById("centre-button");
+  const springButton = document.getElementById("spring-button");
   const motionButton = document.getElementById("motion-button");
   const dropZone = document.getElementById("drop-zone");
+  const fitButton = document.getElementById("fit-button");
+  const fillButton = document.getElementById("fill-button");
+  const pointerModeButton = document.getElementById("pointer-mode");
+  const dragModeButton = document.getElementById("drag-mode");
+  const autoModeButton = document.getElementById("auto-mode");
+  const preset = document.getElementById("device-preset");
+  const customAspect = document.getElementById("custom-aspect");
+  const customWidth = document.getElementById("custom-width");
+  const customHeight = document.getElementById("custom-height");
+  const applyCustomAspect = document.getElementById("apply-custom-aspect");
+  const aspectOutput = document.getElementById("aspect-output");
+  const tiltXOut = document.getElementById("tilt-x");
+  const tiltYOut = document.getElementById("tilt-y");
 
   let scene = null;
   let objectUrls = [];
@@ -59,10 +67,40 @@
   let lastTime = performance.now();
   let motionEnabled = false;
   let neutralBeta = null, neutralGamma = null;
+  let fitMode = "fit";
+  let controlMode = "pointer";
+  let springBack = true;
+  let dragPointerId = null;
+  let autoPhase = 0;
 
   const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v) || 0));
-
   function setStatus(message) { status.textContent = message; }
+
+  const PRESETS = {
+    "tall-phone": [9, 19.5, "9:19.5"],
+    "phone": [9, 16, "9:16"],
+    "tablet": [10, 16, "10:16"],
+    "tablet-4-3": [3, 4, "3:4"],
+    "landscape-phone": [19.5, 9, "19.5:9"],
+    "square": [1, 1, "1:1"]
+  };
+
+  function setDeviceAspect(w, h, label = `${w}:${h}`) {
+    const width = Math.max(.01, Number(w) || 1);
+    const height = Math.max(.01, Number(h) || 1);
+    device.style.setProperty("--device-ratio", String(width / height));
+    aspectOutput.textContent = label;
+    resizeCanvas();
+    render();
+  }
+
+  function applyPreset() {
+    const value = preset.value;
+    customAspect.hidden = value !== "custom";
+    if (value === "custom") return;
+    const p = PRESETS[value] || PRESETS["tall-phone"];
+    setDeviceAspect(p[0], p[1], p[2]);
+  }
 
   function hasPlxHeader(bytes) {
     return bytes.length >= 8 && bytes[0] === 0x50 && bytes[1] === 0x4c && bytes[2] === 0x58 && bytes[3] === 0x31;
@@ -90,7 +128,9 @@
     for (let i = 0; i < manifest.layers.length; i += 1) {
       const layer = manifest.layers[i];
       const length = Number(layer.byteLength);
-      if (!Number.isFinite(length) || length <= 0 || offset + length > buffer.byteLength) throw new Error(`Invalid image payload for ${layer.name || `Layer ${i + 1}`}.`);
+      if (!Number.isFinite(length) || length <= 0 || offset + length > buffer.byteLength) {
+        throw new Error(`Invalid image payload for ${layer.name || `Layer ${i + 1}`}.`);
+      }
       const blob = new Blob([buffer.slice(offset, offset + length)], { type: layer.mime || "image/png" });
       offset += length;
       const url = URL.createObjectURL(blob);
@@ -112,10 +152,7 @@
     layersStat.textContent = String(layers.length);
     motionStat.textContent = `${Math.round(Number(manifest.paraluxious?.strengthX) || 0)} / ${Math.round(Number(manifest.paraluxious?.strengthY) || 0)}`;
     setStatus(`${file.name} loaded`);
-
-    // Count only successful, valid ParaLuxious files.
     trackParaluxiousEvent("plx_opened");
-
     resizeCanvas();
     render();
   }
@@ -151,8 +188,15 @@
     const docW = Math.max(1, Number(manifest.canvas.width) || 1);
     const docH = Math.max(1, Number(manifest.canvas.height) || 1);
     const settings = manifest.paraluxious || {};
-    const base = Math.max(canvas.width / docW, canvas.height / docH);
-    const docScale = base * Math.max(1, Number(settings.overscan) || 1);
+
+    // IMPORTANT: FIT preserves the authored Paintless canvas.
+    // FILL is an explicit user choice and may crop.
+    const fitScale = Math.min(canvas.width / docW, canvas.height / docH);
+    const fillScale = Math.max(canvas.width / docW, canvas.height / docH);
+    const base = fitMode === "fill" ? fillScale : fitScale;
+
+    const overscan = Math.max(1, Number(settings.overscan) || 1);
+    const docScale = base * overscan;
     const previewGain = Number(strength.value) / 100;
 
     layers.forEach((layer) => {
@@ -180,9 +224,21 @@
     });
   }
 
+  function updateTiltReadout() {
+    tiltXOut.textContent = posX.toFixed(2);
+    tiltYOut.textContent = posY.toFixed(2);
+  }
+
   function frame(now) {
     const dt = Math.min(.045, Math.max(.004, (now - lastTime) / 1000));
     lastTime = now;
+
+    if (controlMode === "auto" && scene && !motionEnabled) {
+      autoPhase += dt * .62;
+      targetX = Math.sin(autoPhase) * .82;
+      targetY = Math.cos(autoPhase * .78) * .58;
+    }
+
     const stiffness = 42;
     const damping = 11.5;
     const gain = 7.5;
@@ -192,20 +248,61 @@
     velY *= Math.exp(-damping * dt);
     posX += velX * dt * gain;
     posY += velY * dt * gain;
+
+    updateTiltReadout();
     render();
     requestAnimationFrame(frame);
   }
 
-  function pointerMotion(event) {
-    if (motionEnabled || !scene) return;
+  function pointerTarget(event) {
     const rect = device.getBoundingClientRect();
-    targetX = clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1);
-    targetY = clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1);
+    return {
+      x: clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1),
+      y: clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1)
+    };
+  }
+
+  function pointerMotion(event) {
+    if (motionEnabled || !scene || controlMode !== "pointer") return;
+    const p = pointerTarget(event);
+    targetX = p.x;
+    targetY = p.y;
+  }
+
+  function startDrag(event) {
+    if (motionEnabled || !scene || controlMode !== "drag") return;
+    event.preventDefault();
+    dragPointerId = event.pointerId;
+    device.setPointerCapture?.(event.pointerId);
+    device.classList.add("is-dragging");
+    const p = pointerTarget(event);
+    targetX = p.x;
+    targetY = p.y;
+  }
+
+  function dragTilt(event) {
+    if (dragPointerId !== event.pointerId || controlMode !== "drag") return;
+    event.preventDefault();
+    const p = pointerTarget(event);
+    targetX = p.x;
+    targetY = p.y;
+  }
+
+  function endDrag(event) {
+    if (dragPointerId !== event.pointerId) return;
+    device.releasePointerCapture?.(event.pointerId);
+    dragPointerId = null;
+    device.classList.remove("is-dragging");
+    if (springBack) centre();
   }
 
   function deviceMotion(event) {
     if (!motionEnabled || !scene || event.beta == null || event.gamma == null) return;
-    if (neutralBeta == null) { neutralBeta = event.beta; neutralGamma = event.gamma; return; }
+    if (neutralBeta == null) {
+      neutralBeta = event.beta;
+      neutralGamma = event.gamma;
+      return;
+    }
     targetX = clamp((event.gamma - neutralGamma) / 28, -1, 1);
     targetY = clamp((event.beta - neutralBeta) / 28, -1, 1);
   }
@@ -225,8 +322,10 @@
         trackParaluxiousEvent("phone_tilt_enabled");
       } else {
         window.removeEventListener("deviceorientation", deviceMotion);
+        centre();
       }
 
+      motionButton.classList.toggle("is-active", motionEnabled);
       motionButton.textContent = motionEnabled ? "Phone tilt enabled" : "Enable phone tilt";
       setStatus(motionEnabled ? "Tilt the phone to preview depth" : scene ? `${scene.name} loaded` : "Waiting for a .PLX");
     } catch (error) {
@@ -234,23 +333,81 @@
     }
   }
 
-  function centre() { targetX = targetY = 0; neutralBeta = neutralGamma = null; }
+  function centre() {
+    targetX = targetY = 0;
+    neutralBeta = neutralGamma = null;
+  }
+
+  function setFitMode(mode) {
+    fitMode = mode === "fill" ? "fill" : "fit";
+    fitButton.classList.toggle("is-active", fitMode === "fit");
+    fillButton.classList.toggle("is-active", fitMode === "fill");
+    render();
+  }
+
+  function setControlMode(mode) {
+    controlMode = ["pointer", "drag", "auto"].includes(mode) ? mode : "pointer";
+    pointerModeButton.classList.toggle("is-active", controlMode === "pointer");
+    dragModeButton.classList.toggle("is-active", controlMode === "drag");
+    autoModeButton.classList.toggle("is-active", controlMode === "auto");
+    device.style.cursor = controlMode === "drag" ? "grab" : "default";
+    if (controlMode !== "auto") centre();
+  }
 
   openButton.addEventListener("click", () => { fileInput.value = ""; fileInput.click(); });
-  fileInput.addEventListener("change", () => { const f = fileInput.files?.[0]; if (f) loadPlx(f).catch(err => setStatus(err.message)); });
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files?.[0];
+    if (f) loadPlx(f).catch(err => setStatus(err.message));
+  });
+
   centreButton.addEventListener("click", centre);
+  springButton.addEventListener("click", () => {
+    springBack = !springBack;
+    springButton.classList.toggle("is-active", springBack);
+    springButton.textContent = springBack ? "Spring back" : "Hold angle";
+  });
   motionButton.addEventListener("click", enableMotion);
+
+  fitButton.addEventListener("click", () => setFitMode("fit"));
+  fillButton.addEventListener("click", () => setFitMode("fill"));
+  pointerModeButton.addEventListener("click", () => setControlMode("pointer"));
+  dragModeButton.addEventListener("click", () => setControlMode("drag"));
+  autoModeButton.addEventListener("click", () => setControlMode("auto"));
+
+  preset.addEventListener("change", applyPreset);
+  applyCustomAspect.addEventListener("click", () => {
+    setDeviceAspect(customWidth.value, customHeight.value, `${customWidth.value}:${customHeight.value}`);
+  });
+
   strength.addEventListener("input", () => { strengthOutput.value = `${strength.value}%`; });
+
   device.addEventListener("pointermove", pointerMotion);
-  device.addEventListener("pointerleave", () => { if (!motionEnabled) centre(); });
+  device.addEventListener("pointerdown", startDrag);
+  device.addEventListener("pointermove", dragTilt);
+  device.addEventListener("pointerup", endDrag);
+  device.addEventListener("pointercancel", endDrag);
+  device.addEventListener("pointerleave", () => {
+    if (!motionEnabled && controlMode === "pointer" && springBack) centre();
+  });
+
   window.addEventListener("resize", render);
 
-  ["dragenter", "dragover"].forEach(type => dropZone.addEventListener(type, e => { e.preventDefault(); dropZone.classList.add("is-over"); }));
-  ["dragleave", "drop"].forEach(type => dropZone.addEventListener(type, e => { e.preventDefault(); dropZone.classList.remove("is-over"); }));
-  dropZone.addEventListener("drop", e => { const f = e.dataTransfer.files?.[0]; if (f) loadPlx(f).catch(err => setStatus(err.message)); });
+  ["dragenter", "dragover"].forEach(type => dropZone.addEventListener(type, e => {
+    e.preventDefault();
+    dropZone.classList.add("is-over");
+  }));
+  ["dragleave", "drop"].forEach(type => dropZone.addEventListener(type, e => {
+    e.preventDefault();
+    dropZone.classList.remove("is-over");
+  }));
+  dropZone.addEventListener("drop", e => {
+    const f = e.dataTransfer.files?.[0];
+    if (f) loadPlx(f).catch(err => setStatus(err.message));
+  });
 
-  // One anonymous page-view count when ParaLuxious loads.
+  applyPreset();
+  setFitMode("fit");
+  setControlMode("pointer");
   trackParaluxiousEvent("page_view");
-
   requestAnimationFrame(frame);
 })();
