@@ -226,11 +226,12 @@
     );
 
     if (!state.enabled) {
+      /*
+       * OFF means pause the effect, NOT destroy the authored preview.
+       * Keep previewX/previewY + motion values so turning Paraluxious back
+       * on returns to the exact pose the creator was judging before editing.
+       */
       state.handMode = false;
-      state.previewX = 0;
-      state.previewY = 0;
-      state.motionX = 0;
-      state.motionY = 0;
     }
 
     save();
@@ -492,6 +493,9 @@
   ======================================================= */
 
   function ensureDeviceShell() {
+    /* Mobile V2 keeps the real Paintless stage exactly where canvas.js owns it. */
+    if (isTouchMobile()) return;
+
     const stage = document.getElementById("canvas-stage");
 
     if (!stage || deviceShell) return;
@@ -803,6 +807,71 @@
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 
+
+  function cloneCanvas(source) {
+    const copy = document.createElement("canvas");
+    copy.width = Math.max(1, Number(source?.width) || 1);
+    copy.height = Math.max(1, Number(source?.height) || 1);
+    copy.getContext("2d", { alpha: true })?.drawImage(source, 0, 0);
+    return copy;
+  }
+
+  function isPaintless3DActive() {
+    return (
+      window.Paintless3DMode?.getMode?.() === "3d" ||
+      window.Paintless3D?.getMode?.() === "3d" ||
+      document.documentElement?.dataset?.paintlessMode === "3d" ||
+      document.body?.classList?.contains("paintless-3d-mode") ||
+      document.body?.classList?.contains("paintless3d-editor-active")
+    );
+  }
+
+  async function buildBakedAnaglyphLayers(sourceLayers, width, height) {
+    const renderer = window.Paintless3DRenderer;
+
+    if (!renderer?.renderToCanvas || !isPaintless3DActive()) {
+      return null;
+    }
+
+    /*
+     * Render one source layer at a time through Paintless3D.  This bakes
+     * stereo separation + Ultra hinge/skew/warp/rotation into the pixels,
+     * while keeping each PLX layer independent for live parallax motion.
+     */
+    const visibility = sourceLayers.map((layer) => Boolean(layer.visible));
+    const results = [];
+
+    try {
+      for (let index = 0; index < sourceLayers.length; index += 1) {
+        sourceLayers.forEach((layer, i) => {
+          layer.visible = i === index;
+        });
+
+        const rendered = renderer.renderToCanvas({
+          width,
+          height,
+          reason: `plx-bake-anaglyph-${index}`
+        });
+
+        if (!rendered) {
+          throw new Error("Paintless3D did not return a rendered canvas.");
+        }
+
+        /* Clone immediately because the renderer reuses its internal canvas. */
+        results.push(cloneCanvas(rendered));
+      }
+    } finally {
+      sourceLayers.forEach((layer, index) => {
+        layer.visible = visibility[index];
+      });
+
+      window.PaintlessLayers?.renderLayers?.();
+      renderer.requestRender?.("plx-bake-complete");
+    }
+
+    return results;
+  }
+
   async function exportPlx() {
     const sourceLayers = layers()
       .filter((layer) => layer?.canvas && layer.visible && Number(layer.opacity) > 0);
@@ -819,31 +888,45 @@
         height: sourceLayers[0].canvas.height
       };
 
-    notify("Building Paraluxious .PLX wallpaper…");
+    const documentWidth = Number(size.width) || 0;
+    const documentHeight = Number(size.height) || 0;
+    const bakeAnaglyph = isPaintless3DActive();
+
+    notify(
+      bakeAnaglyph
+        ? "Baking Ultra / anaglyph layers into Paraluxious .PLX…"
+        : "Building Paraluxious .PLX wallpaper…"
+    );
 
     try {
+      const bakedCanvases = bakeAnaglyph
+        ? await buildBakedAnaglyphLayers(sourceLayers, documentWidth, documentHeight)
+        : null;
+
       const pngBlobs = [];
       const manifestLayers = [];
 
       for (let index = 0; index < sourceLayers.length; index += 1) {
         const layer = ensureLayer(sourceLayers[index]);
-        const pngBlob = await canvasToPngBlob(layer.canvas);
+        const exportedCanvas = bakedCanvases?.[index] || layer.canvas;
+        const pngBlob = await canvasToPngBlob(exportedCanvas);
         pngBlobs.push(pngBlob);
 
         manifestLayers.push({
           index,
           id: String(layer.id ?? index),
           name: String(layer.name || `Layer ${index + 1}`),
-          width: Number(layer.canvas.width) || 0,
-          height: Number(layer.canvas.height) || 0,
-          opacity: clamp(layer.opacity ?? 1, 0, 1),
-          blendMode: String(layer.blendMode || "source-over"),
-          transformX: Number(layer.transformX) || 0,
-          transformY: Number(layer.transformY) || 0,
-          scaleX: Number(layer.scaleX) || 1,
-          scaleY: Number(layer.scaleY) || 1,
-          rotation: Number(layer.rotation) || 0,
+          width: bakeAnaglyph ? documentWidth : (Number(layer.canvas.width) || 0),
+          height: bakeAnaglyph ? documentHeight : (Number(layer.canvas.height) || 0),
+          opacity: bakeAnaglyph ? 1 : clamp(layer.opacity ?? 1, 0, 1),
+          blendMode: bakeAnaglyph ? "source-over" : String(layer.blendMode || "source-over"),
+          transformX: bakeAnaglyph ? 0 : (Number(layer.transformX) || 0),
+          transformY: bakeAnaglyph ? 0 : (Number(layer.transformY) || 0),
+          scaleX: bakeAnaglyph ? 1 : (Number(layer.scaleX) || 1),
+          scaleY: bakeAnaglyph ? 1 : (Number(layer.scaleY) || 1),
+          rotation: bakeAnaglyph ? 0 : (Number(layer.rotation) || 0),
           depth: clamp(layer.paraluxiousDepth, -2, 2),
+          bakedAnaglyph: Boolean(bakeAnaglyph),
 
           /* Paintless round-trip metadata. Older PLX readers simply ignore these. */
           stereo3dEnabled: Boolean(layer.stereo3dEnabled),
@@ -872,6 +955,12 @@
         created: new Date().toISOString(),
         coordinateSystem: "paintless-document-centred-transform-v1",
         layerOrder: "bottom-to-top",
+        visualMode: bakeAnaglyph ? "baked-anaglyph-v1" : "layers-v1",
+        paintless3d: {
+          mode: bakeAnaglyph ? "3d" : "2d",
+          baked: Boolean(bakeAnaglyph),
+          ultraTilt: Number(window.Paintless3DRenderer?.getUltraTilt?.()) || 0
+        },
         canvas: {
           width: Number(size.width) || 0,
           height: Number(size.height) || 0
@@ -901,7 +990,11 @@
       );
 
       downloadBlob(output, getPlxFilename());
-      notify(`Exported ${manifestLayers.length}-layer Paraluxious wallpaper.`);
+      notify(
+        bakeAnaglyph
+          ? `Exported ${manifestLayers.length}-layer ANAGLYPH Paraluxious wallpaper.`
+          : `Exported ${manifestLayers.length}-layer Paraluxious wallpaper.`
+      );
 
       document.dispatchEvent(
         new CustomEvent(
@@ -2053,6 +2146,7 @@
 
   window.PaintlessParaluxious = {
     state,
+    getState() { return { ...state }; },
     setEnabled,
     getLayerTransform,
     render,
@@ -2061,14 +2155,22 @@
     setPreview,
     centrePreview,
     requestMotionPermission,
+    setStrengthX(value) { state.strengthX = clamp(value, 0, 100); save(); render("strength-x-api"); return state.strengthX; },
+    setStrengthY(value) { state.strengthY = clamp(value, 0, 100); save(); render("strength-y-api"); return state.strengthY; },
+    setOverscan(value) { state.overscan = clamp(value, 1, 1.5); save(); render("overscan-api"); return state.overscan; },
+    setDeviceTilt(value) { state.useDeviceTilt = Boolean(value); save(); updateUi(); return state.useDeviceTilt; },
     exportPlx
   };
 
   const start = () => {
     ensureDeviceShell();
     installUi();
-    installMobileShell();
-    installOutsideCanvasRotationGesture();
+
+    /* Desktop keeps the existing Paraluxious preview shell. Mobile V2 owns its UI. */
+    if (!isTouchMobile()) {
+      installMobileShell();
+      installOutsideCanvasRotationGesture();
+    }
 
     document.body.classList.toggle(
       "paraluxious-active",
