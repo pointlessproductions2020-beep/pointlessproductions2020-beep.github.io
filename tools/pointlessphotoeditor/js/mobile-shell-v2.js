@@ -50,6 +50,108 @@
   document.addEventListener("paintless:document-opened", installMobileCoordinateMap);
   document.addEventListener("paintless:image-layer-created", installMobileCoordinateMap);
 
+  // ---------------------------------------------------------
+  // MOBILE IMAGE IMPORT
+  // Directly imports into PaintlessLayers instead of bouncing
+  // through desktop buttons/file inputs. Desktop is untouched.
+  // ---------------------------------------------------------
+  const mobileImageInput = document.createElement("input");
+  mobileImageInput.type = "file";
+  mobileImageInput.accept = "image/png,image/jpeg,image/webp,image/gif,image/*";
+  mobileImageInput.hidden = true;
+  mobileImageInput.id = "pmv2-image-input";
+  document.body.append(mobileImageInput);
+
+  const mobileStatus = message => {
+    document.dispatchEvent(new CustomEvent("paintless:status-message", {
+      detail: { message }
+    }));
+  };
+
+  const loadMobileImage = file => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Paintless could not read that image."));
+    };
+    image.src = url;
+  });
+
+  async function importMobileImageFile(file) {
+    if (!file) return false;
+
+    const canvasApi = window.PaintlessCanvas;
+    const api = layersApi();
+
+    if (!canvasApi?.isDocumentOpen?.()) {
+      if (typeof window.PaintlessFiles?.openImageFile === "function") {
+        return window.PaintlessFiles.openImageFile(file);
+      }
+      mobileStatus("Create or open a canvas first.");
+      return false;
+    }
+
+    if (typeof api?.createLayerFromImage !== "function") {
+      mobileStatus("Paintless image-layer engine is still loading.");
+      return false;
+    }
+
+    try {
+      mobileStatus(`Importing ${file.name}…`);
+      const image = await loadMobileImage(file);
+
+      // Use Paintless's own image-layer constructor. It handles the
+      // document-size layer canvas, contain sizing and centring.
+      const layer = api.createLayerFromImage(image, {
+        name: String(file.name || "Imported Image").replace(/\.[^.]+$/, ""),
+        fit: "contain",
+        select: true
+      });
+
+      if (!layer?.canvas) {
+        throw new Error("Paintless did not create the imported image layer.");
+      }
+
+      api.renderLayerList?.();
+      api.renderLayers?.();
+      saveHistory("Import image");
+
+      document.dispatchEvent(new CustomEvent("paintless:image-imported", {
+        detail: { file, layer, mobile: true }
+      }));
+
+      mobileStatus(`${file.name} imported as a new layer.`);
+      installMobileCoordinateMap();
+
+      requestAnimationFrame(() => {
+        window.PaintlessCanvas?.fitCanvasToScreen?.();
+        requestAnimationFrame(() => window.PaintlessCanvas?.centreCanvas?.());
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Paintless Mobile image import failed:", error);
+      mobileStatus(error?.message || "Paintless could not import that image.");
+      return false;
+    }
+  }
+
+  function requestMobileImageImport() {
+    mobileImageInput.value = "";
+    mobileImageInput.click();
+  }
+
+  mobileImageInput.addEventListener("change", async () => {
+    const file = mobileImageInput.files?.[0];
+    if (file) await importMobileImageFile(file);
+    mobileImageInput.value = "";
+  });
+
   const closeAll = () => {
     document.querySelectorAll(".pmv2-rail,.pmv2-card").forEach(el => el.classList.remove("open"));
   };
@@ -65,24 +167,34 @@
     const a = e.target.closest("[data-act]")?.dataset.act;
     if (a === "undo") $("#undo-button")?.click();
     if (a === "redo") $("#redo-button")?.click();
-    if (a === "import") (window.PaintlessFiles?.requestImportImage?.() || $("#import-image-button")?.click());
+    if (a === "import") requestMobileImageImport();
   });
 
   // Fine mobile zoom. Desktop keeps its original larger zoom steps.
   let mobileZoom = Math.max(.05, Number(String($("#zoom-display")?.textContent || "100").replace("%","")) / 100 || 1);
   const canvasControls = make("div", "pmv2-canvas-controls");
   canvasControls.innerHTML = `
-    <button type="button" data-canvas="out" aria-label="Zoom out 5 percent">−</button>
+    <button type="button" data-canvas="pan" aria-label="Pan canvas">✋</button>
+    <button type="button" data-canvas="out" aria-label="Fine zoom out">−</button>
     <output class="pmv2-zoom">100%</output>
-    <button type="button" data-canvas="in" aria-label="Zoom in 5 percent">＋</button>
+    <button type="button" data-canvas="in" aria-label="Fine zoom in">＋</button>
     <button type="button" data-canvas="fit">FIT</button>
     <button type="button" data-canvas="export">⇩</button>`;
   document.body.append(canvasControls);
   const zoomOut = canvasControls.querySelector(".pmv2-zoom");
+  const mobileZoomStep = direction => {
+    const percent = mobileZoom * 100;
+    // Portrait phone canvases often FIT around 15–25%.
+    // At that size a five-point jump is enormous, so use 1 point.
+    const points = percent < 50 ? 1 : percent < 100 ? 2 : 5;
+    return direction * (points / 100);
+  };
+
   const setMobileZoom = value => {
-    mobileZoom = Math.min(8, Math.max(.05, Math.round(Number(value) * 100) / 100));
-    window.PaintlessCanvas?.setZoom?.(mobileZoom);
+    mobileZoom = Math.min(8, Math.max(.05, Math.round(Number(value) * 1000) / 1000));
+    window.PaintlessCanvas?.setZoom?.(mobileZoom, { keepCentre: false });
     if (zoomOut) zoomOut.textContent = `${Math.round(mobileZoom * 100)}%`;
+    requestAnimationFrame(() => window.PaintlessCanvas?.centreCanvas?.());
   };
   document.addEventListener("paintless:zoom-changed", e => {
     const z = Number(e.detail?.zoom);
@@ -91,11 +203,23 @@
       if (zoomOut) zoomOut.textContent = `${Math.round(z * 100)}%`;
     }
   });
+  let mobilePanMode = false;
+  const panButton = canvasControls.querySelector('[data-canvas="pan"]');
+  const setPanMode = enabled => {
+    mobilePanMode = Boolean(enabled);
+    panButton?.classList.toggle("active", mobilePanMode);
+    document.body.classList.toggle("pmv2-pan-mode", mobilePanMode);
+  };
+
   canvasControls.addEventListener("click", e => {
     const a = e.target.closest("[data-canvas]")?.dataset.canvas;
-    if (a === "out") setMobileZoom(mobileZoom - .05);
-    if (a === "in") setMobileZoom(mobileZoom + .05);
-    if (a === "fit") window.PaintlessCanvas?.fitCanvasToScreen?.() || window.PaintlessCanvas?.fitCanvasToScreen?.() || $("#fit-screen-button")?.click();
+    if (a === "pan") setPanMode(!mobilePanMode);
+    if (a === "out") setMobileZoom(mobileZoom + mobileZoomStep(-1));
+    if (a === "in") setMobileZoom(mobileZoom + mobileZoomStep(1));
+    if (a === "fit") {
+      window.PaintlessCanvas?.fitCanvasToScreen?.();
+      requestAnimationFrame(() => window.PaintlessCanvas?.centreCanvas?.());
+    }
     if (a === "export") $("#export-button")?.click();
   });
 
@@ -238,8 +362,9 @@
 
   function layersCard() {
     const list = (layersApi()?.getLayers?.() || []).slice().reverse();
-    showCard("LAYERS", `<div class="pmv2-layer-list">${list.map(l => `<button class="pmv2-layer-item ${l.id===layersApi()?.getActiveLayerId?.()?"active":""}" data-layer-id="${String(l.id).replaceAll('"','&quot;')}"><span>${String(l.name||"Layer")}</span><small>${Math.round((Number(l.opacity)||1)*100)}%</small></button>`).join("")}</div><div class="pmv2-grid two" style="margin-top:8px"><button data-add-layer>＋ LAYER</button><button data-dup-active>DUPLICATE</button></div>`);
+    showCard("LAYERS", `<div class="pmv2-layer-list">${list.map(l => `<button class="pmv2-layer-item ${l.id===layersApi()?.getActiveLayerId?.()?"active":""}" data-layer-id="${String(l.id).replaceAll('"','&quot;')}"><span>${String(l.name||"Layer")}</span><small>${Math.round((Number(l.opacity)||1)*100)}%</small></button>`).join("")}</div><div class="pmv2-grid three" style="margin-top:8px"><button data-import-image>＋ IMG</button><button data-add-layer>＋ LAYER</button><button data-dup-active>DUP</button></div>`);
     card.querySelectorAll("[data-layer-id]").forEach(b => b.onclick=()=>{layersApi()?.selectLayer?.(b.dataset.layerId); layersCard();});
+    card.querySelector("[data-import-image]").onclick=requestMobileImageImport;
     card.querySelector("[data-add-layer]").onclick=()=>layersApi()?.createLayer?.();
     card.querySelector("[data-dup-active]").onclick=()=>{const l=activeLayer(); if(l) layersApi()?.duplicateLayer?.(l.id);};
   }
@@ -281,6 +406,154 @@
     const p=e.target.closest("[data-panel]")?.dataset.panel;
     if(p==='layer') layerCard(); if(p==='layers') layersCard(); if(p==='3d') mode3dCard(); if(p==='lux') luxCard();
   });
+
+  // ---------------------------------------------------------
+  // MOBILE CANVAS NAVIGATION
+  // PAN button + one finger = move workspace.
+  // Two fingers = pan + pinch zoom at any time.
+  // ---------------------------------------------------------
+  const viewport = document.getElementById("canvas-viewport");
+  const gesturePoints = new Map();
+  let navGesture = null;
+
+  const distanceBetween = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+  const midpointBetween = (a, b) => ({
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2
+  });
+
+  function cancelPaintForNavigation() {
+    try {
+      window.PaintlessPointer?.cancelCurrentPointerAction?.();
+      window.PaintlessPointer?.resetPointerState?.();
+      window.PaintlessToolCore?.resetPointerState?.();
+      window.PaintlessCanvas?.clearOverlay?.();
+    } catch (_) {}
+  }
+
+  viewport?.addEventListener("pointerdown", event => {
+    if (event.pointerType !== "touch") return;
+
+    gesturePoints.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY
+    });
+
+    if (gesturePoints.size >= 2) {
+      event.preventDefault();
+      event.stopPropagation();
+      cancelPaintForNavigation();
+
+      const [a, b] = Array.from(gesturePoints.values()).slice(0, 2);
+      const mid = midpointBetween(a, b);
+
+      navGesture = {
+        type: "pinch",
+        startDistance: Math.max(1, distanceBetween(a, b)),
+        startZoom: Number(window.PaintlessCanvas?.getZoom?.()) || mobileZoom || 1,
+        startMidX: mid.x,
+        startMidY: mid.y,
+        startScrollLeft: viewport.scrollLeft,
+        startScrollTop: viewport.scrollTop
+      };
+      return;
+    }
+
+    if (mobilePanMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      cancelPaintForNavigation();
+
+      navGesture = {
+        type: "pan",
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startScrollLeft: viewport.scrollLeft,
+        startScrollTop: viewport.scrollTop
+      };
+    }
+  }, { capture: true, passive: false });
+
+  viewport?.addEventListener("pointermove", event => {
+    if (event.pointerType !== "touch" || !gesturePoints.has(event.pointerId)) return;
+
+    gesturePoints.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY
+    });
+
+    if (gesturePoints.size >= 2) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const [a, b] = Array.from(gesturePoints.values()).slice(0, 2);
+      const currentDistance = Math.max(1, distanceBetween(a, b));
+      const currentMid = midpointBetween(a, b);
+
+      if (!navGesture || navGesture.type !== "pinch") {
+        navGesture = {
+          type: "pinch",
+          startDistance: currentDistance,
+          startZoom: Number(window.PaintlessCanvas?.getZoom?.()) || mobileZoom || 1,
+          startMidX: currentMid.x,
+          startMidY: currentMid.y,
+          startScrollLeft: viewport.scrollLeft,
+          startScrollTop: viewport.scrollTop
+        };
+        return;
+      }
+
+      const ratio = currentDistance / navGesture.startDistance;
+      const nextZoom = Math.min(8, Math.max(.05, navGesture.startZoom * ratio));
+
+      window.PaintlessCanvas?.setZoom?.(nextZoom, { keepCentre: false });
+      mobileZoom = nextZoom;
+      if (zoomOut) zoomOut.textContent = `${Math.round(nextZoom * 100)}%`;
+
+      viewport.scrollLeft =
+        navGesture.startScrollLeft -
+        (currentMid.x - navGesture.startMidX);
+
+      viewport.scrollTop =
+        navGesture.startScrollTop -
+        (currentMid.y - navGesture.startMidY);
+
+      return;
+    }
+
+    if (
+      mobilePanMode &&
+      navGesture?.type === "pan" &&
+      navGesture.pointerId === event.pointerId
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      viewport.scrollLeft =
+        navGesture.startScrollLeft -
+        (event.clientX - navGesture.startX);
+
+      viewport.scrollTop =
+        navGesture.startScrollTop -
+        (event.clientY - navGesture.startY);
+    }
+  }, { capture: true, passive: false });
+
+  const finishNavPointer = event => {
+    gesturePoints.delete(event.pointerId);
+
+    if (gesturePoints.size < 2 && navGesture?.type === "pinch") {
+      navGesture = null;
+    }
+
+    if (navGesture?.type === "pan" && navGesture.pointerId === event.pointerId) {
+      navGesture = null;
+    }
+  };
+
+  viewport?.addEventListener("pointerup", finishNavPointer, { capture: true });
+  viewport?.addEventListener("pointercancel", finishNavPointer, { capture: true });
 
   document.addEventListener("paintless:active-tool-changed", syncActiveTool);
   document.addEventListener("paintless:active-layer-changed", () => { if(card.classList.contains('open') && card.querySelector('[data-layer]')) layerCard(); });
