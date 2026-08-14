@@ -23,14 +23,20 @@
 
   <main class="app-shell">
     <section class="viewer-panel">
-      <div class="device" id="device">
-        <canvas id="viewer-canvas" aria-label="Paraluxious live wallpaper preview"></canvas>
-        <div class="empty-state" id="empty-state">
-          <img src="assets/images/logo.webp" alt="">
-          <strong>LIVE IN DEPTH</strong>
-          <span>Open a .PLX wallpaper to preview it.</span>
+      <div class="device-wrap">
+        <div class="device" id="device">
+          <canvas id="viewer-canvas" aria-label="Paraluxious live wallpaper preview"></canvas>
+          <div class="empty-state" id="empty-state">
+            <img src="assets/images/logo.webp" alt="">
+            <strong>LIVE IN DEPTH</strong>
+            <span>Open a .PLX wallpaper to preview it.</span>
+          </div>
+          <div class="screen-brand">PARALUXIOUS</div>
         </div>
-        <div class="screen-brand">PARALUXIOUS</div>
+        <div class="tilt-readout" aria-live="polite">
+          <span>X <b id="tilt-x">0.00</b></span>
+          <span>Y <b id="tilt-y">0.00</b></span>
+        </div>
       </div>
     </section>
 
@@ -50,17 +56,61 @@
         <div><span>Motion</span><strong id="motion-stat">—</strong></div>
       </div>
 
+      <section class="control-block">
+        <div class="control-heading">
+          <strong>Device preview</strong>
+          <span id="aspect-output">9:19.5</span>
+        </div>
+
+        <select id="device-preset" class="select-control">
+          <option value="tall-phone" selected>Tall phone · 9:19.5</option>
+          <option value="phone">Standard phone · 9:16</option>
+          <option value="tablet">Tablet · 10:16</option>
+          <option value="tablet-4-3">Tablet · 3:4</option>
+          <option value="landscape-phone">Landscape phone · 19.5:9</option>
+          <option value="square">Square · 1:1</option>
+          <option value="custom">Custom aspect</option>
+        </select>
+
+        <div class="custom-aspect" id="custom-aspect" hidden>
+          <label>W <input id="custom-width" type="number" min="1" value="1440"></label>
+          <span>:</span>
+          <label>H <input id="custom-height" type="number" min="1" value="3120"></label>
+          <button id="apply-custom-aspect" type="button">Apply</button>
+        </div>
+
+        <div class="segmented" aria-label="Canvas fit">
+          <button id="fit-button" class="is-active" type="button">FIT CANVAS</button>
+          <button id="fill-button" type="button">FILL SCREEN</button>
+        </div>
+        <p class="micro-hint"><strong>FIT</strong> preserves the complete Paintless composition. <strong>FILL</strong> crops only when you deliberately ask it to.</p>
+      </section>
+
+      <section class="control-block">
+        <div class="control-heading">
+          <strong>Preview control</strong>
+          <span>how to tilt</span>
+        </div>
+
+        <div class="segmented three">
+          <button id="pointer-mode" class="is-active" type="button">POINTER</button>
+          <button id="drag-mode" type="button">DRAG TILT</button>
+          <button id="auto-mode" type="button">AUTO</button>
+        </div>
+
+        <div class="toggle-row compact">
+          <button id="centre-button" type="button">Centre</button>
+          <button id="spring-button" class="is-active" type="button">Spring back</button>
+          <button id="motion-button" type="button">Enable phone tilt</button>
+        </div>
+      </section>
+
       <label class="range-row">
         <span><b>Preview strength</b><output id="strength-output">100%</output></span>
         <input id="strength" type="range" min="25" max="180" value="100">
       </label>
 
-      <div class="toggle-row">
-        <button id="centre-button" type="button">Centre</button>
-        <button id="motion-button" type="button">Enable phone tilt</button>
-      </div>
-
-      <p class="hint">Desktop: move the pointer over the phone. Mobile: enable phone tilt, then physically tilt the device.</p>
+      <p class="hint">Desktop: Pointer follows the cursor. Drag Tilt lets you grab the virtual device and hold it at an angle. Mobile: enable phone tilt and physically tilt the device.</p>
 
       <div class="drop-zone" id="drop-zone">
         <strong>Drop a .PLX here</strong>
