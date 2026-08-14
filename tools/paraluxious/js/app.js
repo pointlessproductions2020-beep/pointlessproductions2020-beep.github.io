@@ -1,6 +1,42 @@
-"use strict";
-
 (() => {
+  "use strict";
+
+  const ANALYTICS_ENDPOINT =
+    "https://pointless-analytics.pointlessproductions2020.workers.dev/track";
+
+  function getDeviceType() {
+    const width = window.innerWidth || 0;
+    const touch = navigator.maxTouchPoints > 0;
+
+    if (touch && width <= 768) return "mobile";
+    if (touch && width <= 1200) return "tablet";
+    return "desktop";
+  }
+
+  function trackParaluxiousEvent(eventName) {
+    if (!eventName) return;
+
+    try {
+      fetch(ANALYTICS_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          event: String(eventName),
+          app: "paraluxious",
+          page: window.location.pathname || "/tools/paraluxious/",
+          mode: "viewer",
+          referrer: document.referrer || "direct",
+          device: getDeviceType()
+        }),
+        keepalive: true
+      }).catch(() => {});
+    } catch (_) {
+      // Analytics must never interfere with ParaLuxious.
+    }
+  }
+
   const fileInput = document.getElementById("file-input");
   const openButton = document.getElementById("open-button");
   const canvas = document.getElementById("viewer-canvas");
@@ -76,6 +112,10 @@
     layersStat.textContent = String(layers.length);
     motionStat.textContent = `${Math.round(Number(manifest.paraluxious?.strengthX) || 0)} / ${Math.round(Number(manifest.paraluxious?.strengthY) || 0)}`;
     setStatus(`${file.name} loaded`);
+
+    // Count only successful, valid ParaLuxious files.
+    trackParaluxiousEvent("plx_opened");
+
     resizeCanvas();
     render();
   }
@@ -176,9 +216,17 @@
         const result = await DeviceOrientationEvent.requestPermission();
         if (result !== "granted") throw new Error("Motion permission was not granted.");
       }
+
       motionEnabled = !motionEnabled;
       neutralBeta = neutralGamma = null;
-      window.addEventListener("deviceorientation", deviceMotion, { passive: true });
+
+      if (motionEnabled) {
+        window.addEventListener("deviceorientation", deviceMotion, { passive: true });
+        trackParaluxiousEvent("phone_tilt_enabled");
+      } else {
+        window.removeEventListener("deviceorientation", deviceMotion);
+      }
+
       motionButton.textContent = motionEnabled ? "Phone tilt enabled" : "Enable phone tilt";
       setStatus(motionEnabled ? "Tilt the phone to preview depth" : scene ? `${scene.name} loaded` : "Waiting for a .PLX");
     } catch (error) {
@@ -200,6 +248,9 @@
   ["dragenter", "dragover"].forEach(type => dropZone.addEventListener(type, e => { e.preventDefault(); dropZone.classList.add("is-over"); }));
   ["dragleave", "drop"].forEach(type => dropZone.addEventListener(type, e => { e.preventDefault(); dropZone.classList.remove("is-over"); }));
   dropZone.addEventListener("drop", e => { const f = e.dataTransfer.files?.[0]; if (f) loadPlx(f).catch(err => setStatus(err.message)); });
+
+  // One anonymous page-view count when ParaLuxious loads.
+  trackParaluxiousEvent("page_view");
 
   requestAnimationFrame(frame);
 })();
