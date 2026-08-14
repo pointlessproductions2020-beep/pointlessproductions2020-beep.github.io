@@ -22,6 +22,34 @@
     window.PaintlessHistory?.saveHistory?.(reason) ||
     document.dispatchEvent(new CustomEvent("paintless:history-requested", { detail:{ reason } }));
 
+  // Mobile coordinate correction:
+  // use the transformed stage rectangle itself as the visible document bounds.
+  // This removes the centre-correct / edge-drifting touch error seen on mobile.
+  const installMobileCoordinateMap = () => {
+    const api = window.PaintlessCanvas;
+    const stage = document.getElementById("canvas-stage");
+    const editor = document.getElementById("editor-canvas");
+    if (!api || !stage || !editor || api.__mobileV21Coordinates) return;
+    api.__mobileV21Coordinates = true;
+    api.clientToCanvas = (clientX, clientY) => {
+      const r = stage.getBoundingClientRect();
+      const w = Math.max(1, Number(editor.width) || 1);
+      const h = Math.max(1, Number(editor.height) || 1);
+      const x = (Number(clientX) - r.left) * (w / Math.max(1e-6, r.width));
+      const y = (Number(clientY) - r.top) * (h / Math.max(1e-6, r.height));
+      return { x, y, inside: x >= 0 && y >= 0 && x <= w && y <= h };
+    };
+    api.canvasToClient = (x, y) => {
+      const r = stage.getBoundingClientRect();
+      const w = Math.max(1, Number(editor.width) || 1);
+      const h = Math.max(1, Number(editor.height) || 1);
+      return { x: r.left + (Number(x) / w) * r.width, y: r.top + (Number(y) / h) * r.height };
+    };
+  };
+  installMobileCoordinateMap();
+  document.addEventListener("paintless:document-opened", installMobileCoordinateMap);
+  document.addEventListener("paintless:image-layer-created", installMobileCoordinateMap);
+
   const closeAll = () => {
     document.querySelectorAll(".pmv2-rail,.pmv2-card").forEach(el => el.classList.remove("open"));
   };
@@ -37,25 +65,37 @@
     const a = e.target.closest("[data-act]")?.dataset.act;
     if (a === "undo") $("#undo-button")?.click();
     if (a === "redo") $("#redo-button")?.click();
-    if (a === "import") $("#import-image-button")?.click();
+    if (a === "import") (window.PaintlessFiles?.requestImportImage?.() || $("#import-image-button")?.click());
   });
 
-  // Canvas controls delegate to Paintless' existing zoom implementation.
+  // Fine mobile zoom. Desktop keeps its original larger zoom steps.
+  let mobileZoom = Math.max(.05, Number(String($("#zoom-display")?.textContent || "100").replace("%","")) / 100 || 1);
   const canvasControls = make("div", "pmv2-canvas-controls");
   canvasControls.innerHTML = `
-    <button type="button" data-canvas="out">−</button>
+    <button type="button" data-canvas="out" aria-label="Zoom out 5 percent">−</button>
+    <output class="pmv2-zoom">100%</output>
+    <button type="button" data-canvas="in" aria-label="Zoom in 5 percent">＋</button>
     <button type="button" data-canvas="fit">FIT</button>
-    <button type="button" data-canvas="in">＋</button>
     <button type="button" data-canvas="export">⇩</button>`;
   document.body.append(canvasControls);
+  const zoomOut = canvasControls.querySelector(".pmv2-zoom");
+  const setMobileZoom = value => {
+    mobileZoom = Math.min(8, Math.max(.05, Math.round(Number(value) * 100) / 100));
+    window.PaintlessCanvas?.setZoom?.(mobileZoom);
+    if (zoomOut) zoomOut.textContent = `${Math.round(mobileZoom * 100)}%`;
+  };
+  document.addEventListener("paintless:zoom-changed", e => {
+    const z = Number(e.detail?.zoom);
+    if (Number.isFinite(z)) {
+      mobileZoom = z;
+      if (zoomOut) zoomOut.textContent = `${Math.round(z * 100)}%`;
+    }
+  });
   canvasControls.addEventListener("click", e => {
     const a = e.target.closest("[data-canvas]")?.dataset.canvas;
-    if (a === "out") $("#zoom-out-button")?.click();
-    if (a === "in") $("#zoom-in-button")?.click();
-    if (a === "fit") {
-      const fit = $("#fit-screen-button") || $("[data-action='fit-screen']");
-      if (fit) fit.click(); else window.PaintlessCanvas?.fitToScreen?.();
-    }
+    if (a === "out") setMobileZoom(mobileZoom - .05);
+    if (a === "in") setMobileZoom(mobileZoom + .05);
+    if (a === "fit") window.PaintlessCanvas?.fitCanvasToScreen?.() || window.PaintlessCanvas?.fitCanvasToScreen?.() || $("#fit-screen-button")?.click();
     if (a === "export") $("#export-button")?.click();
   });
 
@@ -69,11 +109,14 @@
   leftRail.innerHTML = `
     <button data-tool="brush">✎<small>BRUSH</small></button>
     <button data-tool="eraser">⌫<small>ERASE</small></button>
-    <button data-tool="selection">✧<small>SELECT</small></button>
+    <button data-tool="select">✧<small>SELECT</small></button>
     <button data-tool="move">✥<small>MOVE</small></button>
     <button data-tool="transform">↔<small>SIZE</small></button>
-    <button data-tool="shapes">◇<small>SHAPE</small></button>
-    <button data-tool="text">T<small>TEXT</small></button>`;
+    <button data-tool="fill">▰<small>FILL</small></button>
+    <button data-tool="gradient">◩<small>GRAD</small></button>
+    <button data-tool="shape">◇<small>SHAPE</small></button>
+    <button data-tool="text">T<small>TEXT</small></button>
+    <button data-more-tools>•••<small>MORE</small></button>`;
   document.body.append(leftRail);
 
   const rightRail = make("div", "pmv2-rail right");
@@ -113,13 +156,19 @@
       const opacity = Number($("#tool-opacity")?.value || 100);
       showCard(tool === "brush" ? "BRUSH" : "ERASER", `
         <div class="pmv2-row"><label>Size</label><input data-bind="brush-size" type="range" min="1" max="200" value="${size}"><output>${size}px</output></div>
-        <div class="pmv2-row"><label>Opacity</label><input data-bind="tool-opacity" type="range" min="1" max="100" value="${opacity}"><output>${opacity}%</output></div>`);
+        <div class="pmv2-row"><label>Opacity</label><input data-bind="tool-opacity" type="range" min="1" max="100" value="${opacity}"><output>${opacity}%</output></div>
+        <div class="pmv2-row"><label>Hardness</label><input data-bind="brush-hardness" type="range" min="0" max="100" value="${Number($("#brush-hardness")?.value || 80)}"><output>${Number($("#brush-hardness")?.value || 80)}%</output></div>
+        <div class="pmv2-colour-row"><label>Colour</label><input data-mobile-colour type="color" value="${$("#primary-colour")?.value || "#a84cff"}"></div>`);
       card.querySelectorAll("[data-bind]").forEach(input => input.addEventListener("input", () => {
         const target = document.getElementById(input.dataset.bind); if (!target) return;
         target.value = input.value; target.dispatchEvent(new Event("input", { bubbles:true }));
         input.nextElementSibling.textContent = input.dataset.bind === "brush-size" ? `${input.value}px` : `${input.value}%`;
       }));
-    } else if (tool === "selection") {
+      card.querySelector("[data-mobile-colour]")?.addEventListener("input", e => {
+        const target = $("#primary-colour"); if (!target) return;
+        target.value = e.target.value; target.dispatchEvent(new Event("input", { bubbles:true })); target.dispatchEvent(new Event("change", { bubbles:true }));
+      });
+    } else if (tool === "select") {
       showCard("SELECT", `<div class="pmv2-grid">
         <button data-select="magic-wand">MAGIC</button><button data-select="polygon-lasso">POLYGON</button><button data-select="rectangle">RECT</button>
         <button data-select-action="new">NEW LAYER</button><button data-select-action="copy">COPY</button><button data-select-action="clear">CLEAR</button></div>`);
@@ -129,12 +178,37 @@
       card.querySelector("[data-select-action='new']").onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key:"j", code:"KeyJ", ctrlKey:true, bubbles:true }));
       card.querySelector("[data-select-action='copy']").onclick = () => document.dispatchEvent(new KeyboardEvent("keydown", { key:"c", code:"KeyC", ctrlKey:true, bubbles:true }));
       card.querySelector("[data-select-action='clear']").onclick = () => $("#deselect-button")?.click();
+    } else if (tool === "shape") {
+      showCard("SHAPES", `<div class="pmv2-grid two">
+        <button data-shape="ellipse">ELLIPSE</button><button data-shape="rectangle">RECTANGLE</button>
+        <button data-shape="rounded-rectangle">ROUNDED</button><button data-shape="line">LINE</button></div>
+        <div class="pmv2-grid two" style="margin-top:8px"><button data-check="shape-fill-enabled">FILL</button><button data-check="shape-stroke-enabled">STROKE</button></div>`);
+      card.querySelectorAll("[data-shape]").forEach(b => b.onclick = () => {
+        const s=$("#shape-type"); if(s){s.value=b.dataset.shape;s.dispatchEvent(new Event("change",{bubbles:true}));}
+      });
+      card.querySelectorAll("[data-check]").forEach(b => b.onclick = () => document.getElementById(b.dataset.check)?.click());
+    } else if (tool === "text") {
+      showCard("TEXT", `<div class="pmv2-row"><label>Size</label><input data-text-size type="range" min="6" max="200" value="${Number($("#text-font-size")?.value||32)}"><output>${Number($("#text-font-size")?.value||32)}px</output></div>
+        <div class="pmv2-grid two"><button data-text-toggle="text-bold">BOLD</button><button data-text-toggle="text-italic">ITALIC</button></div>`);
+      card.querySelector("[data-text-size]").oninput=e=>{const t=$("#text-font-size"); if(t){t.value=e.target.value;t.dispatchEvent(new Event("input",{bubbles:true}));t.dispatchEvent(new Event("change",{bubbles:true}));} e.target.nextElementSibling.textContent=`${e.target.value}px`;};
+      card.querySelectorAll("[data-text-toggle]").forEach(b=>b.onclick=()=>document.getElementById(b.dataset.textToggle)?.click());
     } else {
       card.classList.remove("open");
     }
   }
 
-  leftRail.addEventListener("click", e => { const tool=e.target.closest("[data-tool]")?.dataset.tool; if(tool) openTool(tool); });
+  function moreToolsCard() {
+    showCard("MORE TOOLS", `<div class="pmv2-grid three">
+      <button data-extra-tool="crop">CROP</button><button data-extra-tool="clone">CLONE</button><button data-extra-tool="eyedropper">PICKER</button>
+      <button data-extra-tool="blur">BLUR</button><button data-extra-tool="sharpen">SHARPEN</button><button data-extra-tool="smudge">SMUDGE</button>
+      <button data-extra-tool="liquify">LIQUIFY</button></div>`);
+    card.querySelectorAll("[data-extra-tool]").forEach(b=>b.onclick=()=>openTool(b.dataset.extraTool));
+  }
+
+  leftRail.addEventListener("click", e => {
+    if (e.target.closest("[data-more-tools]")) { moreToolsCard(); return; }
+    const tool=e.target.closest("[data-tool]")?.dataset.tool; if(tool) openTool(tool);
+  });
 
   function layerCard() {
     const layer = activeLayer();
@@ -210,7 +284,7 @@
 
   document.addEventListener("paintless:active-tool-changed", syncActiveTool);
   document.addEventListener("paintless:active-layer-changed", () => { if(card.classList.contains('open') && card.querySelector('[data-layer]')) layerCard(); });
-  document.addEventListener("paintless:document-opened", () => setTimeout(()=>window.PaintlessCanvas?.fitToScreen?.(),50));
+  document.addEventListener("paintless:document-opened", () => setTimeout(()=>window.PaintlessCanvas?.fitCanvasToScreen?.(),50));
 
   syncActiveTool();
 })();
