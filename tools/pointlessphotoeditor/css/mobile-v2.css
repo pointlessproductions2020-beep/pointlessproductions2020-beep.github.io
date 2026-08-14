@@ -1,0 +1,143 @@
+/* =========================================================
+   PAINTLESS MOBILE SHELL V2
+   Touch-first presentation layer. Desktop remains untouched.
+   IMPORTANT: never CSS-transform #editor-canvas / #canvas-stage.
+========================================================= */
+@media (max-width: 820px) and (pointer: coarse),
+       (max-width: 820px) and (hover: none) {
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+
+  body.paintless-mobile-v2 .paintless-app {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    height: 100dvh !important;
+  }
+
+  body.paintless-mobile-v2 .top-bar,
+  body.paintless-mobile-v2 .tool-options-bar,
+  body.paintless-mobile-v2 .toolbox,
+  body.paintless-mobile-v2 .right-sidebar,
+  body.paintless-mobile-v2 #sidebar-resize-handle,
+  body.paintless-mobile-v2 .status-bar,
+  body.paintless-mobile-v2 .workspace-ruler,
+  body.paintless-mobile-v2 .paraluxious-hand-fab {
+    display: none !important;
+  }
+
+  body.paintless-mobile-v2 .editor-layout {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.paintless-mobile-v2 .workspace {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body.paintless-mobile-v2 .canvas-viewport {
+    position: absolute !important;
+    inset: 0 !important;
+    padding: 58px 46px 78px !important;
+    overflow: auto !important;
+    display: grid !important;
+    place-items: center !important;
+    touch-action: none;
+  }
+
+  /* DO NOT add transforms here. PaintlessCanvas owns canvas zoom geometry. */
+  body.paintless-mobile-v2 .canvas-stage {
+    flex: 0 0 auto;
+    margin: auto !important;
+  }
+
+  body.paintless-mobile-v2 .workspace-empty-state {
+    width: min(320px, calc(100vw - 72px));
+    padding: 22px 18px;
+  }
+
+  .pmv2-top {
+    position: fixed; z-index: 16000; top: max(8px, env(safe-area-inset-top));
+    left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 7px; border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px; background: rgba(10,7,15,.88);
+    backdrop-filter: blur(14px); box-shadow: 0 8px 26px rgba(0,0,0,.35);
+  }
+  .pmv2-top button, .pmv2-canvas-controls button,
+  .pmv2-rail button, .pmv2-card button {
+    min-width: 42px; min-height: 42px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.055);
+    color: #fff; font: 800 14px/1 system-ui; touch-action: manipulation;
+  }
+  .pmv2-top button:active, .pmv2-rail button:active, .pmv2-card button:active {
+    background: rgba(168,76,255,.30);
+  }
+  .pmv2-brand { color:#d49aff; font:950 11px/1 system-ui; letter-spacing:.08em; padding:0 5px; }
+
+  .pmv2-edge {
+    position: fixed; z-index: 16010; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 74px; padding: 0;
+    border: 1px solid rgba(212,154,255,.35); background: rgba(13,9,19,.94); color:#fff;
+    font-size: 24px; font-weight:900; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    touch-action: manipulation;
+  }
+  .pmv2-edge.left { left: 0; border-radius: 0 15px 15px 0; }
+  .pmv2-edge.right { right: 0; border-radius: 15px 0 0 15px; }
+
+  .pmv2-rail {
+    position: fixed; z-index: 16020; top: 50%; transform: translateY(-50%);
+    display: none; flex-direction: column; gap: 7px; padding: 8px;
+    border: 1px solid rgba(212,154,255,.28); border-radius: 18px;
+    background: rgba(11,7,17,.94); backdrop-filter: blur(16px);
+    box-shadow: 0 15px 45px rgba(0,0,0,.45);
+  }
+  .pmv2-rail.open { display:flex; }
+  .pmv2-rail.left { left: 34px; }
+  .pmv2-rail.right { right: 34px; }
+  .pmv2-rail button { width: 48px; padding:0; font-size:18px; }
+  .pmv2-rail button small { display:block; margin-top:3px; font-size:7px; color:#bcaec8; letter-spacing:.05em; }
+  .pmv2-rail button.active { border-color:#a84cff; box-shadow:0 0 0 1px rgba(168,76,255,.28); }
+
+  .pmv2-card {
+    position: fixed; z-index: 16030; left: 50%; bottom: calc(72px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); width: min(340px, calc(100vw - 76px)); max-height: 46dvh;
+    overflow: auto; display:none; padding: 12px;
+    border:1px solid rgba(212,154,255,.30); border-radius:20px;
+    background:rgba(13,9,19,.96); backdrop-filter:blur(18px);
+    box-shadow:0 20px 60px rgba(0,0,0,.55); color:#fff;
+  }
+  .pmv2-card.open { display:block; }
+  .pmv2-card-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .pmv2-card-head strong { flex:1; font:900 13px/1 system-ui; letter-spacing:.06em; }
+  .pmv2-card-head button { min-width:38px; min-height:38px; }
+  .pmv2-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
+  .pmv2-row label { width:78px; color:#c9bfce; font:700 11px/1 system-ui; }
+  .pmv2-row input[type=range] { flex:1; min-width:0; }
+  .pmv2-row output { width:48px; text-align:right; color:#d49aff; font:800 11px/1 system-ui; }
+  .pmv2-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .pmv2-grid.two { grid-template-columns:repeat(2,1fr); }
+  .pmv2-grid button { min-width:0; padding:7px 5px; font-size:11px; }
+  .pmv2-layer-list { display:grid; gap:6px; }
+  .pmv2-layer-item { display:flex; align-items:center; gap:8px; width:100%; padding:8px 10px !important; text-align:left; }
+  .pmv2-layer-item span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pmv2-layer-item.active { border-color:#a84cff; background:rgba(168,76,255,.16); }
+
+  .pmv2-canvas-controls {
+    position: fixed; z-index:16000; bottom:max(10px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    display:flex; gap:6px; padding:5px 7px; border:1px solid rgba(255,255,255,.12);
+    border-radius:999px; background:rgba(10,7,15,.90); backdrop-filter:blur(14px);
+  }
+  .pmv2-canvas-controls button { min-width:44px; min-height:42px; }
+
+  body.paintless-mobile-v2 .paraluxious-device-shell,
+  body.paintless-mobile-v2 .paraluxious-device-screen {
+    /* shell can exist, but it must never steal touches from the editor canvas */
+    pointer-events: none !important;
+  }
+}
