@@ -196,3 +196,44 @@
   }
   .pmv2-grid.three{grid-template-columns:repeat(3,1fr)}
 }
+
+
+/* =========================================================
+   MOBILE V2.2 — IMPORT + FINE ZOOM
+========================================================= */
+@media (max-width: 820px) and (pointer: coarse),
+       (max-width: 820px) and (hover: none) {
+  .pmv2-canvas-controls {
+    max-width:calc(100vw - 20px);
+  }
+  .pmv2-canvas-controls .pmv2-zoom {
+    min-width:52px;
+    padding:0 4px;
+  }
+  .pmv2-card .pmv2-grid.three button {
+    font-size:9px;
+    letter-spacing:.02em;
+  }
+}
+
+
+/* =========================================================
+   MOBILE V2.3 — CANVAS NAVIGATION
+========================================================= */
+@media (max-width: 820px) and (pointer: coarse),
+       (max-width: 820px) and (hover: none) {
+  .pmv2-canvas-controls button[data-canvas="pan"].active {
+    border-color:#f1d38a !important;
+    color:#fff !important;
+    background:linear-gradient(180deg,rgba(217,173,84,.27),rgba(168,76,255,.18)) !important;
+    box-shadow:0 0 18px rgba(217,173,84,.15) !important;
+  }
+
+  body.pmv2-pan-mode #canvas-viewport {
+    cursor:grab !important;
+  }
+
+  body.pmv2-pan-mode #canvas-viewport:active {
+    cursor:grabbing !important;
+  }
+}
